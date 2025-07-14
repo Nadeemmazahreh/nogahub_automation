@@ -1,8 +1,12 @@
 const { Sequelize, DataTypes } = require('sequelize');
 
 // Database connection - Use PostgreSQL for production, SQLite for development
-const sequelize = process.env.DATABASE_URL ? 
-  new Sequelize(process.env.DATABASE_URL, {
+let sequelize;
+
+if (process.env.DATABASE_URL) {
+  // Production: Use PostgreSQL
+  console.log('🐘 Using PostgreSQL database');
+  sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     dialectOptions: {
@@ -17,9 +21,11 @@ const sequelize = process.env.DATABASE_URL ?
       acquire: 30000,
       idle: 10000
     }
-  }) :
-  process.env.DB_NAME ? 
-  new Sequelize(
+  });
+} else if (process.env.DB_NAME) {
+  // Custom MySQL/MariaDB
+  console.log('🐬 Using MySQL database');
+  sequelize = new Sequelize(
     process.env.DB_NAME,
     process.env.DB_USER,
     process.env.DB_PASSWORD,
@@ -35,12 +41,21 @@ const sequelize = process.env.DATABASE_URL ?
         idle: 10000
       }
     }
-  ) :
-  new Sequelize({
+  );
+} else if (process.env.NODE_ENV === 'production') {
+  // Production without DATABASE_URL - this is an error
+  console.error('❌ No database configuration found in production!');
+  console.error('Please add a PostgreSQL database to Railway and ensure DATABASE_URL is set.');
+  process.exit(1);
+} else {
+  // Development: Use SQLite
+  console.log('🗃️ Using SQLite database for development');
+  sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: './nogahub.db',
     logging: process.env.NODE_ENV === 'development' ? console.log : false
   });
+}
 
 // User model
 const User = sequelize.define('User', {
