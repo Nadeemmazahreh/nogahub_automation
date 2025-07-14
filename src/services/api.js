@@ -5,6 +5,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api
 console.log('🔗 API_BASE_URL:', API_BASE_URL);
 console.log('🌍 Environment:', process.env.NODE_ENV);
 console.log('🔧 REACT_APP_API_URL from env:', process.env.REACT_APP_API_URL);
+console.log('🖼️ Logo should be at: /logo-no-background.png');
 
 class ApiService {
   constructor() {
