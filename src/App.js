@@ -1616,7 +1616,7 @@ const NogaHubAutomation = () => {
                           <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
                             <span>{(savedProject.equipment?.length || 0) + (savedProject.customEquipment?.length || 0)} items</span>
                             <span>•</span>
-                            <span>{(savedProject.total || 0).toFixed(2)} JOD total</span>
+                            <span>{(parseFloat(savedProject.total) || 0).toFixed(2)} JOD total</span>
                             <span>•</span>
                             <span>Saved {savedProject.createdAt || new Date(savedProject.createdAt).toLocaleDateString()}</span>
                           </div>
