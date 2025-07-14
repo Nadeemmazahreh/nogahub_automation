@@ -659,7 +659,7 @@ const NogaHubAutomation = () => {
                 <span>${(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(2)} JOD</span>
               </div>
               <div class="totals-row discount">
-                <span>Equipment Discount (${project.globalDiscount.toFixed(2)}%):</span>
+                <span>Equipment Discount (${(parseFloat(project.globalDiscount) || 0).toFixed(2)}%):</span>
                 <span>-${(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(2)} JOD</span>
               </div>
               <div class="totals-row">
@@ -1555,7 +1555,7 @@ const NogaHubAutomation = () => {
                     {project.globalDiscount > 0 && (
                       <div>
                         <span className="text-gray-600">Discount:</span>
-                        <p className="font-semibold text-red-600">-{project.globalDiscount.toFixed(2)}%</p>
+                        <p className="font-semibold text-red-600">-{(parseFloat(project.globalDiscount) || 0).toFixed(2)}%</p>
                       </div>
                     )}
                     <div>
@@ -2125,7 +2125,7 @@ const NogaHubAutomation = () => {
                         </div>
                         {project.globalDiscount > 0 && (
                           <div className="flex justify-between text-xs text-red-600">
-                            <span>Equipment Discount ({project.globalDiscount.toFixed(2)}%):</span>
+                            <span>Equipment Discount ({(parseFloat(project.globalDiscount) || 0).toFixed(2)}%):</span>
                             <span>-{(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(2)} JOD</span>
                           </div>
                         )}
