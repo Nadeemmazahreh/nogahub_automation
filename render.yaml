@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: nogahub-backend
+    env: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        value: https://nogahub-automation.vercel.app
