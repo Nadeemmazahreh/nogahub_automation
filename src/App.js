@@ -869,8 +869,8 @@ const NogaHubAutomation = () => {
                     <span style="font-size: 9px; color: #9ca3af;">Delivery Date: ${deliveryDate}</span>
                   </td>
                   <td style="text-align: center;">${item.quantity}</td>
-                  <td style="text-align: right;">$${(item.dealerPriceUSD || item.dealerUSD)?.toFixed(2) || '0.00'}</td>
-                  <td style="text-align: right;">$${(((item.dealerPriceUSD || item.dealerUSD) || 0) * (item.quantity || 0)).toFixed(2)}</td>
+                  <td style="text-align: right;">$${(parseFloat(item.dealerPriceUSD || item.dealerUSD) || 0).toFixed(2)}</td>
+                  <td style="text-align: right;">$${(parseFloat(item.dealerPriceUSD || item.dealerUSD || 0) * parseFloat(item.quantity || 0)).toFixed(2)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -2392,8 +2392,8 @@ const NogaHubAutomation = () => {
                                   })()}</div>
                                 </td>
                                 <td className="border border-gray-300 p-2 text-center">{item.quantity}</td>
-                                <td className="border border-gray-300 p-2 text-right">${(item.dealerPriceUSD || item.dealerUSD)?.toFixed(2) || '0.00'}</td>
-                                <td className="border border-gray-300 p-2 text-right">${(((item.dealerPriceUSD || item.dealerUSD) || 0) * (item.quantity || 0)).toFixed(2)}</td>
+                                <td className="border border-gray-300 p-2 text-right">${(parseFloat(item.dealerPriceUSD || item.dealerUSD) || 0).toFixed(2)}</td>
+                                <td className="border border-gray-300 p-2 text-right">${(parseFloat(item.dealerPriceUSD || item.dealerUSD || 0) * parseFloat(item.quantity || 0)).toFixed(2)}</td>
                               </tr>
                             ))}
                           </tbody>
