@@ -17,7 +17,7 @@ const NogaHubAutomation = () => {
   const NogaHubLogo = ({ size = 100, className = "" }) => (
     <div className={`flex items-center ${className}`}>
       <img 
-        src="/logo-no-background.png" 
+        src="/logo-no-background.png?v=2" 
         alt="NogaHub Logo" 
         width={size} 
         height={size} 
@@ -541,7 +541,7 @@ const NogaHubAutomation = () => {
         <body>
           <div class="header">
             <div style="text-align: left; margin-bottom: 20px;">
-              <img src="/logo-no-background.png" alt="NogaHub Logo" style="width: 80px; height: 80px; margin-bottom: 15px; object-fit: contain; display: block;" onerror="this.style.display='none'"/>
+              <img src="/logo-no-background.png?v=2" alt="NogaHub Logo" style="width: 80px; height: 80px; margin-bottom: 15px; object-fit: contain; display: block;" onerror="this.style.display='none'"/>
               <h1 style="margin: 0 0 10px 0; font-size: 1.8em;">QUOTATION</h1>
               <div class="company-info">
                 <strong>Deep Sound For Technical Consultations</strong><br/>
