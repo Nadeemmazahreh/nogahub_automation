@@ -8,3 +8,5 @@ restartPolicyMaxRetries = 10
 
 [env]
 NODE_ENV = "production"
+
+# PostgreSQL database will be automatically provided by Railway
