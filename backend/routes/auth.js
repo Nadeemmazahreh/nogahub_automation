@@ -53,7 +53,7 @@ router.post('/register', validateInput(registerSchema), async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
 
     res.status(201).json({
@@ -97,7 +97,7 @@ router.post('/login', validateInput(loginSchema), async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
 
     res.json({
@@ -149,7 +149,7 @@ router.post('/refresh', authenticateToken, async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
 
     res.json({ token });
