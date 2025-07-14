@@ -19,7 +19,17 @@
 .env.test.local
 .env.production.local
 
+# backend env files
+backend/.env
+backend/nogahub.db
+
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# deployment
 .vercel
+
+# backend dependencies
+backend/node_modules

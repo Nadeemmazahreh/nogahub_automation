@@ -57,11 +57,8 @@ const NogaHubAutomation = () => {
       setSavedProjects(response.projects || []);
     } catch (error) {
       console.error('Failed to load saved projects:', error);
-      // Fallback to localStorage for backward compatibility
-      const saved = localStorage.getItem('nogahub-saved-projects');
-      if (saved) {
-        setSavedProjects(JSON.parse(saved));
-      }
+      // No localStorage fallback to maintain user isolation
+      setSavedProjects([]);
     }
   };
 
@@ -74,6 +71,7 @@ const NogaHubAutomation = () => {
           setIsAuthenticated(true);
           setUserRole(profileResponse.user.role);
           await loadEquipmentData();
+          await loadSavedProjects(); // Load projects after successful auth
         } catch (error) {
           console.error('Auth check failed:', error);
           setIsAuthenticated(false);
@@ -83,7 +81,6 @@ const NogaHubAutomation = () => {
     };
 
     checkAuth();
-    loadSavedProjects();
   }, []);
 
   // Remove localStorage sync - projects are now stored in backend
@@ -219,6 +216,7 @@ const NogaHubAutomation = () => {
       setIsAuthenticated(true);
       setUserRole(response.user.role);
       await loadEquipmentData();
+      await loadSavedProjects(); // Load projects after successful login
       
     } catch (error) {
       console.error('Login failed:', error);
