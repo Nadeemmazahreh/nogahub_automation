@@ -51,8 +51,8 @@ router.get('/', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    // Build query conditions - admins can see all projects, users only their own
-    const whereConditions = userRole === 'admin' ? {} : { userId };
+    // Build query conditions - all users can see all projects
+    const whereConditions = {};
     
     if (search) {
       whereConditions[Op.or] = [
@@ -65,10 +65,10 @@ router.get('/', authenticateToken, async (req, res) => {
     const offset = (page - 1) * limit;
     const projects = await Project.findAndCountAll({
       where: whereConditions,
-      include: userRole === 'admin' ? [{
+      include: [{
         model: User,
         attributes: ['username', 'email']
-      }] : [],
+      }],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['updatedAt', 'DESC']]
@@ -97,7 +97,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     const project = await Project.findOne({
-      where: { id, userId }
+      where: { id },
+      include: [{
+        model: User,
+        attributes: ['username', 'email']
+      }]
     });
 
     if (!project) {
@@ -245,12 +249,10 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 // Get project statistics
-router.get('/stats/summary', authenticateToken, async (req, res) => {
+router.get('/stats/summary', authenticateToken, async (_, res) => {
   try {
-    const userId = req.user.id;
-
     const stats = await Project.findAll({
-      where: { userId },
+      where: {},
       attributes: [
         [sequelize.fn('COUNT', sequelize.col('id')), 'totalProjects'],
         [sequelize.fn('SUM', sequelize.col('total')), 'totalValue'],
