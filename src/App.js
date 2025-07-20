@@ -2053,7 +2053,7 @@ const NogaHubAutomation = () => {
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Equipment Revenue:</span>
-                          <span className="font-medium">{calculationResults.equipmentTotalJOD.toFixed(2)} JOD</span>
+                          <span className="font-medium">{calculationResults.equipmentClientTotalJOD.toFixed(2)} JOD</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Door-to-Door Cost:</span>
