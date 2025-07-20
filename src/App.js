@@ -266,7 +266,7 @@ const NogaHubAutomation = () => {
     nogahubFee: 0.375    // 37.5% of void sales profit
   };
 
-   // Updated calculation based on new logic
+   // Updated calculation based on new logic - v2
   const calculateProjectCosts = () => {
     if (project.equipment.length === 0 && project.customEquipment.length === 0) return null;
 
