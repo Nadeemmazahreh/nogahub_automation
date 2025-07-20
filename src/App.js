@@ -435,7 +435,8 @@ const NogaHubAutomation = () => {
     const projectTotalJOD = projectSubtotalJOD + projectTaxJOD;
 
     // Step 6: Void profit calculations (based on business report)
-    const voidSalesProfit = equipmentClientTotalJOD - equipmentDealerTotalJOD;
+    // Updated to use actual revenue after discount minus door-to-door cost excluding tax020
+    const voidSalesProfit = equipmentTotalJOD - doorToDoorCostExclTax020JOD;
     
     // Step 7: Role-based fees
     const producerFee = voidSalesProfit * roleFees.producer;
@@ -2053,11 +2054,11 @@ const NogaHubAutomation = () => {
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Equipment Revenue:</span>
-                          <span className="font-medium">{calculationResults.equipmentClientTotalJOD.toFixed(2)} JOD</span>
+                          <span className="font-medium">{calculationResults.equipmentTotalJOD.toFixed(2)} JOD</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Equipment Cost:</span>
-                          <span className="font-medium">{calculationResults.equipmentDealerTotalJOD.toFixed(2)} JOD</span>
+                          <span className="text-gray-600">Door-to-Door Cost:</span>
+                          <span className="font-medium">{calculationResults.doorToDoorCostExclTax020JOD.toFixed(2)} JOD</span>
                         </div>
                         <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                           <span className="font-semibold text-gray-900">Sales Profit:</span>
