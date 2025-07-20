@@ -1,7 +1,7 @@
 const express = require('express');
 const Joi = require('joi');
-const { Op, sequelize } = require('sequelize');
-const { Project, User } = require('../models/database');
+const { Op } = require('sequelize');
+const { Project, User, sequelize } = require('../models/database');
 const { authenticateToken, validateInput } = require('../middleware/auth');
 
 const router = express.Router();
@@ -37,7 +37,13 @@ const projectSchema = Joi.object({
   ).default([]),
   roles: Joi.object({
     producer: Joi.string().allow(''),
-    projectManager: Joi.string().allow('')
+    director: Joi.string().allow(''),
+    projectManager: Joi.string().allow(''),
+    juniorProjectManager: Joi.string().allow(''),
+    accountant: Joi.string().allow(''),
+    logisticsManager: Joi.string().allow(''),
+    noiseControlEngineer: Joi.string().allow(''),
+    soundSystemDesigner: Joi.string().allow('')
   }).required(),
   total: Joi.number().min(0).default(0),
   isCalculated: Joi.boolean().default(false),
