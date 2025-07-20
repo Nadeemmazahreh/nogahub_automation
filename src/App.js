@@ -435,7 +435,7 @@ const NogaHubAutomation = () => {
     const projectTotalJOD = projectSubtotalJOD + projectTaxJOD;
 
     // Step 6: Void profit calculations (based on business report)
-    // Updated to use actual revenue after discount minus door-to-door cost excluding tax020
+    // Equipment revenue (client cost + shipping + customs excl tax020) minus door-to-door cost (dealer cost + shipping + customs excl tax020)
     const voidSalesProfit = equipmentTotalJOD - doorToDoorCostExclTax020JOD;
     
     // Step 7: Role-based fees
@@ -572,6 +572,11 @@ const NogaHubAutomation = () => {
       soundDesignServiceCost,
       noiseControlEngineerFee,
       soundSystemDesignerFee,
+      shipping: totalShippingCost,
+      customs: totalCustomsExclTax020,
+      tax: tax020,
+      internalDoorToDoorPrice: doorToDoorCostJOD,
+      clientDoorToDoorCost: doorToDoorCostExclTax020JOD,
       distribution,
       breakdown: {
         voidRetainedEarnings,
@@ -840,7 +845,7 @@ const NogaHubAutomation = () => {
 
     const deliveryDate = (() => {
       const deliveryDate = new Date();
-      deliveryDate.setDate(deliveryDate.getDate() + 42);
+      deliveryDate.setDate(deliveryDate.getDate() + 14);
       return deliveryDate.toLocaleDateString('en-GB');
     })();
 
@@ -916,9 +921,9 @@ const NogaHubAutomation = () => {
           <div class="section">
             <div class="section-title">Ship To:</div>
             <div style="font-size: 11px;">
-              <strong>Third-Party Logistics Company:</strong> Moab Mountains for import and export (شركة جبال مؤاب للاستيراد والتصدير)<br/>
+              <strong>Company:</strong> Deep Sound For Technical Consultation LLC<br/>
               <strong>Contact Person:</strong> Tarik Zuraikat<br/>
-              <strong>Address:</strong> 260 Aqr St., Amman, Jordan<br/>
+              <strong>Address:</strong> 15 Al rojoum, Downtown Amman, 11118, Jordan<br/>
               <strong>City, Country:</strong> Amman, Jordan<br/>
               <strong>Phone:</strong> +96779061007<br/>
               <strong>Email:</strong> T.zuraikat@moab-llift.com
@@ -979,8 +984,6 @@ const NogaHubAutomation = () => {
           <div class="instructions">
             <div class="section-title">Special Instructions:</div>
             • Invoice to: Deep Sound For Technical Consultation LLC (Bill To address above)<br/>
-            • Ship to: Third-party logistics company (Ship To address above)<br/>
-            • Please include third-party shipping company details on all shipping documentation<br/>
             • Coordinate delivery schedule with shipping company contact person<br/>
             • All equipment must be factory sealed and include manufacturer warranties<br/>
             • Delivery confirmation required upon receipt at shipping company
@@ -2057,7 +2060,7 @@ const NogaHubAutomation = () => {
                           <span className="font-medium">{calculationResults.equipmentTotalJOD.toFixed(2)} JOD</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Door-to-Door Cost:</span>
+                          <span className="text-gray-600">Door-to-Door Cost (excl. Tax):</span>
                           <span className="font-medium">{calculationResults.doorToDoorCostExclTax020JOD.toFixed(2)} JOD</span>
                         </div>
                         <div className="flex justify-between items-center pt-2 border-t border-gray-200">
@@ -2154,36 +2157,89 @@ const NogaHubAutomation = () => {
                   <div className="border border-gray-200 rounded-lg p-6 bg-white">
                     <h4 className="font-semibold text-gray-900 mb-6">Void Analysis</h4>
                     
+                    {/* Order Analysis */}
+                    <div className="mb-6">
+                      <h6 className="font-medium text-gray-800 mb-4">Order Breakdown</h6>
+                      
+                      {/* Total Door-to-door (Internal) - Above */}
+                      <div className="mb-4">
+                        <div className="text-center p-4 bg-gray-50 rounded-lg">
+                          <p className="text-gray-600 font-medium">Total Door-to-door (Internal)</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.internalDoorToDoorPrice.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">100%</p>
+                        </div>
+                      </div>
+
+                      {/* Main 4 boxes */}
+                      <div className="grid grid-cols-4 gap-4 text-sm mb-4">
+                        <div className="text-center p-4 bg-gray-50 rounded-lg">
+                          <p className="text-gray-600 font-medium">Void Equipment Dealer Cost</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.equipmentDetails.filter(item => {
+                            const equipment = equipmentDatabase.find(eq => eq.name === item.name);
+                            return equipment && equipment.category === 'void';
+                          }).reduce((sum, item) => sum + item.dealerTotalJOD, 0).toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">{((calculationResults.equipmentDetails.filter(item => {
+                            const equipment = equipmentDatabase.find(eq => eq.name === item.name);
+                            return equipment && equipment.category === 'void';
+                          }).reduce((sum, item) => sum + item.dealerTotalJOD, 0) / calculationResults.internalDoorToDoorPrice) * 100).toFixed(1)}%</p>
+                        </div>
+                        <div className="text-center p-4 bg-gray-50 rounded-lg">
+                          <p className="text-gray-600 font-medium">Shipping</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.shipping.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">{((calculationResults.shipping / calculationResults.internalDoorToDoorPrice) * 100).toFixed(1)}%</p>
+                        </div>
+                        <div className="text-center p-4 bg-gray-50 rounded-lg">
+                          <p className="text-gray-600 font-medium">Customs</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.customs.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">{((calculationResults.customs / calculationResults.internalDoorToDoorPrice) * 100).toFixed(1)}%</p>
+                        </div>
+                        <div className="text-center p-4 bg-gray-50 rounded-lg">
+                          <p className="text-gray-600 font-medium">Tax (VAT 16%)</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.tax.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">{((calculationResults.tax / calculationResults.internalDoorToDoorPrice) * 100).toFixed(1)}%</p>
+                        </div>
+                      </div>
+
+                      {/* Final Profit - Below */}
+                      <div>
+                        <div className="text-center p-4 bg-gray-50 rounded-lg">
+                          <p className="text-gray-600 font-medium">Final Profit</p>
+                          <p className="text-base text-green-600 mt-1">{calculationResults.voidSalesProfit.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">{((calculationResults.voidSalesProfit / calculationResults.internalDoorToDoorPrice) * 100).toFixed(1)}%</p>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Void Profit Distribution Summary */}
                     <div className="mb-6">
-                      <h5 className="font-semibold text-gray-900 mb-4">Void Profit Distribution</h5>
+                      <h6 className="font-medium text-gray-800 mb-4">Void Profit Distribution</h6>
                       <div className="grid grid-cols-4 gap-4 text-sm">
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Producer</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">5%</p>
-                          <p className="text-xs text-gray-500 font-bold">{calculationResults.producerFee.toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.producerFee.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">5%</p>
                         </div>
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Nogahub Management</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">37.5%</p>
-                          <p className="text-xs text-gray-500 font-bold">{calculationResults.nogahubFee.toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.nogahubFee.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">37.5%</p>
                         </div>
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Void Retained Earnings</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">5%</p>
-                          <p className="text-xs text-gray-500 font-bold">{calculationResults.breakdown.voidRetainedEarnings.toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.voidRetainedEarnings.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">5%</p>
                         </div>
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Void Stakeholders</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">52.5%</p>
-                          <p className="text-xs text-gray-500 font-bold">{calculationResults.breakdown.voidShareholderDistribution.toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.voidShareholderDistribution.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">52.5%</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Void Stakeholder Distribution Details */}
                     <div>
-                      <h5 className="font-semibold text-gray-900 mb-4">Void Stakeholder Distribution (52.5%)</h5>
+                      <h6 className="font-medium text-gray-800 mb-4">Void Stakeholder Distribution (52.5%)</h6>
                       <div className="space-y-3 text-sm">
                         <div className="ml-4 space-y-2 text-xs bg-gray-50 p-3 rounded-lg">
                           <div className="flex justify-between items-center">
@@ -2209,49 +2265,49 @@ const NogaHubAutomation = () => {
                     
                     {/* Nogahub Distribution Details */}
                     <div className="mb-6">
-                      <h5 className="font-semibold text-gray-900 mb-4">Nogahub Distribution (37.5%)</h5>
+                      <h6 className="font-medium text-gray-800 mb-4">Nogahub Distribution (37.5%)</h6>
                       <div className="grid grid-cols-4 gap-4 text-sm mb-4">
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Project Director</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">20%</p>
-                          <p className="text-xs text-gray-500 font-bold">{calculationResults.breakdown.nogahubProjectDirector.toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubProjectDirector.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">20%</p>
                         </div>
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Project Manager</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">15%</p>
-                          <p className="text-xs text-gray-500 font-bold">{calculationResults.breakdown.nogahubProjectManager.toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubProjectManager.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">15%</p>
                         </div>
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Junior PM</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">8%</p>
-                          <p className="text-xs text-gray-500 font-bold">{calculationResults.breakdown.nogahubJuniorPM.toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubJuniorPM.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">8%</p>
                         </div>
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Logistics</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">3%</p>
-                          <p className="text-xs text-gray-500 font-bold">{calculationResults.breakdown.nogahubLogistics.toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubLogistics.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">3%</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-4 gap-4 text-sm">
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Accounting</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">2%</p>
-                          <p className="text-xs text-gray-500 font-bold">{calculationResults.breakdown.nogahubAccounting.toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubAccounting.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">2%</p>
                         </div>
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Admin & Legal</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">5%</p>
-                          <p className="text-xs text-gray-500 font-bold">{(calculationResults.breakdown.nogahubLegal + calculationResults.breakdown.nogahubAdmin).toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{(calculationResults.breakdown.nogahubLegal + calculationResults.breakdown.nogahubAdmin).toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">5%</p>
                         </div>
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Retained Earnings</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">27%</p>
-                          <p className="text-xs text-gray-500 font-bold">{calculationResults.breakdown.nogahubRetainedEarnings.toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubRetainedEarnings.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">27%</p>
                         </div>
                         <div className="text-center p-4 bg-gray-50 rounded-lg">
                           <p className="text-gray-600 font-medium">Nogahub Stakeholders</p>
-                          <p className="text-lg font-bold text-red-600 mt-1">20%</p>
-                          <p className="text-xs text-gray-500 font-bold">{calculationResults.breakdown.nogahubShareholderDistribution.toFixed(2)} JOD</p>
+                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubShareholderDistribution.toFixed(2)} JOD</p>
+                          <p className="text-xs text-red-600">20%</p>
                         </div>
                       </div>
                     </div>
@@ -2755,9 +2811,9 @@ const NogaHubAutomation = () => {
                         <p className="font-semibold mb-2">Ship To:</p>
                         <div className="grid grid-cols-2 gap-4 text-xs">
                           <div>
-                            <p><strong>Third-Party Logistics Company:</strong> Moab Mountains for import and export (شركة جبال مؤاب للاستيراد والتصدير)</p>
+                            <p><strong>Company:</strong> Deep Sound For Technical Consultation LLC</p>
                             <p><strong>Contact Person:</strong> Tarik Zuraikat</p>
-                            <p><strong>Address:</strong> 260 Aqr St., Amman, Jordan</p>
+                            <p><strong>Address:</strong> 15 Al rojoum, Downtown Amman, 11118, Jordan</p>
                             <p><strong>City, Country:</strong> Amman, Jordan</p>
                             <p><strong>Phone:</strong> +96779061007</p>
                             <p><strong>Email:</strong> T.zuraikat@moab-llift.com</p>
@@ -2781,7 +2837,7 @@ const NogaHubAutomation = () => {
                         <div>
                           <p className="font-semibold text-sm">Delivery Date: {(() => {
                             const deliveryDate = new Date();
-                            deliveryDate.setDate(deliveryDate.getDate() + 42); // 6 weeks from now
+                            deliveryDate.setDate(deliveryDate.getDate() + 14); // 2 weeks from now
                             return deliveryDate.toLocaleDateString('en-GB');
                           })()}</p>
                         </div>
@@ -2818,7 +2874,7 @@ const NogaHubAutomation = () => {
                                   </div>
                                   <div className="text-gray-500 text-xs">Delivery Date: {(() => {
                                     const deliveryDate = new Date();
-                                    deliveryDate.setDate(deliveryDate.getDate() + 42);
+                                    deliveryDate.setDate(deliveryDate.getDate() + 14);
                                     return deliveryDate.toLocaleDateString('en-GB');
                                   })()}</div>
                                 </td>
@@ -2866,8 +2922,6 @@ const NogaHubAutomation = () => {
                         <p className="font-semibold text-sm mb-2">Special Instructions:</p>
                         <div className="text-xs space-y-1 pl-4">
                           <p>• Invoice to: Deep Sound For Technical Consultation LLC (Bill To address above)</p>
-                          <p>• Ship to: Third-party logistics company (Ship To address above)</p>
-                          <p>• Please include third-party shipping company details on all shipping documentation</p>
                           <p>• Coordinate delivery schedule with shipping company contact person</p>
                         </div>
                       </div>
