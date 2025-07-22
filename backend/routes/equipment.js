@@ -22,7 +22,9 @@ const equipmentSchema = Joi.object({
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { role } = req.user;
-    const { category, search, page = 1, limit = 50 } = req.query;
+    const { category, search, page = 1, limit = 1000 } = req.query;
+    
+    console.log(`Equipment query: limit=${limit}, page=${page}, category=${category}, search=${search}`);
 
     // Build query conditions
     const whereConditions = { isActive: true };
@@ -59,6 +61,8 @@ router.get('/', authenticateToken, async (req, res) => {
       order: [['name', 'ASC']]
     });
 
+    console.log(`Equipment response: ${equipment.rows.length} items returned, total: ${equipment.count}`);
+    
     res.json({
       equipment: equipment.rows,
       pagination: {
