@@ -73,16 +73,22 @@ const addMSRPColumn = async () => {
   } catch (error) {
     console.error('❌ Error during migration:', error);
     throw error;
-  } finally {
-    await sequelize.close();
   }
 };
 
 // Run if called directly
 if (require.main === module) {
   addMSRPColumn()
-    .then(() => process.exit(0))
-    .catch(() => process.exit(1));
+    .then(() => {
+      console.log('Migration completed, closing connection...');
+      sequelize.close();
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Migration failed:', error);
+      sequelize.close();
+      process.exit(1);
+    });
 }
 
 module.exports = { addMSRPColumn };

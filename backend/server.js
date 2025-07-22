@@ -8,7 +8,6 @@ const authRoutes = require('./routes/auth');
 const equipmentRoutes = require('./routes/equipment');
 const projectRoutes = require('./routes/projects');
 const { initDatabase } = require('./models/database');
-const { addMSRPColumn } = require('./add-msrpusd-column');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -68,11 +67,6 @@ app.use('*', (req, res) => {
 const startServer = async () => {
   try {
     await initDatabase();
-    
-    // Run database migration for msrpUSD column
-    console.log('🔧 Running database migrations...');
-    await addMSRPColumn();
-    
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV}`);
