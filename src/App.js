@@ -318,6 +318,12 @@ const NogaHubAutomation = () => {
           calculationResults: calculationResults
         };
 
+        console.log('🔧 Original project.equipment:', project.equipment);
+        console.log('🔧 Original project.services:', project.services);
+        console.log('🔧 Transformed projectData.equipment:', projectData.equipment);
+        console.log('🔧 Transformed projectData.services:', projectData.services);
+        console.log('🔧 Full projectData being sent:', JSON.stringify(projectData, null, 2));
+
         const response = await apiService.saveProject(projectData);
         
         // Reload projects from backend to get updated list
