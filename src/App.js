@@ -47,8 +47,8 @@ const NogaHubAutomation = () => {
           // 3. Exact substring (but with priority to word boundaries)
           return searchTerms.every(term => {
             // Check in option name
-            const nameWords = optionName.split(/[\s\-\.]+/); // Split on space, dash, dot
-            const codeWords = optionCode.split(/[\s\-\.]+/);
+            const nameWords = optionName.split(/[\s\-.]+/); // Split on space, dash, dot
+            const codeWords = optionCode.split(/[\s\-.]+/);
             
             // Check if term matches start of any word or is contained
             const matchesName = nameWords.some(word => word.startsWith(term)) || optionName.includes(term);
