@@ -1,9 +1,18 @@
 const { Equipment, initDatabase } = require('./models/database');
 const fs = require('fs');
 
-const importEquipmentData = async () => {
+const importEquipmentData = async (forceImport = false) => {
   try {
     await initDatabase();
+    
+    // Check if we should skip import
+    const existingCount = await Equipment.count({ where: { isActive: true } });
+    console.log(`🔍 Found ${existingCount} existing active equipment items`);
+    
+    if (existingCount >= 400 && !forceImport) {
+      console.log('✅ Database already has sufficient equipment data, skipping import');
+      return { skipped: true, existingCount };
+    }
     
     // Read the equipment data
     const filename = 'equipment-export.json';
@@ -15,14 +24,6 @@ const importEquipmentData = async () => {
     const equipmentData = JSON.parse(fs.readFileSync(filename, 'utf8'));
     
     console.log(`📦 Importing ${equipmentData.length} equipment items to production database`);
-    
-    // Clear existing equipment first (optional)
-    const existingCount = await Equipment.count();
-    console.log(`🗑️ Found ${existingCount} existing equipment items`);
-    
-    if (existingCount > 0) {
-      console.log('🔄 This will add new equipment or update existing ones by code...');
-    }
     
     let added = 0;
     let updated = 0;
@@ -66,11 +67,18 @@ const importEquipmentData = async () => {
     console.log(`   Total active accessories: ${accessoryCount}`);
     console.log(`   Total active equipment in database: ${totalCount}`);
     
-    process.exit(0);
+    return { added, updated, errors, totalCount };
   } catch (error) {
     console.error('❌ Error importing equipment:', error);
-    process.exit(1);
+    throw error;
   }
 };
 
-importEquipmentData();
+// Only run directly if called as script
+if (require.main === module) {
+  importEquipmentData(process.argv.includes('--force'))
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
+}
+
+module.exports = { importEquipmentData };

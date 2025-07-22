@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const equipmentRoutes = require('./routes/equipment');
 const projectRoutes = require('./routes/projects');
 const { initDatabase } = require('./models/database');
+const { importEquipmentData } = require('./import-equipment-data');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -67,6 +68,16 @@ app.use('*', (req, res) => {
 const startServer = async () => {
   try {
     await initDatabase();
+    
+    // Import equipment data if database is empty or missing data
+    console.log('🔄 Checking equipment database...');
+    const importResult = await importEquipmentData();
+    if (importResult.skipped) {
+      console.log(`✅ Equipment database is complete with ${importResult.existingCount} items`);
+    } else {
+      console.log(`✅ Equipment import completed: ${importResult.added} added, ${importResult.updated} updated`);
+    }
+    
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV}`);
