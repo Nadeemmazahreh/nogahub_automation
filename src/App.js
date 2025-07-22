@@ -124,6 +124,7 @@ const NogaHubAutomation = () => {
             type="text"
             value={displayValue}
             onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
             onFocus={handleInputFocus}
             onBlur={handleClickOutside}
             placeholder={disabled ? 'Loading equipment...' : placeholder}
