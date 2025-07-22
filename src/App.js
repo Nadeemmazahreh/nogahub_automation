@@ -511,7 +511,10 @@ const NogaHubAutomation = () => {
         // Convert to JOD
         const dealerPriceJOD = equipment.dealerUSD * exchangeRate;
         const clientPriceJOD = equipment.clientUSD * exchangeRate;
-        const msrpPriceJOD = equipment.msrpUSD * exchangeRate;
+        // Use MSRP if available, otherwise fall back to clientUSD (but this shouldn't happen)
+        const msrpPriceJOD = (equipment.msrpUSD || equipment.clientUSD) * exchangeRate;
+        
+        console.log(`${equipment.name}: MSRP=$${equipment.msrpUSD}, Client=$${equipment.clientUSD}, MSRP_JOD=${msrpPriceJOD.toFixed(2)}`);
         
         // Calculate shipping cost per unit (dealer cost × shipping share)
         const shippingPerUnit = dealerPriceJOD * shippingShare;
@@ -747,7 +750,7 @@ const NogaHubAutomation = () => {
       equipmentDealerTotalJOD,
       equipmentDealerTotalUSD,
       equipmentClientTotalJOD,
-      equipmentTotalJOD: equipmentTotalJODBeforeDiscount, // Use BOQ total for display
+      equipmentTotalJOD: equipmentTotalJODBeforeDiscount + customEquipmentTotalJOD, // Use BOQ total + custom equipment for display
       equipmentTotalJODBeforeDiscount,
       doorToDoorCostJOD,
       doorToDoorCostExclTax020JOD,
