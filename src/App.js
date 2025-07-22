@@ -35,15 +35,30 @@ const NogaHubAutomation = () => {
     
     useEffect(() => {
       if (searchTerm) {
-        // Improved absolute search - split search terms and match all parts
-        const searchTerms = searchTerm.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+        // More precise search: split search terms and require better matching
+        const searchTerms = searchTerm.toLowerCase().trim().split(/\s+/).filter(term => term.length > 0);
         const filtered = options.filter(option => {
-          const optionText = `${option.name} ${option.code}`.toLowerCase();
-          // All search terms must be found somewhere in the option text (absolute search)
-          return searchTerms.every(term => optionText.includes(term));
+          const optionName = option.name.toLowerCase();
+          const optionCode = option.code.toLowerCase();
+          
+          // Each search term must match as:
+          // 1. Word boundary in name/code, OR
+          // 2. Start of a word, OR  
+          // 3. Exact substring (but with priority to word boundaries)
+          return searchTerms.every(term => {
+            // Check in option name
+            const nameWords = optionName.split(/[\s\-\.]+/); // Split on space, dash, dot
+            const codeWords = optionCode.split(/[\s\-\.]+/);
+            
+            // Check if term matches start of any word or is contained
+            const matchesName = nameWords.some(word => word.startsWith(term)) || optionName.includes(term);
+            const matchesCode = codeWords.some(word => word.startsWith(term)) || optionCode.includes(term);
+            
+            return matchesName || matchesCode;
+          });
         });
         setFilteredOptions(filtered);
-        setIsOpen(true); // Auto-open dropdown when typing
+        setIsOpen(true);
       } else {
         setFilteredOptions(options);
       }
@@ -59,12 +74,20 @@ const NogaHubAutomation = () => {
       const newValue = e.target.value;
       setSearchTerm(newValue);
       
-      // Don't automatically clear selection when backspacing - let user search freely
-      // Only clear selection if user completely deletes everything and clicks away
-      
-      // Always keep dropdown open when typing (even if backspacing to empty)
-      if (!isOpen) {
-        setIsOpen(true);
+      // Always keep dropdown open when user is actively typing/editing
+      setIsOpen(true);
+    };
+
+    const handleKeyDown = (e) => {
+      // Prevent dropdown from closing on backspace or any other key
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        // Keep dropdown open
+        if (!isOpen) {
+          setIsOpen(true);
+        }
+      }
+      if (e.key === 'Escape') {
+        setIsOpen(false);
       }
     };
 
@@ -78,7 +101,7 @@ const NogaHubAutomation = () => {
       if (!disabled) {
         setIsOpen(true);
         // If there's a selected option and no search term, set the search term to the selected name
-        // This allows users to edit the selected text
+        // This allows users to edit the selected text without losing the dropdown
         if (selectedOption && searchTerm === '') {
           setSearchTerm(selectedOption.name);
         }
@@ -87,16 +110,11 @@ const NogaHubAutomation = () => {
 
     const handleClickOutside = () => {
       setIsOpen(false);
-      // Only clear the search term if there's no selection at all
-      // This preserves user's search progress and prevents frustrating resets
-      if (!selectedOption && searchTerm) {
-        // Clear selection only when clicking outside with no valid selection
-        onChange('');
-      }
-      // If there's a selected option, reset search to show the selection
+      // Simple logic: if user has a selection, show it; otherwise keep search term for continued editing
       if (selectedOption && searchTerm !== selectedOption.name) {
-        setSearchTerm(''); // Reset search term to show selected option name
+        setSearchTerm(''); // Show the selected item name
       }
+      // Never clear the selection when clicking outside - let user continue searching
     };
 
     return (
