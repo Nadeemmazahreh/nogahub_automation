@@ -511,6 +511,7 @@ const NogaHubAutomation = () => {
         // Convert to JOD
         const dealerPriceJOD = equipment.dealerUSD * exchangeRate;
         const clientPriceJOD = equipment.clientUSD * exchangeRate;
+        const msrpPriceJOD = equipment.msrpUSD * exchangeRate;
         
         // Calculate shipping cost per unit (dealer cost × shipping share)
         const shippingPerUnit = dealerPriceJOD * shippingShare;
@@ -518,8 +519,8 @@ const NogaHubAutomation = () => {
         // Calculate customs/clearance per unit (dealer cost × customs share)
         const customsPerUnit = dealerPriceJOD * customsShare;
 
-        // Calculate final unit price (client price + shipping + customs)
-        const finalUnitPriceJOD = clientPriceJOD + shippingPerUnit + customsPerUnit;
+        // Calculate final unit price (MSRP price + shipping + customs) - BOQ should be above MSRP
+        const finalUnitPriceJOD = msrpPriceJOD + shippingPerUnit + customsPerUnit;
         
         // Calculate total for this item (final unit price × quantity)
         const finalTotalJOD = finalUnitPriceJOD * item.quantity;
