@@ -305,6 +305,14 @@ const NogaHubAutomation = () => {
       try {
         const projectData = {
           ...project,
+          // Fix equipment - filter out empty codes
+          equipment: project.equipment.filter(item => item.code && item.code.trim()),
+          // Fix services - convert to simple booleans
+          services: {
+            commissioning: project.services.commissioning?.enabled || false,
+            noiseControl: project.services.noiseControl?.enabled || false,
+            soundDesign: project.services.soundDesign?.enabled || false
+          },
           total: calculationResults ? (calculationResults.projectTotalJOD || calculationResults.totalCostUSD || 0) : 0,
           isCalculated: isCalculated,
           calculationResults: calculationResults
