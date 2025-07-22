@@ -616,8 +616,12 @@ const NogaHubAutomation = () => {
       servicesTotal += service.price || 0;
     });
 
-    // Step 5: Project totals (including custom equipment)
-    const projectSubtotalJOD = equipmentTotalJOD + customEquipmentTotalJOD + servicesTotal;
+    // Step 5: Project totals - apply discount to the final subtotal
+    // For BOQ display: use full prices without discount (equipmentTotalJODBeforeDiscount)
+    // For project summary: apply discount to final subtotal
+    const subtotalBeforeDiscount = equipmentTotalJODBeforeDiscount + customEquipmentTotalJOD + servicesTotal;
+    const discountAmount = subtotalBeforeDiscount * (project.globalDiscount / 100);
+    const projectSubtotalJOD = subtotalBeforeDiscount - discountAmount;
     const projectTaxJOD = projectSubtotalJOD * 0.16; // 16% VAT
     const projectTotalJOD = projectSubtotalJOD + projectTaxJOD;
 
@@ -743,12 +747,14 @@ const NogaHubAutomation = () => {
       equipmentDealerTotalJOD,
       equipmentDealerTotalUSD,
       equipmentClientTotalJOD,
-      equipmentTotalJOD,
+      equipmentTotalJOD: equipmentTotalJODBeforeDiscount, // Use BOQ total for display
       equipmentTotalJODBeforeDiscount,
       doorToDoorCostJOD,
       doorToDoorCostExclTax020JOD,
       totalWeight,
       servicesTotal,
+      subtotalBeforeDiscount,
+      discountAmount,
       projectSubtotalJOD,
       projectTaxJOD,
       projectTotalJOD,

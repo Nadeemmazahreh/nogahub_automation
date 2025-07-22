@@ -5,46 +5,66 @@ const cleanupDuplicates = async (autoMode = false) => {
   try {
     await initDatabase();
     
-    console.log('🧹 Starting duplicate cleanup...');
+    console.log('🧹 Starting comprehensive duplicate cleanup...');
     
-    // Find all Bias Q2+ entries
-    const biasEntries = await Equipment.findAll({
-      where: {
-        name: 'Bias Q2+',
-        isActive: true
-      },
-      order: [['id', 'ASC']] // Keep the first one (original seeding)
-    });
+    // First, remove ALL original seeded equipment (IT1000-IT1025, AC1006-AC1011)
+    console.log('🗑️ Removing original seeded equipment...');
+    const originalSeedCodes = [
+      'IT1000', 'IT1001', 'IT1002', 'IT1003', 'IT1004', 'IT1005', 'IT1006', 'IT1007', 'IT1008', 'IT1009',
+      'IT1010', 'IT1011', 'IT1012', 'IT1013', 'IT1014', 'IT1015', 'IT1016', 'IT1017', 'IT1018', 'IT1019',
+      'IT1020', 'IT1021', 'IT1022', 'IT1023', 'IT1024', 'IT1025', 'AC1006', 'AC1007', 'AC1008', 'AC1009',
+      'AC1010', 'AC1011'
+    ];
     
-    console.log(`Found ${biasEntries.length} "Bias Q2+" entries:`);
-    biasEntries.forEach((item, index) => {
-      console.log(`  ${index + 1}. ID: ${item.id} | Code: ${item.code} | Price: $${item.clientUSD} | Weight: ${item.weight}kg`);
-    });
-    
-    if (biasEntries.length > 1) {
-      // Keep the one from the import (IT4383) and remove the old seeding one (IT1018)
-      const correctEntry = biasEntries.find(item => item.code === 'IT4383');
-      const duplicateEntries = biasEntries.filter(item => item.code !== 'IT4383');
-      
-      if (correctEntry && duplicateEntries.length > 0) {
-        console.log(`\n🎯 Keeping correct entry: ${correctEntry.code} - $${correctEntry.clientUSD}, ${correctEntry.weight}kg`);
-        console.log(`🗑️ Removing ${duplicateEntries.length} duplicate(s):`);
-        
-        for (const duplicate of duplicateEntries) {
-          console.log(`  Removing ID: ${duplicate.id} | Code: ${duplicate.code} | Price: $${duplicate.clientUSD}`);
-          await duplicate.update({ isActive: false });
-        }
-        
-        console.log('✅ Duplicate cleanup completed successfully');
-        return { cleaned: duplicateEntries.length, kept: correctEntry.code };
-      } else {
-        console.log('⚠️ Could not identify correct entry to keep');
-        return { error: 'Could not identify correct entry' };
+    const removedSeeds = await Equipment.update(
+      { isActive: false },
+      { 
+        where: { 
+          code: { [Op.in]: originalSeedCodes },
+          isActive: true 
+        } 
       }
-    } else {
-      console.log('✅ No Bias Q2+ duplicates found');
-      return { cleaned: 0, message: 'No duplicates found' };
+    );
+    
+    console.log(`✅ Removed ${removedSeeds[0]} original seeded equipment items`);
+    
+    // Now find and clean up any remaining duplicates by name
+    console.log('🔍 Finding duplicate equipment names...');
+    const duplicateNames = await Equipment.findAll({
+      attributes: ['name', [require('sequelize').fn('COUNT', require('sequelize').col('name')), 'count']],
+      where: { isActive: true },
+      group: ['name'],
+      having: require('sequelize').fn('COUNT', require('sequelize').col('name')).gt(1)
+    });
+    
+    let totalCleaned = removedSeeds[0];
+    
+    if (duplicateNames.length > 0) {
+      console.log(`⚠️ Found ${duplicateNames.length} equipment names with duplicates:`);
+      
+      for (const duplicate of duplicateNames) {
+        const items = await Equipment.findAll({
+          where: { name: duplicate.name, isActive: true },
+          order: [['id', 'ASC']] // Keep the first one
+        });
+        
+        console.log(`\n"${duplicate.name}" appears ${items.length} times:`);
+        items.forEach((item, index) => {
+          console.log(`  ${index + 1}. ID: ${item.id} | Code: ${item.code} | Price: $${item.clientUSD}`);
+        });
+        
+        // Keep the first item, deactivate the rest
+        const duplicatesToRemove = items.slice(1); // Remove all except first
+        for (const dup of duplicatesToRemove) {
+          console.log(`  🗑️ Removing duplicate: ${dup.code} - ${dup.name}`);
+          await dup.update({ isActive: false });
+          totalCleaned++;
+        }
+      }
     }
+    
+    console.log(`✅ Total cleanup completed: ${totalCleaned} duplicates removed`);
+    return { cleaned: totalCleaned, message: 'Comprehensive cleanup completed' };
     
     // Check for other potential duplicates
     console.log('\n🔍 Checking for other duplicates...');
