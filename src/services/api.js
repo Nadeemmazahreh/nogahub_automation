@@ -52,6 +52,15 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle authentication errors more specifically
+        if (response.status === 401) {
+          this.setToken(null);
+          throw new Error('Authentication required');
+        } else if (response.status === 403) {
+          this.setToken(null);
+          throw new Error('Invalid or expired token');
+        }
+        
         throw new Error(data.error || `HTTP error! status: ${response.status}`);
       }
 
@@ -194,6 +203,18 @@ class ApiService {
   // Utility methods
   isAuthenticated() {
     return !!this.getToken();
+  }
+
+  async validateToken() {
+    if (!this.getToken()) return false;
+    
+    try {
+      await this.getProfile();
+      return true;
+    } catch (error) {
+      this.setToken(null);
+      return false;
+    }
   }
 
   async checkConnection() {

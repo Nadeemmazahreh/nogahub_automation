@@ -249,12 +249,27 @@ const NogaHubAutomation = () => {
     
     try {
       setEquipmentLoading(true);
+      
+      // Validate token first
+      const isValidToken = await apiService.validateToken();
+      if (!isValidToken) {
+        console.log('Token validation failed, redirecting to login');
+        window.location.href = '/login';
+        return;
+      }
+      
       const response = await apiService.getEquipment({ limit: 1000 }); // Load all equipment
       setEquipmentDatabase(response.equipment || []);
       console.log(`Loaded ${response.equipment?.length || 0} equipment items`);
     } catch (error) {
       console.error('Failed to load equipment:', error);
-      window.alert('Failed to load equipment data. Please check your connection.');
+      
+      if (error.message.includes('Authentication') || error.message.includes('token')) {
+        window.alert('Your session has expired. Please log in again.');
+        window.location.href = '/login';
+      } else {
+        window.alert(`Failed to load equipment data: ${error.message}`);
+      }
     } finally {
       setEquipmentLoading(false);
     }
