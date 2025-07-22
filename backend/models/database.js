@@ -107,6 +107,11 @@ const Equipment = sequelize.define('Equipment', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  msrpUSD: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    comment: 'MSRP (Manufacturer Suggested Retail Price) in USD'
+  },
   dealerUSD: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false

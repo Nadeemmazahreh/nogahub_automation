@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Users, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, RefreshCw, Download, Building2, Zap, Save, FolderOpen } from 'lucide-react';
+import { Calculator, Users, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, RefreshCw, Download, Building2, Zap, Save, FolderOpen, ChevronDown } from 'lucide-react';
 import apiService from './services/api';
 import logoImage from './logo-no-background.png';
 
@@ -27,6 +27,154 @@ const NogaHubAutomation = () => {
     </div>
   );
 
+  // SearchableDropdown component - Integrated search input with dropdown
+  const SearchableDropdown = ({ options, value, onChange, placeholder = "Search equipment...", disabled = false }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filteredOptions, setFilteredOptions] = useState(options);
+    
+    useEffect(() => {
+      if (searchTerm) {
+        const filtered = options.filter(option => 
+          option.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          option.code.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredOptions(filtered);
+        setIsOpen(true); // Auto-open dropdown when typing
+      } else {
+        setFilteredOptions(options);
+      }
+    }, [searchTerm, options]);
+
+    const selectedOption = options.find(opt => opt.code === value);
+
+    // If we have a selection and no search term, show the selected name
+    // If we have a search term, show that instead (user is actively searching)
+    const displayValue = searchTerm !== '' ? searchTerm : (selectedOption ? selectedOption.name : '');
+
+    const handleInputChange = (e) => {
+      const newValue = e.target.value;
+      setSearchTerm(newValue);
+      
+      // If user clears all text (backspaced to empty), clear the selection
+      if (newValue === '') {
+        onChange(''); // Clear selection when input is empty
+      }
+      // Only clear selection if the search term doesn't match any part of the selected option
+      // This allows users to backspace and edit gradually
+      else if (selectedOption && newValue !== selectedOption.name && !selectedOption.name.toLowerCase().includes(newValue.toLowerCase())) {
+        onChange(''); // Clear the selection only when search diverges completely
+      }
+      
+      if (!isOpen && newValue.length > 0) {
+        setIsOpen(true);
+      }
+    };
+
+    const handleSelectOption = (optionCode) => {
+      onChange(optionCode);
+      setSearchTerm('');
+      setIsOpen(false);
+    };
+
+    const handleInputFocus = () => {
+      if (!disabled) {
+        setIsOpen(true);
+        // If there's a selected option and no search term, set the search term to the selected name
+        // This allows users to edit the selected text
+        if (selectedOption && searchTerm === '') {
+          setSearchTerm(selectedOption.name);
+        }
+      }
+    };
+
+    const handleClickOutside = () => {
+      setIsOpen(false);
+      // If user was searching but didn't select anything, clear the search term
+      // If there's a selected option, go back to showing it
+      if (selectedOption && searchTerm !== selectedOption.name) {
+        setSearchTerm(''); // Reset search term to show selected option name
+      } else if (!selectedOption) {
+        setSearchTerm(''); // Clear search if no selection was made
+      }
+    };
+
+    return (
+      <div className="relative">
+        <div className="relative">
+          <input
+            type="text"
+            value={displayValue}
+            onChange={handleInputChange}
+            onFocus={handleInputFocus}
+            onBlur={handleClickOutside}
+            placeholder={disabled ? 'Loading equipment...' : placeholder}
+            disabled={disabled}
+            className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black bg-white"
+          />
+          <div 
+            className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
+            onClick={() => !disabled && setIsOpen(!isOpen)}
+          >
+            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          </div>
+        </div>
+        
+        {isOpen && !disabled && (
+          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+            <div className="max-h-60 overflow-y-auto">
+              {filteredOptions.length > 0 ? (
+                <>
+                  {/* Void Equipment */}
+                  {filteredOptions.filter(eq => eq.category === 'void').length > 0 && (
+                    <>
+                      <div className="px-3 py-2 text-sm font-semibold text-gray-600 bg-gray-50 sticky top-0">
+                        Void Acoustics Equipment
+                      </div>
+                      {filteredOptions.filter(eq => eq.category === 'void').map(option => (
+                        <div
+                          key={option.code}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100"
+                          onMouseDown={(e) => e.preventDefault()} // Prevent blur
+                          onClick={() => handleSelectOption(option.code)}
+                        >
+                          <div className="font-medium">{option.name}</div>
+                          <div className="text-gray-500 text-xs">${option.msrpUSD || option.clientUSD || option.price} USD • {option.weight}kg</div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  
+                  {/* Accessories */}
+                  {filteredOptions.filter(eq => eq.category === 'accessory').length > 0 && (
+                    <>
+                      <div className="px-3 py-2 text-sm font-semibold text-gray-600 bg-gray-50 sticky top-0">
+                        Accessories
+                      </div>
+                      {filteredOptions.filter(eq => eq.category === 'accessory').map(option => (
+                        <div
+                          key={option.code}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100"
+                          onMouseDown={(e) => e.preventDefault()} // Prevent blur
+                          onClick={() => handleSelectOption(option.code)}
+                        >
+                          <div className="font-medium">{option.name}</div>
+                          <div className="text-gray-500 text-xs">${option.msrpUSD || option.clientUSD || option.price} USD • {option.weight}kg</div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="px-3 py-4 text-gray-500 text-sm text-center">No equipment found</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Equipment data will be fetched from secure backend API
   const [equipmentDatabase, setEquipmentDatabase] = useState([]);
   const [equipmentLoading, setEquipmentLoading] = useState(false);
@@ -37,9 +185,9 @@ const NogaHubAutomation = () => {
     equipment: [],
     globalDiscount: 0,
     services: {
-      commissioning: false,
-      noiseControl: false,
-      soundDesign: false,
+      commissioning: { enabled: false, customValue: 0 },
+      noiseControl: { enabled: false, customValue: 0 },
+      soundDesign: { enabled: false, customValue: 0 },
     },
     customServices: [],
     customEquipment: [],
@@ -101,8 +249,9 @@ const NogaHubAutomation = () => {
     
     try {
       setEquipmentLoading(true);
-      const response = await apiService.getEquipment();
+      const response = await apiService.getEquipment({ limit: 1000 }); // Load all equipment
       setEquipmentDatabase(response.equipment || []);
+      console.log(`Loaded ${response.equipment?.length || 0} equipment items`);
     } catch (error) {
       console.error('Failed to load equipment:', error);
       window.alert('Failed to load equipment data. Please check your connection.');
@@ -150,7 +299,21 @@ const NogaHubAutomation = () => {
       projectName: savedProject.projectName || '',
       equipment: savedProject.equipment || [],
       globalDiscount: savedProject.globalDiscount || 0,
-      services: savedProject.services || { commissioning: false, noiseControl: false, soundDesign: false },
+      services: savedProject.services ? {
+        commissioning: savedProject.services.commissioning?.enabled !== undefined 
+          ? savedProject.services.commissioning 
+          : { enabled: savedProject.services.commissioning || false, customValue: 0 },
+        noiseControl: savedProject.services.noiseControl?.enabled !== undefined 
+          ? savedProject.services.noiseControl 
+          : { enabled: savedProject.services.noiseControl || false, customValue: 0 },
+        soundDesign: savedProject.services.soundDesign?.enabled !== undefined 
+          ? savedProject.services.soundDesign 
+          : { enabled: savedProject.services.soundDesign || false, customValue: 0 }
+      } : { 
+        commissioning: { enabled: false, customValue: 0 }, 
+        noiseControl: { enabled: false, customValue: 0 }, 
+        soundDesign: { enabled: false, customValue: 0 } 
+      },
       customServices: savedProject.customServices || [],
       customEquipment: savedProject.customEquipment || [],
       roles: savedProject.roles || { producer: '', projectManager: '' }
@@ -407,18 +570,26 @@ const NogaHubAutomation = () => {
 
     // Step 4: Calculate services based on equipment dealer cost percentages
     let servicesTotal = 0;
+    let commissioningServiceCost = 0;
     let noiseControlServiceCost = 0;
     let soundDesignServiceCost = 0;
     
-    if (project.services.commissioning) {
-      servicesTotal += equipmentDealerTotalJOD * servicePricing.commissioning;
+    if (project.services.commissioning.enabled) {
+      commissioningServiceCost = project.services.commissioning.customValue > 0 
+        ? project.services.commissioning.customValue 
+        : equipmentDealerTotalJOD * servicePricing.commissioning;
+      servicesTotal += commissioningServiceCost;
     }
-    if (project.services.noiseControl) {
-      noiseControlServiceCost = equipmentDealerTotalJOD * servicePricing.noiseControl;
+    if (project.services.noiseControl.enabled) {
+      noiseControlServiceCost = project.services.noiseControl.customValue > 0 
+        ? project.services.noiseControl.customValue 
+        : equipmentDealerTotalJOD * servicePricing.noiseControl;
       servicesTotal += noiseControlServiceCost;
     }
-    if (project.services.soundDesign) {
-      soundDesignServiceCost = equipmentDealerTotalJOD * servicePricing.soundDesign;
+    if (project.services.soundDesign.enabled) {
+      soundDesignServiceCost = project.services.soundDesign.customValue > 0 
+        ? project.services.soundDesign.customValue 
+        : equipmentDealerTotalJOD * servicePricing.soundDesign;
       servicesTotal += soundDesignServiceCost;
     }
     if (project.services.projectManagement) {
@@ -568,6 +739,7 @@ const NogaHubAutomation = () => {
       voidSalesProfit,
       producerFee,
       nogahubFee,
+      commissioningServiceCost,
       noiseControlServiceCost,
       soundDesignServiceCost,
       noiseControlEngineerFee,
@@ -670,8 +842,8 @@ const NogaHubAutomation = () => {
                 <tr>
                   <td>${item.name}</td>
                   <td>${item.quantity}</td>
-                  <td>${item.finalUnitPriceJOD?.toFixed(2) || 'N/A'}</td>
-                  <td>${item.finalTotalJOD?.toFixed(2) || 'N/A'}</td>
+                  <td>${Math.round(item.finalUnitPriceJOD) || 'N/A'}</td>
+                  <td>${Math.round(item.finalTotalJOD) || 'N/A'}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -693,8 +865,8 @@ const NogaHubAutomation = () => {
                   <tr>
                     <td>${item.name}</td>
                     <td>${item.quantity}</td>
-                    <td>${item.finalUnitPriceJOD?.toFixed(2) || 'N/A'}</td>
-                    <td>${item.finalTotalJOD?.toFixed(2) || 'N/A'}</td>
+                    <td>${Math.round(item.finalUnitPriceJOD) || 'N/A'}</td>
+                    <td>${Math.round(item.finalTotalJOD) || 'N/A'}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -714,34 +886,34 @@ const NogaHubAutomation = () => {
                 </tr>
               </thead>
               <tbody>
-                ${project.services.commissioning ? `
+                ${project.services.commissioning.enabled ? `
                   <tr>
                     <td>Sub-contracting Commissioning</td>
-                    <td>${(calculationResults.equipmentDealerTotalJOD * 0.06).toFixed(2)}</td>
+                    <td>${Math.round(calculationResults.commissioningServiceCost)}</td>
                   </tr>
                 ` : ''}
-                ${project.services.noiseControl ? `
+                ${project.services.noiseControl.enabled ? `
                   <tr>
                     <td>Noise Control Studies</td>
-                    <td>${(calculationResults.equipmentDealerTotalJOD * 0.10).toFixed(2)}</td>
+                    <td>${Math.round(calculationResults.noiseControlServiceCost)}</td>
                   </tr>
                 ` : ''}
-                ${project.services.soundDesign ? `
+                ${project.services.soundDesign.enabled ? `
                   <tr>
                     <td>Sound System Design</td>
-                    <td>${(calculationResults.equipmentDealerTotalJOD * 0.025).toFixed(2)}</td>
+                    <td>${Math.round(calculationResults.soundDesignServiceCost)}</td>
                   </tr>
                 ` : ''}
                 ${project.services.projectManagement ? `
                   <tr>
                     <td>Project Management</td>
-                    <td>${(calculationResults.equipmentDealerTotalJOD * 0.10).toFixed(2)}</td>
+                    <td>${Math.round(calculationResults.equipmentDealerTotalJOD * 0.10)}</td>
                   </tr>
                 ` : ''}
                 ${project.customServices.map(service => `
                   <tr>
                     <td>${service.name}</td>
-                    <td>${service.price.toFixed(2)}</td>
+                    <td>${Math.round(service.price)}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -752,45 +924,45 @@ const NogaHubAutomation = () => {
             ${project.globalDiscount > 0 ? `
               <div class="totals-row">
                 <span>Equipment Subtotal (before discount):</span>
-                <span>${(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(2)} JOD</span>
+                <span>${Math.round(calculationResults.equipmentTotalJODBeforeDiscount || 0)} JOD</span>
               </div>
               <div class="totals-row discount">
                 <span>Equipment Discount (${(parseFloat(project.globalDiscount) || 0).toFixed(2)}%):</span>
-                <span>-${(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(2)} JOD</span>
+                <span>-${Math.round(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100)} JOD</span>
               </div>
               <div class="totals-row">
                 <span>Equipment Subtotal (after discount):</span>
-                <span>${((calculationResults.equipmentTotalJODBeforeDiscount || 0) - (((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100)).toFixed(2)} JOD</span>
+                <span>${Math.round((calculationResults.equipmentTotalJODBeforeDiscount || 0) - (((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100))} JOD</span>
               </div>
             ` : `
               <div class="totals-row">
                 <span>Equipment Subtotal:</span>
-                <span>${(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(2)} JOD</span>
+                <span>${Math.round(calculationResults.equipmentTotalJODBeforeDiscount || 0)} JOD</span>
               </div>
             `}
             ${calculationResults.customEquipmentDetails && calculationResults.customEquipmentDetails.length > 0 ? `
               <div class="totals-row">
                 <span>Custom Equipment Subtotal:</span>
-                <span>${(calculationResults.customEquipmentTotalJOD || 0).toFixed(2)} JOD</span>
+                <span>${Math.round(calculationResults.customEquipmentTotalJOD || 0)} JOD</span>
               </div>
             ` : ''}
             ${calculationResults.servicesTotal > 0 ? `
               <div class="totals-row">
                 <span>Services Subtotal:</span>
-                <span>${(calculationResults.servicesTotal || 0).toFixed(2)} JOD</span>
+                <span>${Math.round(calculationResults.servicesTotal || 0)} JOD</span>
               </div>
             ` : ''}
             <div class="totals-row">
               <span>Subtotal:</span>
-              <span>${(calculationResults.projectSubtotalJOD || 0).toFixed(2)} JOD</span>
+              <span>${Math.round(calculationResults.projectSubtotalJOD || 0)} JOD</span>
             </div>
             <div class="totals-row">
               <span>VAT (16%):</span>
-              <span>${(calculationResults.projectTaxJOD || 0).toFixed(2)} JOD</span>
+              <span>${Math.round(calculationResults.projectTaxJOD || 0)} JOD</span>
             </div>
             <div class="totals-row total-final">
               <span>TOTAL:</span>
-              <span>${(calculationResults.projectTotalJOD || 0).toFixed(2)} JOD</span>
+              <span>${Math.round(calculationResults.projectTotalJOD || 0)} JOD</span>
             </div>
           </div>
           
@@ -1335,33 +1507,15 @@ const NogaHubAutomation = () => {
                 <div className="space-y-3">
                   {project.equipment.map((item, index) => (
                     <div key={index} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                      <select
-                        value={item.code}
-                        onChange={(e) => updateEquipment(index, 'code', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black bg-white"
-                      >
-                        <option value="">
-                          {equipmentLoading ? 'Loading equipment...' : 'Select equipment'}
-                        </option>
-                        {!equipmentLoading && (
-                          <>
-                            <optgroup label="Void Acoustics Equipment">
-                              {equipmentDatabase.filter(eq => eq.category === 'void').map(eq => (
-                                <option key={eq.code} value={eq.code}>
-                                  {eq.name} - ${eq.clientUSD || eq.price} USD ({eq.weight}kg)
-                                </option>
-                              ))}
-                            </optgroup>
-                            <optgroup label="Accessories">
-                              {equipmentDatabase.filter(eq => eq.category === 'accessory').map(eq => (
-                                <option key={eq.code} value={eq.code}>
-                                  {eq.name} - ${eq.clientUSD || eq.price} USD ({eq.weight}kg)
-                                </option>
-                              ))}
-                            </optgroup>
-                          </>
-                        )}
-                      </select>
+                      <div className="flex-1">
+                        <SearchableDropdown
+                          options={equipmentDatabase}
+                          value={item.code}
+                          onChange={(value) => updateEquipment(index, 'code', value)}
+                          placeholder="Search equipment..."
+                          disabled={equipmentLoading}
+                        />
+                      </div>
                       <input
                         type="number"
                         min="1"
@@ -1385,54 +1539,189 @@ const NogaHubAutomation = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Services</h3>
                 
-                <div className="flex flex-wrap gap-4 mb-4">
-                  <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer flex-1 min-w-0">
-                    <input
-                      type="checkbox"
-                      checked={project.services.commissioning}
-                      onChange={(e) => {
-                        setProject(prev => ({
-                          ...prev,
-                          services: { ...prev.services, commissioning: e.target.checked }
-                        }));
-                        setIsCalculated(false);
-                      }}
-                      className="h-4 w-4 text-black border-gray-300 rounded focus:ring-black"
-                    />
-                    <span>Commissioning</span>
-                  </label>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 min-h-[52px]">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={project.services.commissioning.enabled}
+                        onChange={(e) => {
+                          setProject(prev => {
+                            const equipmentTotal = prev.equipment.reduce((sum, item) => {
+                              const equipment = equipmentDatabase.find(eq => eq.code === item.code);
+                              if (equipment && item.quantity > 0) {
+                                const clientPriceUSD = equipment.msrpUSD || equipment.clientUSD || equipment.price;
+                                return sum + (clientPriceUSD * 1.41 * item.quantity);
+                              }
+                              return sum;
+                            }, 0);
+                            const defaultValue = e.target.checked ? Math.round(equipmentTotal * 0.06) : 0;
+                            
+                            return {
+                              ...prev,
+                              services: { 
+                                ...prev.services, 
+                                commissioning: { 
+                                  enabled: e.target.checked, 
+                                  customValue: defaultValue 
+                                }
+                              }
+                            };
+                          });
+                          setIsCalculated(false);
+                        }}
+                        className="h-4 w-4 text-black border-gray-300 rounded focus:ring-black"
+                      />
+                      <span>Commissioning</span>
+                    </label>
+                    <div className="flex items-center space-x-2 min-w-[180px] justify-end">
+                      {project.services.commissioning.enabled && (
+                        <>
+                          <span className="text-sm text-gray-600">Custom Value (JOD):</span>
+                          <input
+                            type="number"
+                            value={project.services.commissioning.customValue}
+                            onChange={(e) => {
+                              setProject(prev => ({
+                                ...prev,
+                                services: { 
+                                  ...prev.services, 
+                                  commissioning: { ...prev.services.commissioning, customValue: parseFloat(e.target.value) || 0 }
+                                }
+                              }));
+                              setIsCalculated(false);
+                            }}
+                            className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="6%"
+                            min="0"
+                            step="0.01"
+                          />
+                        </>
+                      )}
+                    </div>
+                  </div>
                   
-                  <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer flex-1 min-w-0">
-                    <input
-                      type="checkbox"
-                      checked={project.services.noiseControl}
-                      onChange={(e) => {
-                        setProject(prev => ({
-                          ...prev,
-                          services: { ...prev.services, noiseControl: e.target.checked }
-                        }));
-                        setIsCalculated(false);
-                      }}
-                      className="h-4 w-4 text-black border-gray-300 rounded focus:ring-black"
-                    />
-                    <span>Noise Control Studies</span>
-                  </label>
+                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 min-h-[52px]">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={project.services.noiseControl.enabled}
+                        onChange={(e) => {
+                          setProject(prev => {
+                            const equipmentTotal = prev.equipment.reduce((sum, item) => {
+                              const equipment = equipmentDatabase.find(eq => eq.code === item.code);
+                              if (equipment && item.quantity > 0) {
+                                const clientPriceUSD = equipment.msrpUSD || equipment.clientUSD || equipment.price;
+                                return sum + (clientPriceUSD * 1.41 * item.quantity);
+                              }
+                              return sum;
+                            }, 0);
+                            const defaultValue = e.target.checked ? Math.round(equipmentTotal * 0.10) : 0;
+                            
+                            return {
+                              ...prev,
+                              services: { 
+                                ...prev.services, 
+                                noiseControl: { 
+                                  enabled: e.target.checked, 
+                                  customValue: defaultValue 
+                                }
+                              }
+                            };
+                          });
+                          setIsCalculated(false);
+                        }}
+                        className="h-4 w-4 text-black border-gray-300 rounded focus:ring-black"
+                      />
+                      <span>Noise Control Studies</span>
+                    </label>
+                    <div className="flex items-center space-x-2 min-w-[180px] justify-end">
+                      {project.services.noiseControl.enabled && (
+                        <>
+                          <span className="text-sm text-gray-600">Custom Value (JOD):</span>
+                          <input
+                            type="number"
+                            value={project.services.noiseControl.customValue}
+                            onChange={(e) => {
+                              setProject(prev => ({
+                                ...prev,
+                                services: { 
+                                  ...prev.services, 
+                                  noiseControl: { ...prev.services.noiseControl, customValue: parseFloat(e.target.value) || 0 }
+                                }
+                              }));
+                              setIsCalculated(false);
+                            }}
+                            className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="10%"
+                            min="0"
+                            step="0.01"
+                          />
+                        </>
+                      )}
+                    </div>
+                  </div>
                   
-                  <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer flex-1 min-w-0">
-                    <input
-                      type="checkbox"
-                      checked={project.services.soundDesign}
-                      onChange={(e) => {
-                        setProject(prev => ({
-                          ...prev,
-                          services: { ...prev.services, soundDesign: e.target.checked }
-                        }));
-                        setIsCalculated(false);
-                      }}
-                      className="h-4 w-4 text-black border-gray-300 rounded focus:ring-black"
-                    />
-                    <span>Sound System Design</span>
-                  </label>
+                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 min-h-[52px]">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={project.services.soundDesign.enabled}
+                        onChange={(e) => {
+                          setProject(prev => {
+                            const equipmentTotal = prev.equipment.reduce((sum, item) => {
+                              const equipment = equipmentDatabase.find(eq => eq.code === item.code);
+                              if (equipment && item.quantity > 0) {
+                                const clientPriceUSD = equipment.msrpUSD || equipment.clientUSD || equipment.price;
+                                return sum + (clientPriceUSD * 1.41 * item.quantity);
+                              }
+                              return sum;
+                            }, 0);
+                            const defaultValue = e.target.checked ? Math.round(equipmentTotal * 0.025) : 0;
+                            
+                            return {
+                              ...prev,
+                              services: { 
+                                ...prev.services, 
+                                soundDesign: { 
+                                  enabled: e.target.checked, 
+                                  customValue: defaultValue 
+                                }
+                              }
+                            };
+                          });
+                          setIsCalculated(false);
+                        }}
+                        className="h-4 w-4 text-black border-gray-300 rounded focus:ring-black"
+                      />
+                      <span>Sound System Design</span>
+                    </label>
+                    <div className="flex items-center space-x-2 min-w-[180px] justify-end">
+                      {project.services.soundDesign.enabled && (
+                        <>
+                          <span className="text-sm text-gray-600">Custom Value (JOD):</span>
+                          <input
+                            type="number"
+                            value={project.services.soundDesign.customValue}
+                            onChange={(e) => {
+                              setProject(prev => ({
+                                ...prev,
+                                services: { 
+                                  ...prev.services, 
+                                  soundDesign: { ...prev.services.soundDesign, customValue: parseFloat(e.target.value) || 0 }
+                                }
+                              }));
+                              setIsCalculated(false);
+                            }}
+                            className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="2.5%"
+                            min="0"
+                            step="0.01"
+                          />
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Custom Equipment */}
@@ -1594,8 +1883,8 @@ const NogaHubAutomation = () => {
                             <td className="p-3 font-mono">{equipmentDatabase.find(eq => eq.name === item.name)?.code || 'N/A'}</td>
                             <td className="p-3">{item.name}</td>
                             <td className="p-3 text-center">{item.quantity}</td>
-                            <td className="p-3 text-right">{item.finalUnitPriceJOD?.toFixed(2) || 'N/A'}</td>
-                            <td className="p-3 text-right font-semibold">{item.finalTotalJOD?.toFixed(2) || 'N/A'}</td>
+                            <td className="p-3 text-right">{Math.round(item.finalUnitPriceJOD) || 'N/A'}</td>
+                            <td className="p-3 text-right font-semibold">{Math.round(item.finalTotalJOD) || 'N/A'}</td>
                             <td className="p-3 text-right">{item.weightTotal.toFixed(1)}</td>
                           </tr>
                         ))}
@@ -1604,8 +1893,8 @@ const NogaHubAutomation = () => {
                             <td className="p-3 font-mono">{item.code}</td>
                             <td className="p-3">{item.name}</td>
                             <td className="p-3 text-center">{item.quantity}</td>
-                            <td className="p-3 text-right">{item.finalUnitPriceJOD?.toFixed(2) || 'N/A'}</td>
-                            <td className="p-3 text-right font-semibold">{item.finalTotalJOD?.toFixed(2) || 'N/A'}</td>
+                            <td className="p-3 text-right">{Math.round(item.finalUnitPriceJOD) || 'N/A'}</td>
+                            <td className="p-3 text-right font-semibold">{Math.round(item.finalTotalJOD) || 'N/A'}</td>
                             <td className="p-3 text-right">{item.weightTotal.toFixed(1)}</td>
                           </tr>
                         ))}
@@ -1613,13 +1902,13 @@ const NogaHubAutomation = () => {
                       <tfoot>
                         <tr className="bg-gray-100 font-semibold">
                           <td colSpan="4" className="p-3 text-right">Equipment Subtotal:</td>
-                          <td className="p-3 text-right">{(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(2)} JOD</td>
+                          <td className="p-3 text-right">{Math.round(calculationResults.equipmentTotalJODBeforeDiscount || 0)} JOD</td>
                           <td className="p-3 text-right">{calculationResults.totalWeight.toFixed(1)} kg</td>
                         </tr>
                         {calculationResults.customEquipmentDetails && calculationResults.customEquipmentDetails.length > 0 && (
                           <tr className="bg-blue-100 font-semibold">
                             <td colSpan="4" className="p-3 text-right">Custom Equipment Subtotal:</td>
-                            <td className="p-3 text-right">{(calculationResults.customEquipmentTotalJOD || 0).toFixed(2)} JOD</td>
+                            <td className="p-3 text-right">{Math.round(calculationResults.customEquipmentTotalJOD || 0)} JOD</td>
                             <td className="p-3 text-right">0.0 kg</td>
                           </tr>
                         )}
@@ -1636,15 +1925,15 @@ const NogaHubAutomation = () => {
                   <div className={`grid ${project.globalDiscount > 0 ? 'grid-cols-5' : 'grid-cols-4'} gap-4 text-sm`}>
                     <div>
                       <span className="text-gray-600">Equipment Total:</span>
-                      <p className="font-semibold">{(calculationResults.equipmentTotalJOD || 0).toFixed(2)} JOD</p>
+                      <p className="font-semibold">{Math.round(calculationResults.equipmentTotalJOD || 0)} JOD</p>
                     </div>
                     <div>
                       <span className="text-gray-600">Services Total:</span>
-                      <p className="font-semibold">{(calculationResults.servicesTotal || 0).toFixed(2)} JOD</p>
+                      <p className="font-semibold">{Math.round(calculationResults.servicesTotal || 0)} JOD</p>
                     </div>
                     <div>
                       <span className="text-gray-600">Subtotal:</span>
-                      <p className="font-semibold">{(calculationResults.projectSubtotalJOD || 0).toFixed(2)} JOD</p>
+                      <p className="font-semibold">{Math.round(calculationResults.projectSubtotalJOD || 0)} JOD</p>
                     </div>
                     {project.globalDiscount > 0 && (
                       <div>
@@ -1654,7 +1943,7 @@ const NogaHubAutomation = () => {
                     )}
                     <div>
                       <span className="text-gray-600">Final (with 16% VAT):</span>
-                      <p className="font-semibold text-green-600">{(calculationResults.projectTotalJOD || 0).toFixed(2)} JOD</p>
+                      <p className="font-semibold text-green-600">{Math.round(calculationResults.projectTotalJOD || 0)} JOD</p>
                     </div>
                   </div>
                 </div>
@@ -2603,7 +2892,7 @@ const NogaHubAutomation = () => {
                         {calculationResults.equipmentDetails.map((item, index) => (
                           <div key={index} className="flex justify-between text-xs">
                             <span>{item.name} x{item.quantity}</span>
-                            <span>{item.finalTotalJOD?.toFixed(2) || 'N/A'} JOD</span>
+                            <span>{Math.round(item.finalTotalJOD) || 'N/A'} JOD</span>
                           </div>
                         ))}
                         <div className="flex justify-between text-xs font-medium mt-2 pt-2 border-t">
@@ -2623,7 +2912,7 @@ const NogaHubAutomation = () => {
                             {calculationResults.customEquipmentDetails.map((item, index) => (
                               <div key={index} className="flex justify-between text-xs">
                                 <span>{item.name} x{item.quantity}</span>
-                                <span>{item.finalTotalJOD?.toFixed(2) || 'N/A'} JOD</span>
+                                <span>{Math.round(item.finalTotalJOD) || 'N/A'} JOD</span>
                               </div>
                             ))}
                             <div className="flex justify-between text-xs font-medium mt-2 pt-2 border-t">
@@ -2636,22 +2925,22 @@ const NogaHubAutomation = () => {
                         {calculationResults.servicesTotal > 0 && (
                           <>
                             <h6 className="font-semibold mt-3 mb-2">Professional Services:</h6>
-                            {project.services.commissioning && (
+                            {project.services.commissioning.enabled && (
                               <div className="flex justify-between text-xs">
                                 <span>Sub-contracting Commissioning</span>
-                                <span>{(calculationResults.equipmentDealerTotalJOD * servicePricing.commissioning).toFixed(2)} JOD</span>
+                                <span>{Math.round(calculationResults.commissioningServiceCost)} JOD</span>
                               </div>
                             )}
-                            {project.services.noiseControl && (
+                            {project.services.noiseControl.enabled && (
                               <div className="flex justify-between text-xs">
                                 <span>Noise Control Studies</span>
-                                <span>{(calculationResults.equipmentDealerTotalJOD * servicePricing.noiseControl).toFixed(2)} JOD</span>
+                                <span>{Math.round(calculationResults.noiseControlServiceCost)} JOD</span>
                               </div>
                             )}
-                            {project.services.soundDesign && (
+                            {project.services.soundDesign.enabled && (
                               <div className="flex justify-between text-xs">
                                 <span>Sound System Design</span>
-                                <span>{(calculationResults.equipmentDealerTotalJOD * servicePricing.soundDesign).toFixed(2)} JOD</span>
+                                <span>{Math.round(calculationResults.soundDesignServiceCost)} JOD</span>
                               </div>
                             )}
                             {project.services.projectManagement && (
@@ -2668,7 +2957,7 @@ const NogaHubAutomation = () => {
                             ))}
                             <div className="flex justify-between text-xs font-medium mt-2 pt-2 border-t">
                               <span>Services Subtotal:</span>
-                              <span>{(calculationResults.servicesTotal || 0).toFixed(2)} JOD</span>
+                              <span>{Math.round(calculationResults.servicesTotal || 0)} JOD</span>
                             </div>
                           </>
                         )}
@@ -2676,7 +2965,7 @@ const NogaHubAutomation = () => {
                         <div className="border-t mt-3 pt-2">
                           <div className="flex justify-between text-xs">
                             <span>Total:</span>
-                            <span>{(calculationResults.projectSubtotalJOD || 0).toFixed(2)} JOD</span>
+                            <span>{Math.round(calculationResults.projectSubtotalJOD || 0)} JOD</span>
                           </div>
                           <div className="flex justify-between text-xs">
                             <span>VAT (16%):</span>
@@ -2684,7 +2973,7 @@ const NogaHubAutomation = () => {
                           </div>
                           <div className="flex justify-between font-semibold">
                             <span>Total:</span>
-                            <span>{(calculationResults.projectTotalJOD || 0).toFixed(2)} JOD</span>
+                            <span>{Math.round(calculationResults.projectTotalJOD || 0)} JOD</span>
                           </div>
                         </div>
                       </div>

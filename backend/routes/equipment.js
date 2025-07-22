@@ -10,6 +10,7 @@ const router = express.Router();
 const equipmentSchema = Joi.object({
   code: Joi.string().required(),
   name: Joi.string().required(),
+  msrpUSD: Joi.number().precision(2).positive().allow(null),
   dealerUSD: Joi.number().precision(2).positive().required(),
   clientUSD: Joi.number().precision(2).positive().required(),
   weight: Joi.number().precision(2).positive().required(),
@@ -38,7 +39,7 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     // Define what fields to return based on user role
-    let attributes = ['id', 'code', 'name', 'weight', 'category'];
+    let attributes = ['id', 'code', 'name', 'weight', 'category', 'msrpUSD'];
     
     if (role === 'admin') {
       // Admin can see both dealer and client prices
@@ -81,7 +82,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
     // Define attributes based on role
-    let attributes = ['id', 'code', 'name', 'weight', 'category'];
+    let attributes = ['id', 'code', 'name', 'weight', 'category', 'msrpUSD'];
     
     if (role === 'admin') {
       attributes.push('dealerUSD', 'clientUSD');
