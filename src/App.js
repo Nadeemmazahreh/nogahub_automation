@@ -303,15 +303,19 @@ const NogaHubAutomation = () => {
       }
 
       try {
+        // First create base project data
+        const baseProjectData = { ...project };
+        
+        // Then apply transformations that override the spread
         const projectData = {
-          ...project,
+          ...baseProjectData,
           // Fix equipment - filter out empty codes
-          equipment: project.equipment.filter(item => item.code && item.code.trim()),
-          // Fix services - convert to simple booleans
+          equipment: baseProjectData.equipment.filter(item => item.code && item.code.trim()),
+          // Fix services - convert to simple booleans (this must come after the spread)
           services: {
-            commissioning: project.services.commissioning?.enabled || false,
-            noiseControl: project.services.noiseControl?.enabled || false,
-            soundDesign: project.services.soundDesign?.enabled || false
+            commissioning: baseProjectData.services.commissioning?.enabled || false,
+            noiseControl: baseProjectData.services.noiseControl?.enabled || false,
+            soundDesign: baseProjectData.services.soundDesign?.enabled || false
           },
           total: calculationResults ? (calculationResults.projectTotalJOD || calculationResults.totalCostUSD || 0) : 0,
           isCalculated: isCalculated,
