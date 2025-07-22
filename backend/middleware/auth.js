@@ -37,13 +37,28 @@ const authorizeRole = (allowedRoles) => {
 // Input validation middleware
 const validateInput = (schema) => {
   return (req, res, next) => {
-    const { error } = schema.validate(req.body);
+    console.log('🔍 Validating request body:', JSON.stringify(req.body, null, 2));
+    
+    const { error, value } = schema.validate(req.body, { abortEarly: false });
     if (error) {
+      console.error('❌ Validation failed:', error.details.map(detail => ({
+        path: detail.path,
+        message: detail.message,
+        value: detail.context?.value
+      })));
+      
       return res.status(400).json({ 
         error: 'Validation error', 
-        details: error.details.map(detail => detail.message) 
+        details: error.details.map(detail => detail.message),
+        validationErrors: error.details.map(detail => ({
+          field: detail.path.join('.'),
+          message: detail.message,
+          value: detail.context?.value
+        }))
       });
     }
+    
+    console.log('✅ Validation passed');
     next();
   };
 };
