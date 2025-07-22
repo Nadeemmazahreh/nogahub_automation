@@ -1,7 +1,7 @@
 const { Equipment, initDatabase } = require('./models/database');
 const { Op } = require('sequelize');
 
-const cleanupDuplicates = async () => {
+const cleanupDuplicates = async (autoMode = false) => {
   try {
     await initDatabase();
     
@@ -35,12 +35,15 @@ const cleanupDuplicates = async () => {
           await duplicate.update({ isActive: false });
         }
         
-        console.log('✅ Cleanup completed successfully');
+        console.log('✅ Duplicate cleanup completed successfully');
+        return { cleaned: duplicateEntries.length, kept: correctEntry.code };
       } else {
         console.log('⚠️ Could not identify correct entry to keep');
+        return { error: 'Could not identify correct entry' };
       }
     } else {
-      console.log('✅ No duplicates found');
+      console.log('✅ No Bias Q2+ duplicates found');
+      return { cleaned: 0, message: 'No duplicates found' };
     }
     
     // Check for other potential duplicates
@@ -61,11 +64,21 @@ const cleanupDuplicates = async () => {
       console.log('✅ No other duplicates found');
     }
     
-    process.exit(0);
+    if (!autoMode) {
+      process.exit(0);
+    }
   } catch (error) {
     console.error('❌ Error during cleanup:', error);
-    process.exit(1);
+    if (!autoMode) {
+      process.exit(1);
+    }
+    throw error;
   }
 };
 
-cleanupDuplicates();
+// Only run directly if called as script
+if (require.main === module) {
+  cleanupDuplicates(false);
+}
+
+module.exports = { cleanupDuplicates };

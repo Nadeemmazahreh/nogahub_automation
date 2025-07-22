@@ -9,6 +9,7 @@ const equipmentRoutes = require('./routes/equipment');
 const projectRoutes = require('./routes/projects');
 const { initDatabase } = require('./models/database');
 const { importEquipmentData } = require('./import-equipment-data');
+const { cleanupDuplicates } = require('./cleanup-duplicates');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -76,6 +77,19 @@ const startServer = async () => {
       console.log(`✅ Equipment database is complete with ${importResult.existingCount} items`);
     } else {
       console.log(`✅ Equipment import completed: ${importResult.added} added, ${importResult.updated} updated`);
+    }
+    
+    // Clean up any duplicates
+    console.log('🧹 Cleaning up duplicate equipment entries...');
+    try {
+      const cleanupResult = await cleanupDuplicates(true);
+      if (cleanupResult.cleaned > 0) {
+        console.log(`✅ Cleaned up ${cleanupResult.cleaned} duplicate entries, kept ${cleanupResult.kept}`);
+      } else {
+        console.log('✅ No duplicates needed cleanup');
+      }
+    } catch (error) {
+      console.error('⚠️ Cleanup warning:', error.message);
     }
     
     app.listen(PORT, () => {
