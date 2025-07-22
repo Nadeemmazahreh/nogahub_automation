@@ -35,10 +35,13 @@ const NogaHubAutomation = () => {
     
     useEffect(() => {
       if (searchTerm) {
-        const filtered = options.filter(option => 
-          option.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          option.code.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        // Improved absolute search - split search terms and match all parts
+        const searchTerms = searchTerm.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+        const filtered = options.filter(option => {
+          const optionText = `${option.name} ${option.code}`.toLowerCase();
+          // All search terms must be found somewhere in the option text (absolute search)
+          return searchTerms.every(term => optionText.includes(term));
+        });
         setFilteredOptions(filtered);
         setIsOpen(true); // Auto-open dropdown when typing
       } else {
@@ -56,17 +59,11 @@ const NogaHubAutomation = () => {
       const newValue = e.target.value;
       setSearchTerm(newValue);
       
-      // If user clears all text (backspaced to empty), clear the selection
-      if (newValue === '') {
-        onChange(''); // Clear selection when input is empty
-      }
-      // Only clear selection if the search term doesn't match any part of the selected option
-      // This allows users to backspace and edit gradually
-      else if (selectedOption && newValue !== selectedOption.name && !selectedOption.name.toLowerCase().includes(newValue.toLowerCase())) {
-        onChange(''); // Clear the selection only when search diverges completely
-      }
+      // Don't automatically clear selection when backspacing - let user search freely
+      // Only clear selection if user completely deletes everything and clicks away
       
-      if (!isOpen && newValue.length > 0) {
+      // Always keep dropdown open when typing (even if backspacing to empty)
+      if (!isOpen) {
         setIsOpen(true);
       }
     };
@@ -90,12 +87,15 @@ const NogaHubAutomation = () => {
 
     const handleClickOutside = () => {
       setIsOpen(false);
-      // If user was searching but didn't select anything, clear the search term
-      // If there's a selected option, go back to showing it
+      // Only clear the search term if there's no selection at all
+      // This preserves user's search progress and prevents frustrating resets
+      if (!selectedOption && searchTerm) {
+        // Clear selection only when clicking outside with no valid selection
+        onChange('');
+      }
+      // If there's a selected option, reset search to show the selection
       if (selectedOption && searchTerm !== selectedOption.name) {
         setSearchTerm(''); // Reset search term to show selected option name
-      } else if (!selectedOption) {
-        setSearchTerm(''); // Clear search if no selection was made
       }
     };
 
