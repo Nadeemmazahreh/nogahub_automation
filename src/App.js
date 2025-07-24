@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, Users, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, RefreshCw, Download, Building2, Zap, Save, FolderOpen, ChevronDown } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 import apiService from './services/api';
 import logoImage from './logo-no-background.png';
 
@@ -284,10 +285,10 @@ const NogaHubAutomation = () => {
       console.error('Failed to load equipment:', error);
       
       if (error.message.includes('Authentication') || error.message.includes('token')) {
-        window.alert('Your session has expired. Please log in again.');
+        toast.error('Your session has expired. Please log in again.');
         window.location.href = '/login';
       } else {
-        window.alert(`Failed to load equipment data: ${error.message}`);
+        toast.error(`Failed to load equipment data: ${error.message}`);
       }
     } finally {
       setEquipmentLoading(false);
@@ -298,7 +299,7 @@ const NogaHubAutomation = () => {
   const saveCurrentProject = async () => {
     if (project.projectName.trim() && project.clientName.trim() && (project.equipment.length > 0 || project.customEquipment.length > 0)) {
       if (!apiService.isAuthenticated()) {
-        window.alert('Please log in to save projects.');
+        toast.error('Please log in to save projects.');
         return;
       }
 
@@ -334,13 +335,13 @@ const NogaHubAutomation = () => {
         await loadSavedProjects();
         
         setShowSaveModal(false);
-        window.alert(response.message || 'Project saved successfully!');
+        toast.success(response.message || 'Project saved successfully!');
       } catch (error) {
         console.error('Failed to save project:', error);
-        window.alert('Failed to save project. Please try again.');
+        toast.error('Failed to save project. Please try again.');
       }
     } else {
-      window.alert('Please ensure project has a name, client name, and at least one equipment item before saving.');
+      toast.error('Please ensure project has a name, client name, and at least one equipment item before saving.');
     }
   };
 
@@ -378,13 +379,13 @@ const NogaHubAutomation = () => {
       setCalculationResults(null);
     }
     setActiveTab('quotation');
-    window.alert('Project loaded successfully!');
+    toast.success('Project loaded successfully!');
   };
 
   // Function to delete saved project
   const deleteSavedProject = async (projectId) => {
     if (!apiService.isAuthenticated()) {
-      window.alert('Please log in to delete projects.');
+      toast.error('Please log in to delete projects.');
       return;
     }
 
@@ -392,10 +393,10 @@ const NogaHubAutomation = () => {
       await apiService.deleteProject(projectId);
       // Reload projects from backend to get updated list
       await loadSavedProjects();
-      window.alert('Project deleted successfully!');
+      toast.success('Project deleted successfully!');
     } catch (error) {
       console.error('Failed to delete project:', error);
-      window.alert('Failed to delete project. Please try again.');
+      toast.error('Failed to delete project. Please try again.');
     }
   };
 
@@ -445,7 +446,7 @@ const NogaHubAutomation = () => {
       
     } catch (error) {
       console.error('Login failed:', error);
-      window.alert('Login failed: ' + error.message);
+      toast.error('Login failed: ' + error.message);
     }
   };
 
@@ -841,7 +842,7 @@ const NogaHubAutomation = () => {
       setCalculationResults(results);
       setIsCalculated(true);
     } else {
-      alert('Please add equipment before calculating');
+      toast.error('Please add equipment before calculating');
     }
   };
 
@@ -1060,10 +1061,10 @@ const NogaHubAutomation = () => {
         }, 100);
       } catch (error) {
         console.error('Error generating PDF:', error);
-        alert('Error generating PDF. Please check if popup blocker is disabled.');
+        toast.error('Error generating PDF. Please check if popup blocker is disabled.');
       }
     } else {
-      alert('Unable to open print window. Please check if popup blocker is disabled.');
+      toast.error('Unable to open print window. Please check if popup blocker is disabled.');
     }
   };
 
@@ -1269,11 +1270,11 @@ const NogaHubAutomation = () => {
           printWindow.print();
         }, 100);
       } else {
-        alert('Unable to open print window. Please check if popup blocker is disabled.');
+        toast.error('Unable to open print window. Please check if popup blocker is disabled.');
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Error generating PDF. Please check if popup blocker is disabled.');
+      toast.error('Error generating PDF. Please check if popup blocker is disabled.');
     }
   };
 
@@ -3428,6 +3429,64 @@ const NogaHubAutomation = () => {
           </div>
         </div>
       )}
+      
+      {/* Toast Notifications */}
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        gutter={8}
+        containerClassName=""
+        containerStyle={{}}
+        toastOptions={{
+          className: '',
+          duration: 4000,
+          style: {
+            background: '#ffffff',
+            color: '#374151',
+            borderRadius: '0.75rem',
+            border: '1px solid #e5e7eb',
+            padding: '16px',
+            fontSize: '14px',
+            fontWeight: '500',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          },
+          success: {
+            duration: 3000,
+            style: {
+              background: '#f0fdf4',
+              color: '#166534',
+              border: '1px solid #bbf7d0',
+            },
+            iconTheme: {
+              primary: '#22c55e',
+              secondary: '#f0fdf4',
+            },
+          },
+          error: {
+            duration: 5000,
+            style: {
+              background: '#fef2f2',
+              color: '#991b1b',
+              border: '1px solid #fecaca',
+            },
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fef2f2',
+            },
+          },
+          loading: {
+            style: {
+              background: '#fefbf3',
+              color: '#92400e',
+              border: '1px solid #fed7aa',
+            },
+            iconTheme: {
+              primary: '#f59e0b',
+              secondary: '#fefbf3',
+            },
+          },
+        }}
+      />
     </div>
   );
 };
