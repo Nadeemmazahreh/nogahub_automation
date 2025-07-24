@@ -788,7 +788,7 @@ const NogaHubAutomation = () => {
       equipmentDealerTotalJOD,
       equipmentDealerTotalUSD,
       equipmentClientTotalJOD,
-      equipmentTotalJOD: equipmentTotalJODBeforeDiscount + customEquipmentTotalJOD, // Use BOQ total + custom equipment for display
+      equipmentTotalJOD: equipmentTotalJOD + customEquipmentTotalJOD, // Use discounted BOQ total + custom equipment for display
       equipmentTotalJODBeforeDiscount,
       doorToDoorCostJOD,
       doorToDoorCostExclTax020JOD,
