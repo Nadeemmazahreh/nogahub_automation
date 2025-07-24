@@ -159,7 +159,7 @@ const NogaHubAutomation = () => {
                           onClick={() => handleSelectOption(option.code)}
                         >
                           <div className="font-medium">{option.name}</div>
-                          <div className="text-gray-500 text-xs">${option.msrpUSD || option.clientUSD || option.price} USD • {option.weight}kg</div>
+                          <div className="text-gray-500 text-xs">${option.msrpUSD || option.price} USD • {option.weight}kg</div>
                         </div>
                       ))}
                     </>
@@ -179,7 +179,7 @@ const NogaHubAutomation = () => {
                           onClick={() => handleSelectOption(option.code)}
                         >
                           <div className="font-medium">{option.name}</div>
-                          <div className="text-gray-500 text-xs">${option.msrpUSD || option.clientUSD || option.price} USD • {option.weight}kg</div>
+                          <div className="text-gray-500 text-xs">${option.msrpUSD || option.price} USD • {option.weight}kg</div>
                         </div>
                       ))}
                     </>
@@ -496,7 +496,7 @@ const NogaHubAutomation = () => {
       const equipment = equipmentDatabase.find(eq => eq.code === item.code);
       if (equipment && item.quantity > 0) {
         const dealerPriceJOD = equipment.dealerUSD * exchangeRate;
-        const clientPriceJOD = equipment.clientUSD * exchangeRate;
+        const clientPriceJOD = (equipment.msrpUSD || equipment.dealerUSD) * exchangeRate;
         const dealerTotalJOD = dealerPriceJOD * item.quantity;
         const clientTotalJOD = clientPriceJOD * item.quantity;
         const weightTotal = equipment.weight * item.quantity;
@@ -548,11 +548,11 @@ const NogaHubAutomation = () => {
       if (equipment && item.quantity > 0) {
         // Convert to JOD
         const dealerPriceJOD = equipment.dealerUSD * exchangeRate;
-        const clientPriceJOD = equipment.clientUSD * exchangeRate;
-        // Use MSRP if available, otherwise fall back to clientUSD (but this shouldn't happen)
-        const msrpPriceJOD = (equipment.msrpUSD || equipment.clientUSD) * exchangeRate;
+        const clientPriceJOD = (equipment.msrpUSD || equipment.dealerUSD) * exchangeRate;
+        // Use MSRP if available, otherwise fall back to dealerUSD
+        const msrpPriceJOD = (equipment.msrpUSD || equipment.dealerUSD) * exchangeRate;
         
-        console.log(`${equipment.name}: MSRP=$${equipment.msrpUSD}, Client=$${equipment.clientUSD}, MSRP_JOD=${msrpPriceJOD.toFixed(2)}`);
+        console.log(`${equipment.name}: MSRP=$${equipment.msrpUSD}, Dealer=$${equipment.dealerUSD}, MSRP_JOD=${msrpPriceJOD.toFixed(2)}`);
         
         // Calculate shipping cost per unit (dealer cost × shipping share)
         const shippingPerUnit = dealerPriceJOD * shippingShare;
@@ -1613,7 +1613,7 @@ const NogaHubAutomation = () => {
                             const equipmentTotal = prev.equipment.reduce((sum, item) => {
                               const equipment = equipmentDatabase.find(eq => eq.code === item.code);
                               if (equipment && item.quantity > 0) {
-                                const clientPriceUSD = equipment.msrpUSD || equipment.clientUSD || equipment.price;
+                                const clientPriceUSD = equipment.msrpUSD || equipment.price;
                                 return sum + (clientPriceUSD * 1.41 * item.quantity);
                               }
                               return sum;
@@ -1674,7 +1674,7 @@ const NogaHubAutomation = () => {
                             const equipmentTotal = prev.equipment.reduce((sum, item) => {
                               const equipment = equipmentDatabase.find(eq => eq.code === item.code);
                               if (equipment && item.quantity > 0) {
-                                const clientPriceUSD = equipment.msrpUSD || equipment.clientUSD || equipment.price;
+                                const clientPriceUSD = equipment.msrpUSD || equipment.price;
                                 return sum + (clientPriceUSD * 1.41 * item.quantity);
                               }
                               return sum;
@@ -1735,7 +1735,7 @@ const NogaHubAutomation = () => {
                             const equipmentTotal = prev.equipment.reduce((sum, item) => {
                               const equipment = equipmentDatabase.find(eq => eq.code === item.code);
                               if (equipment && item.quantity > 0) {
-                                const clientPriceUSD = equipment.msrpUSD || equipment.clientUSD || equipment.price;
+                                const clientPriceUSD = equipment.msrpUSD || equipment.price;
                                 return sum + (clientPriceUSD * 1.41 * item.quantity);
                               }
                               return sum;

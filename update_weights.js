@@ -5,7 +5,7 @@ const fs = require('fs');
 // Configuration
 const CONFIG = {
     excelPath: '/Users/cardano/Desktop/Void/Void Dealer 2025/Weights & Dimensions Product List 2025.xlsx',
-    backendUrl: 'http://localhost:5001/api', // Adjust this based on your backend URL
+    backendUrl: 'https://nogahubautomation-production.up.railway.app/api', // Production Railway backend
     defaultWeight: 2.0, // Default weight for items not in Excel (2kg as requested)
     logFile: 'weight_update_log.txt'
 };
@@ -102,7 +102,6 @@ async function updateEquipmentWeight(equipment, newWeight, authToken) {
             name: equipment.name,
             msrpUSD: equipment.msrpUSD,
             dealerUSD: equipment.dealerUSD,
-            clientUSD: equipment.clientUSD,
             weight: newWeight,
             category: equipment.category,
             isActive: equipment.isActive

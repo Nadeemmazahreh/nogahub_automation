@@ -1,0 +1,13 @@
+[2025-07-24T12:28:57.429Z] Starting equipment database export to Excel...
+[2025-07-24T12:28:57.429Z] Fetching all equipment from production database...
+[2025-07-24T12:28:58.400Z] Successfully fetched 465 equipment items
+[2025-07-24T12:28:58.401Z] Converting equipment data to Excel format...
+[2025-07-24T12:28:58.433Z] Saving Excel file: equipment_database_export.xlsx
+[2025-07-24T12:28:58.450Z] Excel file saved successfully: equipment_database_export.xlsx
+[2025-07-24T12:28:58.450Z] File size: 184.53 KB
+[2025-07-24T12:28:58.451Z] 
+=== EXPORT SUMMARY ===
+[2025-07-24T12:28:58.451Z] Equipment items exported: 465
+[2025-07-24T12:28:58.451Z] Output file: equipment_database_export.xlsx
+[2025-07-24T12:28:58.452Z] Log file: export_log.txt
+[2025-07-24T12:28:58.452Z] Export completed successfully!

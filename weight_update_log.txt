@@ -1,0 +1,477 @@
+[2025-07-24T11:44:11.056Z] Starting weight update process...
+[2025-07-24T11:44:11.057Z] Reading Excel file...
+[2025-07-24T11:44:11.083Z] Parsed 218 items from Excel file
+[2025-07-24T11:44:11.084Z] Fetching current equipment from database...
+[2025-07-24T11:44:12.021Z] Fetched 465 equipment items from database
+[2025-07-24T11:44:12.111Z] IT4262: Updated from Excel (15.00kg -> 55.5kg)
+[2025-07-24T11:44:12.303Z] IT4264: Updated from Excel (15.00kg -> 55.5kg)
+[2025-07-24T11:44:12.491Z] IT4263: Updated from Excel (15.00kg -> 55.5kg)
+[2025-07-24T11:44:12.685Z] IT3045: Updated from Excel (15.00kg -> 8.9kg)
+[2025-07-24T11:44:12.878Z] IT3046: Updated from Excel (15.00kg -> 8.9kg)
+[2025-07-24T11:44:13.068Z] IT3047: Updated from Excel (15.00kg -> 8.9kg)
+[2025-07-24T11:44:13.262Z] IT3808: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:13.461Z] IT2239: Updated from Excel (15.00kg -> 23kg)
+[2025-07-24T11:44:13.647Z] IT1575: Updated from Excel (15.00kg -> 227.5kg)
+[2025-07-24T11:44:13.835Z] IT3679: Updated from Excel (15.00kg -> 61kg)
+[2025-07-24T11:44:14.026Z] IT3680: Updated from Excel (15.00kg -> 61kg)
+[2025-07-24T11:44:14.217Z] IT3677: Updated from Excel (15.00kg -> 61kg)
+[2025-07-24T11:44:14.414Z] IT3678: Updated from Excel (15.00kg -> 61kg)
+[2025-07-24T11:44:14.604Z] IT3681: Updated from Excel (15.00kg -> 61kg)
+[2025-07-24T11:44:14.800Z] IT3682: Updated from Excel (15.00kg -> 61kg)
+[2025-07-24T11:44:14.996Z] IT3552: Updated from Excel (15.00kg -> 62.8kg)
+[2025-07-24T11:44:15.207Z] IT2555: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:15.430Z] IT3553: Updated from Excel (15.00kg -> 62.8kg)
+[2025-07-24T11:44:15.618Z] IT3000: Updated from Excel (15.00kg -> 27kg)
+[2025-07-24T11:44:15.813Z] IT3788: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:16.004Z] IT3340: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:16.203Z] IT2704: Updated from Excel (15.00kg -> 27kg)
+[2025-07-24T11:44:16.394Z] IT2998: Updated from Excel (15.00kg -> 27kg)
+[2025-07-24T11:44:16.594Z] IT4008: Updated from Excel (15.00kg -> 48.5kg)
+[2025-07-24T11:44:16.781Z] IT4055: Updated from Excel (15.00kg -> 48.5kg)
+[2025-07-24T11:44:16.977Z] IT4009: Updated from Excel (15.00kg -> 48.5kg)
+[2025-07-24T11:44:17.161Z] IT1576: Updated from Excel (15.00kg -> 53.5kg)
+[2025-07-24T11:44:17.354Z] IT1577: Updated from Excel (15.00kg -> 43kg)
+[2025-07-24T11:44:17.562Z] IT3972: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:17.751Z] IT2922: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:17.950Z] IT2061: Updated from Excel (15.00kg -> 93kg)
+[2025-07-24T11:44:18.137Z] IT4053: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:18.329Z] IT3790: Updated from Excel (15.00kg -> 200kg)
+[2025-07-24T11:44:18.541Z] IT2837: Updated from Excel (15.00kg -> 40kg)
+[2025-07-24T11:44:18.728Z] IT1553: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:18.947Z] IT1198: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:19.136Z] IT3197: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:19.323Z] IT1197: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:19.519Z] IT1832: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:19.715Z] IT3196: Updated from Excel (15.00kg -> 102kg)
+[2025-07-24T11:44:19.909Z] IT5871: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:20.095Z] IT5872: Updated from Excel (15.00kg -> 146kg)
+[2025-07-24T11:44:20.287Z] IT4268: Updated from Excel (15.00kg -> 51kg)
+[2025-07-24T11:44:20.487Z] IT4269: Updated from Excel (15.00kg -> 53kg)
+[2025-07-24T11:44:20.688Z] IT4253: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:20.879Z] IT4310: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:21.068Z] IT3903: Updated from Excel (15.00kg -> 77kg)
+[2025-07-24T11:44:21.258Z] IT2680: Updated from Excel (15.00kg -> 22.5kg)
+[2025-07-24T11:44:21.447Z] IT3023: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:21.635Z] IT3204: Updated from Excel (15.00kg -> 86kg)
+[2025-07-24T11:44:21.823Z] IT2158: Updated from Excel (15.00kg -> 25.5kg)
+[2025-07-24T11:44:22.015Z] IT3024: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:22.212Z] IT2334: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:22.399Z] IT4380: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:22.588Z] IT3841: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:22.775Z] IT3840: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:22.978Z] IT3839: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:23.175Z] IT2098: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:23.366Z] IT4381: Updated from Excel (15.00kg -> 8.5kg)
+[2025-07-24T11:44:23.563Z] IT4382: Updated from Excel (15.00kg -> 8.5kg)
+[2025-07-24T11:44:23.757Z] IT3843: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:23.945Z] IT4383: Updated from Excel (15.00kg -> 9kg)
+[2025-07-24T11:44:24.133Z] IT3842: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:24.321Z] IT3752: Updated from Excel (15.00kg -> 13.5kg)
+[2025-07-24T11:44:24.517Z] IT1915: Updated from Excel (15.00kg -> 16.5kg)
+[2025-07-24T11:44:24.706Z] IT2900: Updated from Excel (15.00kg -> 0.12kg)
+[2025-07-24T11:44:24.894Z] IT2044: Updated from Excel (15.00kg -> 0.248kg)
+[2025-07-24T11:44:25.085Z] IT2618: Updated from Excel (15.00kg -> 0.178kg)
+[2025-07-24T11:44:25.275Z] IT2045: Updated from Excel (15.00kg -> 0.293kg)
+[2025-07-24T11:44:25.462Z] IT2264: Updated from Excel (15.00kg -> 5kg)
+[2025-07-24T11:44:25.656Z] IT2800: Updated from Excel (15.00kg -> 18kg)
+[2025-07-24T11:44:25.846Z] IT2803: Updated from Excel (15.00kg -> 18kg)
+[2025-07-24T11:44:26.035Z] IT2801: Updated from Excel (15.00kg -> 18kg)
+[2025-07-24T11:44:26.236Z] IT4265: Updated from Excel (15.00kg -> 22kg)
+[2025-07-24T11:44:26.430Z] IT5914: Updated from Excel (15.00kg -> 24kg)
+[2025-07-24T11:44:26.617Z] IT5915: Updated from Excel (15.00kg -> 24kg)
+[2025-07-24T11:44:26.811Z] IT5916: Updated from Excel (15.00kg -> 24kg)
+[2025-07-24T11:44:27.011Z] IT4267: Updated from Excel (15.00kg -> 22kg)
+[2025-07-24T11:44:27.202Z] IT4266: Updated from Excel (15.00kg -> 22kg)
+[2025-07-24T11:44:27.389Z] IT3692: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:27.583Z] IT3983: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:27.775Z] IT3691: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:27.971Z] IT2804: Updated from Excel (15.00kg -> 6.5kg)
+[2025-07-24T11:44:28.161Z] IT2807: Updated from Excel (15.00kg -> 6.5kg)
+[2025-07-24T11:44:28.365Z] IT2805: Updated from Excel (15.00kg -> 6.5kg)
+[2025-07-24T11:44:28.561Z] IT2230: Updated from Excel (15.00kg -> 15.5kg)
+[2025-07-24T11:44:28.747Z] IT2326: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:28.932Z] IT2108: Updated from Excel (15.00kg -> 15.5kg)
+[2025-07-24T11:44:29.120Z] IT2229: Updated from Excel (15.00kg -> 15.5kg)
+[2025-07-24T11:44:29.309Z] IT2808: Updated from Excel (15.00kg -> 35kg)
+[2025-07-24T11:44:29.497Z] IT2811: Updated from Excel (15.00kg -> 35kg)
+[2025-07-24T11:44:29.685Z] IT2809: Updated from Excel (15.00kg -> 35kg)
+[2025-07-24T11:44:29.877Z] IT2238: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:30.069Z] IT6288: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:30.268Z] IT2237: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:30.457Z] IT6041: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:30.658Z] IT1580: Updated from Excel (15.00kg -> 145kg)
+[2025-07-24T11:44:30.859Z] IT3995: Updated from Excel (15.00kg -> 3kg)
+[2025-07-24T11:44:31.050Z] IT4457: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:31.241Z] IT4254: Updated from Excel (15.00kg -> 3kg)
+[2025-07-24T11:44:31.431Z] IT1581: Updated from Excel (15.00kg -> 208.5kg)
+[2025-07-24T11:44:31.631Z] IT1202: Updated from Excel (15.00kg -> 7.5kg)
+[2025-07-24T11:44:31.827Z] IT1205: Updated from Excel (15.00kg -> 7.5kg)
+[2025-07-24T11:44:32.015Z] IT2630: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:32.209Z] IT2631: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:32.397Z] IT1206: Updated from Excel (15.00kg -> 7.5kg)
+[2025-07-24T11:44:32.587Z] IT1207: Updated from Excel (15.00kg -> 4.2kg)
+[2025-07-24T11:44:32.793Z] IT1209: Updated from Excel (15.00kg -> 4.2kg)
+[2025-07-24T11:44:32.982Z] IT1119: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:33.208Z] IT1120: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:33.400Z] IT1210: Updated from Excel (15.00kg -> 4.2kg)
+[2025-07-24T11:44:33.590Z] IT1211: Updated from Excel (15.00kg -> 22.5kg)
+[2025-07-24T11:44:33.780Z] IT1214: Updated from Excel (15.00kg -> 22.5kg)
+[2025-07-24T11:44:33.965Z] IT1215: Updated from Excel (15.00kg -> 22.5kg)
+[2025-07-24T11:44:34.152Z] IT1117: Updated from Excel (15.00kg -> 4.6kg)
+[2025-07-24T11:44:34.341Z] IT1118: Updated from Excel (15.00kg -> 4.6kg)
+[2025-07-24T11:44:34.528Z] IT3610: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:34.717Z] IT3609: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:34.906Z] IT2564: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:35.096Z] IT2565: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:35.290Z] IT2089: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:35.491Z] IT5985: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:35.694Z] IT5984: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:35.887Z] IT2088: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:36.070Z] IT1122: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:36.255Z] IT1218: Updated from Excel (15.00kg -> 119.5kg)
+[2025-07-24T11:44:36.444Z] IT5980: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:36.631Z] IT1582: Updated from Excel (15.00kg -> 111.5kg)
+[2025-07-24T11:44:36.830Z] IT3156: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:37.016Z] IT1583: Updated from Excel (15.00kg -> 137kg)
+[2025-07-24T11:44:37.204Z] IT1584: Updated from Excel (15.00kg -> 96kg)
+[2025-07-24T11:44:37.393Z] IT2169: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:37.581Z] IT2168: Updated from Excel (15.00kg -> 3.5kg)
+[2025-07-24T11:44:37.770Z] IT1145: Updated from Excel (15.00kg -> 4kg)
+[2025-07-24T11:44:37.956Z] IT1146: Updated from Excel (15.00kg -> 6kg)
+[2025-07-24T11:44:38.155Z] IT1844: Updated from Excel (15.00kg -> 3.5kg)
+[2025-07-24T11:44:38.346Z] IT1148: Updated from Excel (15.00kg -> 3kg)
+[2025-07-24T11:44:38.537Z] IT1150: Updated from Excel (15.00kg -> 2kg)
+[2025-07-24T11:44:38.724Z] IT1151: Updated from Excel (15.00kg -> 3kg)
+[2025-07-24T11:44:38.909Z] IT4405: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:39.094Z] IT1153: Updated from Excel (15.00kg -> 4kg)
+[2025-07-24T11:44:39.300Z] IT3225: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:39.489Z] IT3131: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:39.683Z] IT3128: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:39.871Z] IT3127: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:40.061Z] IT3130: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:40.250Z] IT3129: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:40.439Z] IT3126: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:40.627Z] IT3125: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:40.823Z] IT3133: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:41.015Z] IT3132: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:44:41.209Z] IT2456: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:41.399Z] IT1595: Updated from Excel (15.00kg -> 51.5kg)
+[2025-07-24T11:44:41.592Z] IT1596: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:41.784Z] IT1601: Updated from Excel (15.00kg -> 89kg)
+[2025-07-24T11:44:41.983Z] IT1597: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:42.178Z] IT1598: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:42.365Z] IT1602: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:42.552Z] IT2212: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:42.749Z] IT1589: Updated from Excel (15.00kg -> 123.5kg)
+[2025-07-24T11:44:42.940Z] IT3338: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:43.128Z] IT3339: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:43.321Z] IT1593: Updated from Excel (15.00kg -> 121kg)
+[2025-07-24T11:44:43.514Z] IT1591: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:43.705Z] IT1592: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:43.897Z] IT1603: Updated from Excel (15.00kg -> 119kg)
+[2025-07-24T11:44:44.090Z] IT3223: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:44.287Z] IT1928: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:44.474Z] IT6207: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:44.660Z] IT6211: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:44.865Z] IT6208: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:45.058Z] IT6213: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:45.247Z] IT6212: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:45.431Z] IT6209: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:45.622Z] IT6214: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:45.812Z] IT3354: Updated from Excel (15.00kg -> 2.3kg)
+[2025-07-24T11:44:46.012Z] IT3802: Updated from Excel (15.00kg -> 2.3kg)
+[2025-07-24T11:44:46.197Z] IT3727: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:46.387Z] IT3728: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:46.589Z] IT3438: Updated from Excel (15.00kg -> 0.7kg)
+[2025-07-24T11:44:46.778Z] IT3439: Updated from Excel (15.00kg -> 0.7kg)
+[2025-07-24T11:44:46.970Z] IT3031: Updated from Excel (15.00kg -> 0.352kg)
+[2025-07-24T11:44:47.162Z] IT2992: Updated from Excel (15.00kg -> 0.352kg)
+[2025-07-24T11:44:47.352Z] IT3217: Updated from Excel (15.00kg -> 6kg)
+[2025-07-24T11:44:47.536Z] IT6289: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:47.728Z] IT3218: Updated from Excel (15.00kg -> 6kg)
+[2025-07-24T11:44:47.914Z] IT6039: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:48.106Z] IT1140: Updated from Excel (15.00kg -> 5kg)
+[2025-07-24T11:44:48.301Z] IT1905: Updated from Excel (15.00kg -> 5kg)
+[2025-07-24T11:44:48.493Z] IT1099: Updated from Excel (15.00kg -> 0.7kg)
+[2025-07-24T11:44:48.686Z] IT1102: Updated from Excel (15.00kg -> 0.7kg)
+[2025-07-24T11:44:48.875Z] IT1125: Updated from Excel (15.00kg -> 1.25kg)
+[2025-07-24T11:44:49.065Z] IT1126: Updated from Excel (15.00kg -> 1.25kg)
+[2025-07-24T11:44:49.254Z] IT1132: Updated from Excel (15.00kg -> 3.25kg)
+[2025-07-24T11:44:49.445Z] IT5881: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:49.630Z] IT5989: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:49.833Z] IT1133: Updated from Excel (15.00kg -> 3.25kg)
+[2025-07-24T11:44:50.024Z] IT3371: Updated from Excel (15.00kg -> 6kg)
+[2025-07-24T11:44:50.220Z] IT3372: Updated from Excel (15.00kg -> 6kg)
+[2025-07-24T11:44:50.415Z] IT1105: Updated from Excel (15.00kg -> 4.5kg)
+[2025-07-24T11:44:50.603Z] IT1106: Updated from Excel (15.00kg -> 4.5kg)
+[2025-07-24T11:44:50.790Z] IT2814: Updated from Excel (15.00kg -> 5.25kg)
+[2025-07-24T11:44:50.984Z] IT2815: Updated from Excel (15.00kg -> 5.25kg)
+[2025-07-24T11:44:51.188Z] IT3725: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:51.385Z] IT3726: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:51.578Z] IT3436: Updated from Excel (15.00kg -> 0.8kg)
+[2025-07-24T11:44:51.767Z] IT3437: Updated from Excel (15.00kg -> 0.8kg)
+[2025-07-24T11:44:51.955Z] IT6040: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:52.146Z] IT1107: Updated from Excel (15.00kg -> 1.7kg)
+[2025-07-24T11:44:52.338Z] IT1109: Updated from Excel (15.00kg -> 1.7kg)
+[2025-07-24T11:44:52.533Z] IT1114: Updated from Excel (15.00kg -> 2.8kg)
+[2025-07-24T11:44:52.724Z] IT1115: Updated from Excel (15.00kg -> 2.8kg)
+[2025-07-24T11:44:52.913Z] IT3473: Updated from Excel (15.00kg -> 0.4kg)
+[2025-07-24T11:44:53.105Z] IT2765: Updated from Excel (15.00kg -> 0.35kg)
+[2025-07-24T11:44:53.293Z] IT3474: Updated from Excel (15.00kg -> 0.4kg)
+[2025-07-24T11:44:53.478Z] IT2041: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:53.664Z] IT2042: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:53.854Z] IT1027: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:54.055Z] IT1028: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:54.244Z] IT4102: Updated from Excel (15.00kg -> 68.5kg)
+[2025-07-24T11:44:54.431Z] IT4103: Updated from Excel (15.00kg -> 68.5kg)
+[2025-07-24T11:44:54.617Z] IT4106: Updated from Excel (15.00kg -> 68.5kg)
+[2025-07-24T11:44:54.811Z] IT4107: Updated from Excel (15.00kg -> 68.5kg)
+[2025-07-24T11:44:54.994Z] IT4104: Updated from Excel (15.00kg -> 68.5kg)
+[2025-07-24T11:44:55.187Z] IT4105: Updated from Excel (15.00kg -> 68.5kg)
+[2025-07-24T11:44:55.375Z] IT1029: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:55.563Z] IT1030: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:55.756Z] IT3485: Updated from Excel (15.00kg -> 5.25kg)
+[2025-07-24T11:44:55.952Z] IT3486: Updated from Excel (15.00kg -> 5.25kg)
+[2025-07-24T11:44:56.144Z] IT2462: Updated from Excel (15.00kg -> 6.7kg)
+[2025-07-24T11:44:56.334Z] IT3149: Updated from Excel (15.00kg -> 6.7kg)
+[2025-07-24T11:44:56.527Z] IT2027: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:56.722Z] IT2816: Updated from Excel (15.00kg -> 4kg)
+[2025-07-24T11:44:56.908Z] IT2817: Updated from Excel (15.00kg -> 4kg)
+[2025-07-24T11:44:57.097Z] IT5992: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:57.289Z] IT1088: Updated from Excel (15.00kg -> 5kg)
+[2025-07-24T11:44:57.477Z] IT5986: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:57.665Z] IT5987: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:57.852Z] IT1089: Updated from Excel (15.00kg -> 5kg)
+[2025-07-24T11:44:58.037Z] IT3723: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:58.231Z] IT3724: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:58.421Z] IT1083: Updated from Excel (15.00kg -> 0.4kg)
+[2025-07-24T11:44:58.614Z] IT5990: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:58.807Z] IT5991: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:58.993Z] IT1085: Updated from Excel (15.00kg -> 0.4kg)
+[2025-07-24T11:44:59.190Z] IT1081: Updated from Excel (15.00kg -> 4.75kg)
+[2025-07-24T11:44:59.380Z] IT1082: Updated from Excel (15.00kg -> 4.75kg)
+[2025-07-24T11:44:59.571Z] IT1245: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:59.757Z] IT3395: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:44:59.944Z] IT1247: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:00.131Z] IT1308: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:00.326Z] IT1246: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:00.523Z] IT1307: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:00.733Z] IT1248: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:00.935Z] IT1249: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:01.122Z] IT1250: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:01.337Z] IT1309: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:01.522Z] IT1251: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:01.712Z] IT1310: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:01.899Z] IT1252: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:02.089Z] IT1253: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:02.282Z] IT1312: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:02.481Z] IT1311: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:02.667Z] IT1254: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:02.855Z] IT1255: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:03.046Z] IT1313: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:03.233Z] IT1257: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:03.421Z] IT1315: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:03.619Z] IT1258: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:03.814Z] IT1933: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:04.004Z] IT1260: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:04.195Z] IT1317: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:04.383Z] IT1259: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:04.579Z] IT1261: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:04.778Z] IT1318: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:04.967Z] IT1316: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:05.153Z] IT1263: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:05.340Z] IT1319: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:05.532Z] IT1264: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:05.724Z] IT1320: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:05.914Z] IT1265: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:06.103Z] IT1321: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:06.297Z] IT1266: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:06.490Z] IT2211: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:06.686Z] IT4174: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:06.878Z] IT1238: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:07.066Z] IT1229: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:07.254Z] IT1219: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:07.440Z] IT1267: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:07.633Z] IT1322: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:07.828Z] IT4078: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:08.017Z] IT1269: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:08.204Z] IT1323: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:08.393Z] IT3365: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:08.578Z] IT1230: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:08.765Z] IT1240: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:08.959Z] IT1231: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:09.147Z] IT1241: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:09.336Z] IT1232: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:09.522Z] IT2645: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:09.719Z] IT2798: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:09.922Z] IT1934: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:10.110Z] IT1270: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:10.301Z] IT1324: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:10.494Z] IT1271: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:10.694Z] IT2694: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:10.887Z] IT1272: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:11.079Z] IT1273: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:11.267Z] IT1274: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:11.478Z] IT1325: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:11.667Z] IT4403: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:11.854Z] IT6205: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:12.043Z] IT3745: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:12.230Z] IT1276: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:12.418Z] IT1326: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:12.605Z] IT1277: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:12.793Z] IT1327: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:12.978Z] IT2101: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:13.179Z] IT1233: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:13.369Z] IT1244: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:13.562Z] IT1234: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:13.754Z] IT1220: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:13.946Z] IT1235: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:14.132Z] IT1221: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:14.318Z] IT1222: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:14.505Z] IT1223: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:14.693Z] IT1224: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:14.899Z] IT2622: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:15.103Z] IT1225: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:15.303Z] IT1236: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:15.491Z] IT1226: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:15.684Z] IT1228: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:15.867Z] IT1237: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:16.053Z] IT1227: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:16.241Z] IT1279: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:16.441Z] IT1328: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:16.637Z] IT1280: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:16.825Z] IT1278: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:17.017Z] IT1329: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:17.206Z] IT1281: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:17.398Z] IT1332: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:17.585Z] IT1331: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:17.771Z] IT1282: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:17.956Z] IT1333: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:18.154Z] IT1283: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:18.342Z] IT2201: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:18.533Z] IT1334: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:18.724Z] IT6204: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:18.913Z] IT1285: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:19.107Z] IT1335: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:19.298Z] IT1286: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:19.491Z] IT1336: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:19.682Z] IT2058: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:19.879Z] IT3481: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:20.067Z] IT1288: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:20.261Z] IT1337: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:20.450Z] IT1289: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:20.640Z] IT1338: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:20.835Z] IT1291: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:21.029Z] IT1290: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:21.216Z] IT1339: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:21.405Z] IT1292: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:21.596Z] IT1340: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:21.794Z] IT1293: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:21.983Z] IT1341: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:22.165Z] IT3792: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:22.352Z] IT1295: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:22.539Z] IT1296: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:22.726Z] IT1342: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:22.914Z] IT1297: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:23.105Z] IT1343: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:23.293Z] IT1298: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:23.480Z] IT1344: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:23.673Z] IT1299: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:23.863Z] IT1345: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:24.054Z] IT1300: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:24.240Z] IT3515: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:24.429Z] IT2302: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:24.626Z] IT3179: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:24.826Z] IT1301: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:25.015Z] IT1346: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:25.213Z] IT3836: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:25.401Z] IT1302: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:25.590Z] IT1303: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:25.797Z] IT1347: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:25.984Z] IT1304: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:26.175Z] IT1305: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:26.360Z] IT1348: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:26.549Z] IT1306: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:26.740Z] IT3713: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:26.944Z] IT1129: Updated from Excel (15.00kg -> 2.75kg)
+[2025-07-24T11:45:27.137Z] IT2300: Updated from Excel (15.00kg -> 2.75kg)
+[2025-07-24T11:45:27.327Z] IT2094: Updated from Excel (15.00kg -> 18kg)
+[2025-07-24T11:45:27.521Z] IT2634: Updated from Excel (15.00kg -> 18kg)
+[2025-07-24T11:45:27.712Z] IT2857: Updated from Excel (15.00kg -> 30.7kg)
+[2025-07-24T11:45:27.900Z] IT2635: Updated from Excel (15.00kg -> 30.7kg)
+[2025-07-24T11:45:28.088Z] IT2920: Updated from Excel (15.00kg -> 3.5kg)
+[2025-07-24T11:45:28.274Z] IT2921: Updated from Excel (15.00kg -> 3.5kg)
+[2025-07-24T11:45:28.476Z] IT2753: Updated from Excel (15.00kg -> 37kg)
+[2025-07-24T11:45:28.684Z] IT2852: Updated from Excel (15.00kg -> 37kg)
+[2025-07-24T11:45:28.871Z] IT2926: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:29.072Z] IT2925: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:29.265Z] IT3242: Updated from Excel (15.00kg -> 50kg)
+[2025-07-24T11:45:29.456Z] IT5171: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:29.647Z] IT5172: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:29.836Z] IT5165: Updated from Excel (15.00kg -> 50kg)
+[2025-07-24T11:45:30.034Z] IT3041: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:45:30.223Z] IT3042: Updated from Excel (15.00kg -> 2.5kg)
+[2025-07-24T11:45:30.406Z] IT1130: Updated from Excel (15.00kg -> 4kg)
+[2025-07-24T11:45:30.591Z] IT2023: Updated from Excel (15.00kg -> 4kg)
+[2025-07-24T11:45:30.784Z] IT2218: Updated from Excel (15.00kg -> 25.2kg)
+[2025-07-24T11:45:30.976Z] IT3789: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:31.163Z] IT2832: Updated from Excel (15.00kg -> 25.2kg)
+[2025-07-24T11:45:31.358Z] IT5895: Updated from Excel (15.00kg -> 5kg)
+[2025-07-24T11:45:31.542Z] IT5899: Updated from Excel (15.00kg -> 5kg)
+[2025-07-24T11:45:31.727Z] IT5687: Updated from Excel (15.00kg -> 21.5kg)
+[2025-07-24T11:45:31.912Z] IT5688: Updated from Excel (15.00kg -> 21.5kg)
+[2025-07-24T11:45:32.110Z] IT2941: Updated from Excel (15.00kg -> 5kg)
+[2025-07-24T11:45:32.305Z] IT2942: Updated from Excel (15.00kg -> 5kg)
+[2025-07-24T11:45:32.493Z] IT2751: Updated from Excel (15.00kg -> 35kg)
+[2025-07-24T11:45:32.676Z] IT2841: Updated from Excel (15.00kg -> 35kg)
+[2025-07-24T11:45:32.869Z] IT3100: Updated from Excel (15.00kg -> 25kg)
+[2025-07-24T11:45:33.072Z] IT4208: Updated from Excel (15.00kg -> 26.5kg)
+[2025-07-24T11:45:33.260Z] IT4210: Updated from Excel (15.00kg -> 26.5kg)
+[2025-07-24T11:45:33.456Z] IT3181: Updated from Excel (15.00kg -> 25kg)
+[2025-07-24T11:45:33.652Z] IT3215: Updated from Excel (15.00kg -> 1.75kg)
+[2025-07-24T11:45:33.850Z] IT3216: Updated from Excel (15.00kg -> 1.75kg)
+[2025-07-24T11:45:34.045Z] IT3075: Updated from Excel (15.00kg -> 37kg)
+[2025-07-24T11:45:34.247Z] IT3824: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:34.439Z] IT3825: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:34.635Z] IT3074: Updated from Excel (15.00kg -> 37kg)
+[2025-07-24T11:45:34.827Z] IT2764: Updated from Excel (15.00kg -> 52kg)
+[2025-07-24T11:45:35.022Z] IT2833: Updated from Excel (15.00kg -> 52kg)
+[2025-07-24T11:45:35.211Z] IT2923: Updated from Excel (15.00kg -> 6.5kg)
+[2025-07-24T11:45:35.414Z] IT2924: Updated from Excel (15.00kg -> 6.5kg)
+[2025-07-24T11:45:35.600Z] IT3940: Updated from Excel (15.00kg -> 55.5kg)
+[2025-07-24T11:45:35.787Z] IT3936: Updated from Excel (15.00kg -> 55.5kg)
+[2025-07-24T11:45:35.982Z] IT2755: Updated from Excel (15.00kg -> 66.5kg)
+[2025-07-24T11:45:36.176Z] IT2854: Updated from Excel (15.00kg -> 66.5kg)
+[2025-07-24T11:45:36.371Z] IT3246: Updated from Excel (15.00kg -> 88.5kg)
+[2025-07-24T11:45:36.561Z] IT5180: Updated from Excel (15.00kg -> 88.5kg)
+[2025-07-24T11:45:36.754Z] IT2588: Updated from Excel (15.00kg -> 1.7kg)
+[2025-07-24T11:45:36.944Z] IT2589: Updated from Excel (15.00kg -> 1.7kg)
+[2025-07-24T11:45:37.137Z] IT2214: Updated from Excel (15.00kg -> 10.8kg)
+[2025-07-24T11:45:37.338Z] IT3711: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:37.531Z] IT4278: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:37.723Z] IT4279: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:37.911Z] IT2632: Updated from Excel (15.00kg -> 10.8kg)
+[2025-07-24T11:45:38.096Z] IT4322: Updated from Excel (15.00kg -> 1.25kg)
+[2025-07-24T11:45:38.288Z] IT4323: Updated from Excel (15.00kg -> 1.25kg)
+[2025-07-24T11:45:38.487Z] IT1131: Updated from Excel (15.00kg -> 2.05kg)
+[2025-07-24T11:45:38.679Z] IT3099: Updated from Excel (15.00kg -> 2.05kg)
+[2025-07-24T11:45:38.866Z] IT2216: Updated from Excel (15.00kg -> 13.7kg)
+[2025-07-24T11:45:39.057Z] IT3712: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:39.246Z] IT2633: Updated from Excel (15.00kg -> 13.7kg)
+[2025-07-24T11:45:39.439Z] IT2723: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:39.629Z] IT2698: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:39.817Z] IT3410: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:40.005Z] IT3406: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:40.199Z] IT3407: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:40.388Z] IT3411: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:40.587Z] IT3408: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:40.782Z] IT3409: Set to default weight (15.00kg -> 2kg) - not found in Excel
+[2025-07-24T11:45:40.968Z] IT3613: Updated from Excel (15.00kg -> 0.3kg)
+[2025-07-24T11:45:41.157Z] IT3614: Updated from Excel (15.00kg -> 0.3kg)
+[2025-07-24T11:45:41.260Z] \n=== UPDATE SUMMARY ===
+[2025-07-24T11:45:41.261Z] Total equipment items processed: 465
+[2025-07-24T11:45:41.262Z] Successfully updated: 465
+[2025-07-24T11:45:41.262Z] Items not found in Excel (set to default 2kg): 252
+[2025-07-24T11:45:41.262Z] Items set to default weight: 253
+[2025-07-24T11:45:41.263Z] Errors encountered: 0
+[2025-07-24T11:45:41.263Z] Items from Excel data: 218

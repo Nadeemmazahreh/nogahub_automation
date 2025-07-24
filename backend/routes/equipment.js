@@ -12,7 +12,6 @@ const equipmentSchema = Joi.object({
   name: Joi.string().required(),
   msrpUSD: Joi.number().precision(2).positive().allow(null),
   dealerUSD: Joi.number().precision(2).positive().required(),
-  clientUSD: Joi.number().precision(2).positive().required(),
   weight: Joi.number().precision(2).positive().required(),
   category: Joi.string().required(),
   isActive: Joi.boolean().default(true)
@@ -44,12 +43,10 @@ router.get('/', authenticateToken, async (req, res) => {
     let attributes = ['id', 'code', 'name', 'weight', 'category', 'msrpUSD'];
     
     if (role === 'admin') {
-      // Admin can see both dealer and client prices
-      attributes.push('dealerUSD', 'clientUSD');
-    } else {
-      // Regular users only see client prices
-      attributes.push('clientUSD');
+      // Admin can see dealer prices
+      attributes.push('dealerUSD');
     }
+    // All users see MSRP (which serves as the client price)
 
     // Get equipment with pagination
     const offset = (page - 1) * limit;
@@ -89,10 +86,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
     let attributes = ['id', 'code', 'name', 'weight', 'category', 'msrpUSD'];
     
     if (role === 'admin') {
-      attributes.push('dealerUSD', 'clientUSD');
-    } else {
-      attributes.push('clientUSD');
+      attributes.push('dealerUSD');
     }
+    // All users see MSRP (which serves as the client price)
 
     const equipment = await Equipment.findOne({
       where: { id, isActive: true },
