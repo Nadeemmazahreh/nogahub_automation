@@ -1328,22 +1328,22 @@ const NogaHubAutomation = () => {
   // Login Screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-100">
-          <div className="text-center mb-8">
-            <NogaHubLogo size={120} className="justify-center mb-4" />
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Project Automation</h1>
-            <p className="text-gray-600">Deep Sound Technical Consultations</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-3 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 w-full max-w-md border border-gray-100">
+          <div className="text-center mb-6 sm:mb-8">
+            <NogaHubLogo size={window.innerWidth < 640 ? 80 : 120} className="justify-center mb-3 sm:mb-4" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Project Automation</h1>
+            <p className="text-sm sm:text-base text-gray-600">Deep Sound Technical Consultations</p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <input
                 type="email"
                 value={loginData.username}
                 onChange={(e) => setLoginData(prev => ({ ...prev, username: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black transition-all"
+                className="w-full px-3 sm:px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black transition-all text-base"
                 placeholder="Enter email address"
               />
             </div>
@@ -1354,16 +1354,16 @@ const NogaHubAutomation = () => {
                 type="password"
                 value={loginData.password}
                 onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black transition-all"
+                className="w-full px-3 sm:px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-black transition-all text-base"
                 placeholder="Enter password"
               />
             </div>
 
             <button
               onClick={handleLogin}
-              className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors duration-200 font-medium"
+              className="w-full flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors duration-200 font-medium text-sm sm:text-base"
             >
-              <LogIn size={20} />
+              <LogIn size={18} />
               <span>Login</span>
             </button>
 
@@ -1374,25 +1374,25 @@ const NogaHubAutomation = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+    <div className="max-w-7xl mx-auto p-3 sm:p-6 bg-gray-50 min-h-screen">
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
         {/* Header */}
-        <div className="border-b border-gray-200 px-6 py-4">
-          <div className="flex justify-between items-center">
+        <div className="border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
             <div className="flex items-center">
-              <NogaHubLogo size={80} />
-              <div className="ml-4">
-                <h1 className="text-2xl font-bold text-gray-900">Project Automation</h1>
-                <p className="text-gray-600 mt-1">
+              <NogaHubLogo size={window.innerWidth < 640 ? 60 : 80} />
+              <div className="ml-3 sm:ml-4">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Project Automation</h1>
+                <p className="text-xs sm:text-base text-gray-600 mt-1">
                   Welcome, {userRole === 'admin' ? 'Administrator' : 'User'} | Deep Sound Technical Consultations
                 </p>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
+              className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors text-sm sm:text-base self-end sm:self-auto"
             >
-              <LogOut size={16} />
+              <LogOut size={14} />
               <span>Logout</span>
             </button>
           </div>
@@ -1400,27 +1400,27 @@ const NogaHubAutomation = () => {
 
         {/* Company Activities Section */}
         <div className="border-b border-gray-200 bg-gray-50">
-          <div className="px-6 py-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Company Activities</h2>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="px-3 sm:px-6 py-4 sm:py-6">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Company Activities</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* Installation Section */}
               <div 
                 onClick={() => setActiveSection('installation')}
-                className={`border-2 rounded-xl p-6 cursor-pointer transition-all ${
+                className={`border-2 rounded-xl p-4 sm:p-6 cursor-pointer transition-all ${
                   activeSection === 'installation' 
                     ? 'border-black bg-white shadow-lg' 
                     : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-md'
                 }`}
               >
-                <div className="flex items-center mb-3">
-                  <Calculator size={24} className="mr-3 text-black" />
-                  <h3 className="text-lg font-semibold text-gray-900">Installation</h3>
+                <div className="flex items-center mb-2 sm:mb-3">
+                  <Calculator size={20} className="mr-2 sm:mr-3 text-black" />
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Installation</h3>
                 </div>
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-600 text-xs sm:text-sm">
                   Sound system design, equipment procurement, installation, and commissioning services.
                 </p>
                 {activeSection === 'installation' && (
-                  <div className="mt-3 px-3 py-1 bg-black text-white text-xs rounded-full inline-block">
+                  <div className="mt-2 sm:mt-3 px-2 sm:px-3 py-1 bg-black text-white text-xs rounded-full inline-block">
                     Active
                   </div>
                 )}
@@ -1429,21 +1429,21 @@ const NogaHubAutomation = () => {
               {/* Rental Section */}
               <div 
                 onClick={() => setActiveSection('rental')}
-                className={`border-2 rounded-xl p-6 cursor-pointer transition-all ${
+                className={`border-2 rounded-xl p-4 sm:p-6 cursor-pointer transition-all ${
                   activeSection === 'rental' 
                     ? 'border-black bg-white shadow-lg' 
                     : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-md'
                 }`}
               >
-                <div className="flex items-center mb-3">
-                  <Zap size={24} className="mr-3 text-black" />
-                  <h3 className="text-lg font-semibold text-gray-900">Rental</h3>
+                <div className="flex items-center mb-2 sm:mb-3">
+                  <Zap size={20} className="mr-2 sm:mr-3 text-black" />
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Rental</h3>
                 </div>
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-600 text-xs sm:text-sm">
                   Equipment rental services for events, temporary installations, and short-term projects.
                 </p>
                 {activeSection === 'rental' && (
-                  <div className="mt-3 px-3 py-1 bg-black text-white text-xs rounded-full inline-block">
+                  <div className="mt-2 sm:mt-3 px-2 sm:px-3 py-1 bg-black text-white text-xs rounded-full inline-block">
                     Active
                   </div>
                 )}
@@ -1455,7 +1455,7 @@ const NogaHubAutomation = () => {
         {/* Navigation Tabs - Only show when Installation is active */}
         {activeSection === 'installation' && (
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
+            <nav className="flex flex-wrap gap-2 sm:gap-0 sm:space-x-8 px-3 sm:px-6 overflow-x-auto">
               {[
                 { id: 'quotation', label: 'Quotation Builder', icon: Calculator, roles: ['admin', 'user'] },
                 { id: 'saved-projects', label: 'Saved Projects', icon: FolderOpen, roles: ['admin', 'user'] },
@@ -1469,14 +1469,15 @@ const NogaHubAutomation = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 transition-all ${
+                    className={`py-2 sm:py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-1 sm:space-x-2 transition-all whitespace-nowrap ${
                       activeTab === tab.id
                         ? 'border-black text-black'
                         : 'border-transparent text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    <Icon size={16} />
-                    <span>{tab.label}</span>
+                    <Icon size={14} />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                   </button>
                 );
               })}
@@ -1484,7 +1485,7 @@ const NogaHubAutomation = () => {
           </div>
         )}
 
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           {/* Installation Section Content */}
           {activeSection === 'installation' && (
             <>
@@ -1492,14 +1493,14 @@ const NogaHubAutomation = () => {
               {activeTab === 'quotation' && (
                 <div className="space-y-6">
                   {/* Project Info */}
-                  <div className="mb-6 grid grid-cols-2 gap-4">
+                  <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
                       <input
                         type="text"
                         value={project.clientName}
                         onChange={(e) => setProject(prev => ({ ...prev, clientName: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-base"
                         placeholder="Enter client name"
                       />
                     </div>
@@ -1509,7 +1510,7 @@ const NogaHubAutomation = () => {
                         type="text"
                         value={project.projectName}
                         onChange={(e) => setProject(prev => ({ ...prev, projectName: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-base"
                         placeholder="Enter project name"
                       />
                     </div>
