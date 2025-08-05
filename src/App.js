@@ -469,9 +469,9 @@ const NogaHubAutomation = () => {
 
   // Service pricing based on business report percentages
   const servicePricing = {
-    commissioning: 0.06, // 6% of equipment MSRP
-    noiseControl: 0.10,  // 5-15% of equipment MSRP (using 10% average)
-    soundDesign: 0.025,  // 0-5% of equipment MSRP (using 2.5% average)
+    commissioning: 0.06, // 6% of equipment dealer price
+    noiseControl: 5000,  // Fixed 5000 JOD
+    soundDesign: 0.03,   // 3% of equipment dealer price
     projectManagement: 0.10 // 10% of equipment MSRP
   };
 
@@ -640,7 +640,7 @@ const NogaHubAutomation = () => {
     if (project.services.noiseControl.enabled) {
       noiseControlServiceCost = project.services.noiseControl.customValue > 0 
         ? project.services.noiseControl.customValue 
-        : equipmentDealerTotalJOD * servicePricing.noiseControl;
+        : servicePricing.noiseControl; // Fixed value of 5000 JOD
       servicesTotal += noiseControlServiceCost;
     }
     if (project.services.soundDesign.enabled) {
@@ -1614,8 +1614,8 @@ const NogaHubAutomation = () => {
                             const equipmentTotal = prev.equipment.reduce((sum, item) => {
                               const equipment = equipmentDatabase.find(eq => eq.code === item.code);
                               if (equipment && item.quantity > 0) {
-                                const clientPriceUSD = equipment.msrpUSD || equipment.price;
-                                return sum + (clientPriceUSD * 1.41 * item.quantity);
+                                const dealerPriceJOD = equipment.dealerUSD * exchangeRate;
+                                return sum + (dealerPriceJOD * item.quantity);
                               }
                               return sum;
                             }, 0);
@@ -1656,7 +1656,17 @@ const NogaHubAutomation = () => {
                               setIsCalculated(false);
                             }}
                             className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
-                            placeholder="6%"
+                            placeholder={`Default: ${(() => {
+                              const equipmentTotal = project.equipment.reduce((sum, item) => {
+                                const equipment = equipmentDatabase.find(eq => eq.code === item.code);
+                                if (equipment && item.quantity > 0) {
+                                  const dealerPriceJOD = equipment.dealerUSD * exchangeRate;
+                                  return sum + (dealerPriceJOD * item.quantity);
+                                }
+                                return sum;
+                              }, 0);
+                              return Math.round(equipmentTotal * 0.06);
+                            })()}`}
                             min="0"
                             step="0.01"
                           />
@@ -1672,15 +1682,7 @@ const NogaHubAutomation = () => {
                         checked={project.services.noiseControl.enabled}
                         onChange={(e) => {
                           setProject(prev => {
-                            const equipmentTotal = prev.equipment.reduce((sum, item) => {
-                              const equipment = equipmentDatabase.find(eq => eq.code === item.code);
-                              if (equipment && item.quantity > 0) {
-                                const clientPriceUSD = equipment.msrpUSD || equipment.price;
-                                return sum + (clientPriceUSD * 1.41 * item.quantity);
-                              }
-                              return sum;
-                            }, 0);
-                            const defaultValue = e.target.checked ? Math.round(equipmentTotal * 0.10) : 0;
+                            const defaultValue = e.target.checked ? 5000 : 0; // Fixed 5000 JOD
                             
                             return {
                               ...prev,
@@ -1717,7 +1719,7 @@ const NogaHubAutomation = () => {
                               setIsCalculated(false);
                             }}
                             className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
-                            placeholder="10%"
+                            placeholder="Default: 5000"
                             min="0"
                             step="0.01"
                           />
@@ -1736,12 +1738,12 @@ const NogaHubAutomation = () => {
                             const equipmentTotal = prev.equipment.reduce((sum, item) => {
                               const equipment = equipmentDatabase.find(eq => eq.code === item.code);
                               if (equipment && item.quantity > 0) {
-                                const clientPriceUSD = equipment.msrpUSD || equipment.price;
-                                return sum + (clientPriceUSD * 1.41 * item.quantity);
+                                const dealerPriceJOD = equipment.dealerUSD * exchangeRate;
+                                return sum + (dealerPriceJOD * item.quantity);
                               }
                               return sum;
                             }, 0);
-                            const defaultValue = e.target.checked ? Math.round(equipmentTotal * 0.025) : 0;
+                            const defaultValue = e.target.checked ? Math.round(equipmentTotal * 0.03) : 0;
                             
                             return {
                               ...prev,
@@ -1778,7 +1780,17 @@ const NogaHubAutomation = () => {
                               setIsCalculated(false);
                             }}
                             className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
-                            placeholder="2.5%"
+                            placeholder={`Default: ${(() => {
+                              const equipmentTotal = project.equipment.reduce((sum, item) => {
+                                const equipment = equipmentDatabase.find(eq => eq.code === item.code);
+                                if (equipment && item.quantity > 0) {
+                                  const dealerPriceJOD = equipment.dealerUSD * exchangeRate;
+                                  return sum + (dealerPriceJOD * item.quantity);
+                                }
+                                return sum;
+                              }, 0);
+                              return Math.round(equipmentTotal * 0.03);
+                            })()}`}
                             min="0"
                             step="0.01"
                           />
@@ -2284,8 +2296,8 @@ const NogaHubAutomation = () => {
                     <ul className="space-y-1 text-sm text-gray-600">
                       <li>• Initial client contact and lead qualification</li>
                       <li>• Site visit and requirements gathering</li>
-                      <li>• Client relationship management</li>
-                      <li>• Contract negotiation support</li>
+                      <li>• Contract negotiation</li>
+                      <li>• Deal Closing</li>
                       <li>• 5% compensation of void sales profit</li>
                     </ul>
                   </div>
@@ -2299,7 +2311,7 @@ const NogaHubAutomation = () => {
                       <li>• Key client relationship management</li>
                       <li>• Project approval and major decisions</li>
                       <li>• Quality assurance and final review</li>
-                      <li>• Business development and planning</li>
+                      <li>• Technology development</li>
                     </ul>
                   </div>
 
@@ -2324,7 +2336,7 @@ const NogaHubAutomation = () => {
                       <li>• Assist with project planning and execution</li>
                       <li>• Documentation and reporting</li>
                       <li>• Vendor coordination and follow-up</li>
-                      <li>• Quality control and testing support</li>
+                      <li>• Quality control and installation support</li>
                       <li>• Administrative tasks and scheduling</li>
                     </ul>
                   </div>
