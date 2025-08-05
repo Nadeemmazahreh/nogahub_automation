@@ -40,13 +40,10 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     // Define what fields to return based on user role
-    let attributes = ['id', 'code', 'name', 'weight', 'category', 'msrpUSD'];
+    let attributes = ['id', 'code', 'name', 'weight', 'category', 'msrpUSD', 'dealerUSD'];
     
-    if (role === 'admin') {
-      // Admin can see dealer prices
-      attributes.push('dealerUSD');
-    }
-    // All users see MSRP (which serves as the client price)
+    // All authenticated users need dealer prices for BOQ calculations
+    // Note: dealerUSD is required for shipping/customs calculations
 
     // Get equipment with pagination
     const offset = (page - 1) * limit;
@@ -83,12 +80,10 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
     // Define attributes based on role
-    let attributes = ['id', 'code', 'name', 'weight', 'category', 'msrpUSD'];
+    let attributes = ['id', 'code', 'name', 'weight', 'category', 'msrpUSD', 'dealerUSD'];
     
-    if (role === 'admin') {
-      attributes.push('dealerUSD');
-    }
-    // All users see MSRP (which serves as the client price)
+    // All authenticated users need dealer prices for BOQ calculations
+    // Note: dealerUSD is required for shipping/customs calculations
 
     const equipment = await Equipment.findOne({
       where: { id, isActive: true },
