@@ -177,6 +177,14 @@ const Project = sequelize.define('Project', {
     type: DataTypes.JSON,
     allowNull: false
   },
+  includeTax: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  terms: {
+    type: DataTypes.TEXT,
+    defaultValue: ''
+  },
   total: {
     type: DataTypes.DECIMAL(12, 2),
     defaultValue: 0
@@ -200,17 +208,36 @@ const initDatabase = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ Database connection established successfully.');
-    
+
     // Sync models (create tables if they don't exist)
     await sequelize.sync({ force: false }); // force: false means don't drop existing tables
     console.log('✅ Database models synchronized.');
-    
+
+    // Run migrations for new columns
+    await runMigrations();
+
     // Seed initial data if needed
     await seedInitialData();
-    
+
   } catch (error) {
     console.error('❌ Unable to connect to the database:', error);
     process.exit(1);
+  }
+};
+
+// Run database migrations
+const runMigrations = async () => {
+  try {
+    console.log('🔄 Running database migrations...');
+
+    // Import and run the tax and terms migration
+    const { addTaxAndTermsColumns } = require('../add-tax-and-terms-columns');
+    await addTaxAndTermsColumns();
+
+    console.log('✅ Migrations completed successfully.');
+  } catch (error) {
+    console.error('⚠️ Migration warning:', error.message);
+    // Don't fail the whole initialization if migration has issues
   }
 };
 

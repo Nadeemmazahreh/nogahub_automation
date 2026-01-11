@@ -45,6 +45,8 @@ const projectSchema = Joi.object({
     noiseControlEngineer: Joi.string().allow(''),
     soundSystemDesigner: Joi.string().allow('')
   }).required(),
+  includeTax: Joi.boolean().default(true),
+  terms: Joi.string().allow('').default(''),
   total: Joi.number().min(0).default(0),
   isCalculated: Joi.boolean().default(false),
   calculationResults: Joi.object().allow(null).default(null)

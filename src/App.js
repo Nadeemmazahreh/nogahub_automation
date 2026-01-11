@@ -211,6 +211,13 @@ const NogaHubAutomation = () => {
     },
     customServices: [],
     customEquipment: [],
+    includeTax: true,
+    terms: `All prices are in Jordanian Dinars (JOD)
+Equipment prices include door-to-door delivery
+VAT is calculated at 16% as per Jordanian tax regulations
+Subject to ±10% change after technical study
+Payment terms: 90% down payment, 10% after project completion
+This quotation is valid for 30 days from the date of issue`,
     roles: {
       producer: '',
       director: '',
@@ -663,7 +670,7 @@ const NogaHubAutomation = () => {
     const subtotalBeforeDiscount = equipmentTotalJODBeforeDiscount + customEquipmentTotalJOD + servicesTotal;
     const discountAmount = subtotalBeforeDiscount * (project.globalDiscount / 100);
     const projectSubtotalJOD = subtotalBeforeDiscount - discountAmount;
-    const projectTaxJOD = projectSubtotalJOD * 0.16; // 16% VAT
+    const projectTaxJOD = project.includeTax ? (projectSubtotalJOD * 0.16) : 0; // 16% VAT if includeTax is true
     const projectTotalJOD = projectSubtotalJOD + projectTaxJOD;
 
     // Step 6: Void profit calculations (based on business report)
@@ -1019,10 +1026,12 @@ const NogaHubAutomation = () => {
               <span>Subtotal:</span>
               <span>${Math.round(calculationResults.projectSubtotalJOD || 0)} JOD</span>
             </div>
+            ${project.includeTax ? `
             <div class="totals-row">
               <span>VAT (16%):</span>
               <span>${Math.round(calculationResults.projectTaxJOD || 0)} JOD</span>
             </div>
+            ` : ''}
             <div class="totals-row total-final">
               <span>TOTAL:</span>
               <span>${Math.round(calculationResults.projectTotalJOD || 0)} JOD</span>
@@ -1031,14 +1040,7 @@ const NogaHubAutomation = () => {
           
           <div style="margin-top: 25px; font-size: 10px; color: #666;">
             <p><strong>Terms & Conditions:</strong></p>
-            <ul>
-              <li>All prices are in Jordanian Dinars (JOD)</li>
-              <li>Equipment prices include door-to-door delivery</li>
-              <li>VAT is calculated at 16% as per Jordanian tax regulations</li>
-              <li>Subject to ±10% change after technical study</li>
-              <li>Payment terms: 90% down payment, 10% after project completion</li>
-              <li>This quotation is valid for 30 days from the date of issue</li>
-            </ul>
+            <p style="white-space: pre-line;">${project.terms || ''}</p>
           </div>
         </body>
       </html>
@@ -1934,6 +1936,49 @@ const NogaHubAutomation = () => {
                     </div>
                   ))}
                 </div>
+
+                {/* Tax Toggle */}
+                <div className="mt-6">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={project.includeTax}
+                      onChange={(e) => {
+                        setProject(prev => ({
+                          ...prev,
+                          includeTax: e.target.checked
+                        }));
+                        setIsCalculated(false);
+                      }}
+                      className="w-5 h-5 text-black border-gray-300 rounded focus:ring-2 focus:ring-black cursor-pointer"
+                    />
+                    <span className="font-medium text-gray-700">Include Tax (16% VAT)</span>
+                  </label>
+                </div>
+
+                {/* Terms & Conditions */}
+                <div className="mt-6">
+                  <label className="block mb-2">
+                    <span className="font-medium text-gray-700">Terms & Conditions</span>
+                  </label>
+                  <textarea
+                    value={project.terms}
+                    onChange={(e) => {
+                      setProject(prev => ({
+                        ...prev,
+                        terms: e.target.value
+                      }));
+                    }}
+                    placeholder="All prices are in Jordanian Dinars (JOD)
+Equipment prices include door-to-door delivery
+VAT is calculated at 16% as per Jordanian tax regulations
+Subject to ±10% change after technical study
+Payment terms: 90% down payment, 10% after project completion
+This quotation is valid for 30 days from the date of issue"
+                    rows="6"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black resize-y"
+                  />
+                </div>
               </div>
 
               {/* BOQ Display */}
@@ -2463,10 +2508,12 @@ const NogaHubAutomation = () => {
                           <span className="text-gray-600">Subtotal:</span>
                           <span className="font-medium">{calculationResults.projectSubtotalJOD.toFixed(2)} JOD</span>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">VAT (16%):</span>
-                          <span className="font-medium">{calculationResults.projectTaxJOD.toFixed(2)} JOD</span>
-                        </div>
+                        {project.includeTax && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">VAT (16%):</span>
+                            <span className="font-medium">{calculationResults.projectTaxJOD.toFixed(2)} JOD</span>
+                          </div>
+                        )}
                         <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                           <span className="font-semibold text-gray-900">Final Total:</span>
                           <span className="font-bold text-green-600">{calculationResults.projectTotalJOD.toFixed(2)} JOD</span>
@@ -3040,13 +3087,15 @@ const NogaHubAutomation = () => {
                         
                         <div className="border-t mt-3 pt-2">
                           <div className="flex justify-between text-xs">
-                            <span>Total:</span>
+                            <span>Subtotal:</span>
                             <span>{Math.round(calculationResults.projectSubtotalJOD || 0)} JOD</span>
                           </div>
-                          <div className="flex justify-between text-xs">
-                            <span>VAT (16%):</span>
-                            <span>{(calculationResults.projectTaxJOD || 0).toFixed(2)} JOD</span>
-                          </div>
+                          {project.includeTax && (
+                            <div className="flex justify-between text-xs">
+                              <span>VAT (16%):</span>
+                              <span>{(calculationResults.projectTaxJOD || 0).toFixed(2)} JOD</span>
+                            </div>
+                          )}
                           <div className="flex justify-between font-semibold">
                             <span>Total:</span>
                             <span>{Math.round(calculationResults.projectTotalJOD || 0)} JOD</span>
