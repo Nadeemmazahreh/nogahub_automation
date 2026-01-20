@@ -230,6 +230,22 @@ This quotation is valid for 30 days from the date of issue`,
     }
   });
 
+  // Noise Control Quotation State
+  const [noiseControlQuotation, setNoiseControlQuotation] = useState({
+    clientName: '',
+    projectName: '',
+    items: [],
+    includeTax: true,
+    terms: `All prices are in Jordanian Dinars (JOD)
+Equipment prices include door-to-door delivery
+VAT is calculated at 16% as per Jordanian tax regulations
+Subject to ±10% change after technical study
+Payment terms: 90% down payment, 10% after project completion
+This quotation is valid for 30 days from the date of issue`
+  });
+  const [ncCalculated, setNcCalculated] = useState(false);
+  const [ncResults, setNcResults] = useState(null);
+
   // Function to load saved projects from backend
   const loadSavedProjects = async () => {
     if (!apiService.isAuthenticated()) return;
@@ -1327,6 +1343,160 @@ This quotation is valid for 30 days from the date of issue`,
     setIsCalculated(false);
   };
 
+  // Noise Control Quotation Functions
+  const addNoiseControlItem = () => {
+    setNoiseControlQuotation(prev => ({
+      ...prev,
+      items: [...prev.items, { name: '', cost: 0, clientPrice: 0, quantity: 1 }]
+    }));
+    setNcCalculated(false);
+  };
+
+  const calculateNoiseControl = () => {
+    if (noiseControlQuotation.items.length === 0) {
+      toast.error('Please add at least one item');
+      return;
+    }
+
+    let totalCost = 0;
+    let totalRevenue = 0;
+
+    noiseControlQuotation.items.forEach(item => {
+      const itemCost = (item.cost || 0) * (item.quantity || 0);
+      const itemRevenue = (item.clientPrice || 0) * (item.quantity || 0);
+      totalCost += itemCost;
+      totalRevenue += itemRevenue;
+    });
+
+    const subtotal = totalRevenue;
+    const tax = noiseControlQuotation.includeTax ? subtotal * 0.16 : 0;
+    const total = subtotal + tax;
+    const profit = totalRevenue - totalCost;
+    const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+
+    const results = {
+      items: noiseControlQuotation.items,
+      totalCost,
+      totalRevenue,
+      subtotal,
+      tax,
+      total,
+      profit,
+      profitMargin
+    };
+
+    setNcResults(results);
+    setNcCalculated(true);
+    toast.success('Noise control quotation calculated successfully');
+  };
+
+  const downloadNoiseControlPDF = () => {
+    if (!ncCalculated || !ncResults) {
+      toast.error('Please calculate the quotation first');
+      return;
+    }
+
+    const printContent = `
+      <html>
+        <head>
+          <title>Noise Control Quotation - ${noiseControlQuotation.projectName}</title>
+          <style>
+            @media print {
+              @page { margin: 0.5in; }
+              body { margin: 0; }
+            }
+            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .header p { margin: 5px 0; color: #666; }
+            .project-info { margin-bottom: 20px; }
+            .project-info p { margin: 5px 0; }
+            .equipment-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            .equipment-table th, .equipment-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+            .equipment-table th { background-color: #000; color: white; }
+            .totals-section { margin-top: 20px; text-align: right; }
+            .totals-row { display: flex; justify-content: flex-end; padding: 8px 0; }
+            .totals-row span:first-child { margin-right: 20px; font-weight: 500; }
+            .total-final { font-size: 16px; font-weight: bold; border-top: 2px solid #000; padding-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>NOISE CONTROL QUOTATION</h1>
+            <p>Deep Sound For Technical Consultation LLC</p>
+            <p>Trading Name: Nogahub</p>
+            <p>Date: ${new Date().toLocaleDateString('en-GB')}</p>
+          </div>
+
+          <div class="project-info">
+            <p><strong>Client Name:</strong> ${noiseControlQuotation.clientName || 'N/A'}</p>
+            <p><strong>Project Name:</strong> ${noiseControlQuotation.projectName || 'N/A'}</p>
+          </div>
+
+          <table class="equipment-table">
+            <thead>
+              <tr>
+                <th>Item Description</th>
+                <th>Quantity</th>
+                <th>Unit Price (JOD)</th>
+                <th>Total (JOD)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${ncResults.items.map(item => `
+                <tr>
+                  <td>${item.name || 'Unnamed Item'}</td>
+                  <td style="text-align: center;">${item.quantity || 0}</td>
+                  <td style="text-align: right;">${(item.clientPrice || 0).toFixed(2)}</td>
+                  <td style="text-align: right;">${((item.clientPrice || 0) * (item.quantity || 0)).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="totals-section">
+            <div class="totals-row">
+              <span>Subtotal:</span>
+              <span>${ncResults.subtotal.toFixed(2)} JOD</span>
+            </div>
+            ${noiseControlQuotation.includeTax ? `
+            <div class="totals-row">
+              <span>VAT (16%):</span>
+              <span>${ncResults.tax.toFixed(2)} JOD</span>
+            </div>
+            ` : ''}
+            <div class="totals-row total-final">
+              <span>TOTAL:</span>
+              <span>${ncResults.total.toFixed(2)} JOD</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 25px; font-size: 10px; color: #666;">
+            <p><strong>Terms & Conditions:</strong></p>
+            <p style="white-space: pre-line;">${noiseControlQuotation.terms || ''}</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    try {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.documentElement.innerHTML = printContent;
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+        }, 100);
+        toast.success('PDF opened in new window');
+      } else {
+        toast.error('Please allow pop-ups to download PDF');
+      }
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast.error('Failed to generate PDF');
+    }
+  };
+
   // Login Screen
   if (!isAuthenticated) {
     return (
@@ -1460,6 +1630,7 @@ This quotation is valid for 30 days from the date of issue`,
             <nav className="flex flex-wrap gap-2 sm:gap-0 sm:space-x-8 px-3 sm:px-6 overflow-x-auto">
               {[
                 { id: 'quotation', label: 'Quotation Builder', icon: Calculator, roles: ['admin', 'user'] },
+                { id: 'noise-control', label: 'Noise Control Quote', icon: Zap, roles: ['admin', 'user'] },
                 { id: 'saved-projects', label: 'Saved Projects', icon: FolderOpen, roles: ['admin', 'user'] },
                 { id: 'roles', label: 'Role Assignment', icon: Users, roles: ['admin', 'user'] },
                 { id: 'results', label: 'Financial Analysis', icon: TrendingUp, roles: ['admin'] },
@@ -2077,6 +2248,279 @@ This quotation is valid for 30 days from the date of issue"
                     <br />
                     Equipment prices include shipping, customs, and all door-to-door costs based on business model.
                   </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Noise Control Quotation Tab */}
+          {activeTab === 'noise-control' && (
+            <div className="space-y-6">
+              {/* Project Info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Client Name</label>
+                  <input
+                    type="text"
+                    placeholder="Enter client name"
+                    value={noiseControlQuotation.clientName}
+                    onChange={(e) => setNoiseControlQuotation(prev => ({ ...prev, clientName: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+                  <input
+                    type="text"
+                    placeholder="Enter project name"
+                    value={noiseControlQuotation.projectName}
+                    onChange={(e) => setNoiseControlQuotation(prev => ({ ...prev, projectName: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                  />
+                </div>
+              </div>
+
+              {/* Items Section */}
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Noise Control Items</h3>
+                  <button
+                    onClick={addNoiseControlItem}
+                    className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    <Plus size={16} />
+                    <span>Add Item</span>
+                  </button>
+                </div>
+
+                {noiseControlQuotation.items.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No items added yet. Click "Add Item" to get started.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {noiseControlQuotation.items.map((item, index) => (
+                      <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-3 items-center p-4 bg-gray-50 rounded-lg">
+                        <input
+                          type="text"
+                          placeholder="Item name/description"
+                          value={item.name}
+                          onChange={(e) => {
+                            setNoiseControlQuotation(prev => ({
+                              ...prev,
+                              items: prev.items.map((itm, i) =>
+                                i === index ? { ...itm, name: e.target.value } : itm
+                              )
+                            }));
+                            setNcCalculated(false);
+                          }}
+                          className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Cost (JOD)"
+                          value={item.cost}
+                          onChange={(e) => {
+                            setNoiseControlQuotation(prev => ({
+                              ...prev,
+                              items: prev.items.map((itm, i) =>
+                                i === index ? { ...itm, cost: parseFloat(e.target.value) || 0 } : itm
+                              )
+                            }));
+                            setNcCalculated(false);
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Client Price (JOD)"
+                          value={item.clientPrice}
+                          onChange={(e) => {
+                            setNoiseControlQuotation(prev => ({
+                              ...prev,
+                              items: prev.items.map((itm, i) =>
+                                i === index ? { ...itm, clientPrice: parseFloat(e.target.value) || 0 } : itm
+                              )
+                            }));
+                            setNcCalculated(false);
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        />
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="number"
+                            placeholder="Qty"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              setNoiseControlQuotation(prev => ({
+                                ...prev,
+                                items: prev.items.map((itm, i) =>
+                                  i === index ? { ...itm, quantity: parseInt(e.target.value) || 1 } : itm
+                                )
+                              }));
+                              setNcCalculated(false);
+                            }}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                          />
+                          <button
+                            onClick={() => {
+                              setNoiseControlQuotation(prev => ({
+                                ...prev,
+                                items: prev.items.filter((_, i) => i !== index)
+                              }));
+                              setNcCalculated(false);
+                            }}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tax Toggle */}
+                <div className="mt-6">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={noiseControlQuotation.includeTax}
+                      onChange={(e) => {
+                        setNoiseControlQuotation(prev => ({
+                          ...prev,
+                          includeTax: e.target.checked
+                        }));
+                        setNcCalculated(false);
+                      }}
+                      className="w-5 h-5 text-black border-gray-300 rounded focus:ring-2 focus:ring-black cursor-pointer"
+                    />
+                    <span className="font-medium text-gray-700">Include Tax (16% VAT)</span>
+                  </label>
+                </div>
+
+                {/* Terms & Conditions */}
+                <div className="mt-6">
+                  <label className="block mb-2">
+                    <span className="font-medium text-gray-700">Terms & Conditions</span>
+                  </label>
+                  <textarea
+                    value={noiseControlQuotation.terms}
+                    onChange={(e) => {
+                      setNoiseControlQuotation(prev => ({
+                        ...prev,
+                        terms: e.target.value
+                      }));
+                    }}
+                    placeholder="All prices are in Jordanian Dinars (JOD)
+Equipment prices include door-to-door delivery
+VAT is calculated at 16% as per Jordanian tax regulations
+Subject to ±10% change after technical study
+Payment terms: 90% down payment, 10% after project completion
+This quotation is valid for 30 days from the date of issue"
+                    rows="6"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black resize-y"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={calculateNoiseControl}
+                  className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  <Calculator size={16} />
+                  <span>Calculate</span>
+                </button>
+              </div>
+
+              {/* Results Display */}
+              {ncCalculated && ncResults && (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 space-y-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Quotation Summary</h3>
+
+                  {/* Items Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-black text-white">
+                          <th className="text-left p-3 font-medium">Item Description</th>
+                          <th className="text-center p-3 font-medium">Qty</th>
+                          <th className="text-right p-3 font-medium">Unit Price</th>
+                          <th className="text-right p-3 font-medium">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ncResults.items.map((item, index) => (
+                          <tr key={index} className="border-b border-gray-200">
+                            <td className="p-3">{item.name || 'Unnamed Item'}</td>
+                            <td className="text-center p-3">{item.quantity}</td>
+                            <td className="text-right p-3">{(item.clientPrice || 0).toFixed(2)} JOD</td>
+                            <td className="text-right p-3">{((item.clientPrice || 0) * (item.quantity || 0)).toFixed(2)} JOD</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Totals */}
+                  <div className="border-t border-gray-300 pt-4">
+                    <div className="flex justify-between mb-2">
+                      <span className="font-medium">Subtotal:</span>
+                      <span>{ncResults.subtotal.toFixed(2)} JOD</span>
+                    </div>
+                    {noiseControlQuotation.includeTax && (
+                      <div className="flex justify-between mb-2">
+                        <span className="font-medium">VAT (16%):</span>
+                        <span>{ncResults.tax.toFixed(2)} JOD</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2">
+                      <span>Total:</span>
+                      <span className="text-green-600">{ncResults.total.toFixed(2)} JOD</span>
+                    </div>
+                  </div>
+
+                  {/* Profit Analysis - Only for Admin */}
+                  {userRole === 'admin' && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 mt-4">
+                      <h4 className="font-semibold text-gray-900 mb-4">Profit Analysis</h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Cost:</span>
+                          <span className="font-medium">{ncResults.totalCost.toFixed(2)} JOD</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Revenue:</span>
+                          <span className="font-medium">{ncResults.totalRevenue.toFixed(2)} JOD</span>
+                        </div>
+                        <div className="flex justify-between border-t border-gray-200 pt-2">
+                          <span className="font-semibold text-gray-900">Profit:</span>
+                          <span className={`font-bold ${ncResults.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {ncResults.profit.toFixed(2)} JOD
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-semibold text-gray-900">Profit Margin:</span>
+                          <span className={`font-bold ${ncResults.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {ncResults.profitMargin.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Download Button */}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={downloadNoiseControlPDF}
+                      className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                    >
+                      <Download size={16} />
+                      <span>Download Quotation PDF</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
