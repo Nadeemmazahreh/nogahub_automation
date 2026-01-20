@@ -235,6 +235,7 @@ This quotation is valid for 30 days from the date of issue`,
     clientName: '',
     projectName: '',
     items: [],
+    globalDiscount: 0,
     includeTax: true,
     terms: `All prices are in Jordanian Dinars (JOD)
 Equipment prices include door-to-door delivery
@@ -1359,25 +1360,27 @@ This quotation is valid for 30 days from the date of issue`
     }
 
     let totalCost = 0;
-    let totalRevenue = 0;
+    let totalRevenueBeforeDiscount = 0;
 
     noiseControlQuotation.items.forEach(item => {
       const itemCost = (item.cost || 0) * (item.quantity || 0);
       const itemRevenue = (item.clientPrice || 0) * (item.quantity || 0);
       totalCost += itemCost;
-      totalRevenue += itemRevenue;
+      totalRevenueBeforeDiscount += itemRevenue;
     });
 
-    const subtotal = totalRevenue;
+    const discountAmount = totalRevenueBeforeDiscount * (noiseControlQuotation.globalDiscount / 100);
+    const subtotal = totalRevenueBeforeDiscount - discountAmount;
     const tax = noiseControlQuotation.includeTax ? subtotal * 0.16 : 0;
     const total = subtotal + tax;
-    const profit = totalRevenue - totalCost;
-    const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+    const profit = subtotal - totalCost;
+    const profitMargin = subtotal > 0 ? (profit / subtotal) * 100 : 0;
 
     const results = {
       items: noiseControlQuotation.items,
       totalCost,
-      totalRevenue,
+      totalRevenueBeforeDiscount,
+      discountAmount,
       subtotal,
       tax,
       total,
@@ -1399,44 +1402,50 @@ This quotation is valid for 30 days from the date of issue`
     const printContent = `
       <html>
         <head>
-          <title>Noise Control Quotation - ${noiseControlQuotation.projectName}</title>
+          <title>Quotation - ${noiseControlQuotation.projectName || 'Project'}</title>
           <style>
             @media print {
               @page { margin: 0.5in; }
               body { margin: 0; }
             }
             body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .header h1 { margin: 0; font-size: 24px; }
-            .header p { margin: 5px 0; color: #666; }
-            .project-info { margin-bottom: 20px; }
-            .project-info p { margin: 5px 0; }
-            .equipment-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            .equipment-table th, .equipment-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-            .equipment-table th { background-color: #000; color: white; }
-            .totals-section { margin-top: 20px; text-align: right; }
-            .totals-row { display: flex; justify-content: flex-end; padding: 8px 0; }
-            .totals-row span:first-child { margin-right: 20px; font-weight: 500; }
-            .total-final { font-size: 16px; font-weight: bold; border-top: 2px solid #000; padding-top: 10px; }
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .company-info { margin-bottom: 15px; font-size: 11px; }
+            .project-info { margin-bottom: 15px; font-size: 11px; }
+            .equipment-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px; }
+            .equipment-table th, .equipment-table td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+            .equipment-table th { background-color: #f2f2f2; font-size: 11px; }
+            .totals { margin-top: 15px; font-size: 12px; }
+            .totals-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+            .total-final { font-weight: bold; font-size: 13px; border-top: 2px solid #000; padding-top: 8px; }
+            .discount { color: red; }
           </style>
         </head>
         <body>
           <div class="header">
-            <h1>NOISE CONTROL QUOTATION</h1>
-            <p>Deep Sound For Technical Consultation LLC</p>
-            <p>Trading Name: Nogahub</p>
-            <p>Date: ${new Date().toLocaleDateString('en-GB')}</p>
+            <div style="text-align: left; margin-bottom: 20px;">
+              <img src="${logoImage}" alt="NogaHub Logo" style="width: 80px; height: 80px; margin-bottom: 15px; object-fit: contain; display: block;" onerror="this.style.display='none'"/>
+              <h1 style="margin: 0 0 10px 0; font-size: 1.8em;">QUOTATION</h1>
+              <div class="company-info">
+                <strong>Deep Sound For Technical Consultations</strong><br/>
+                Housing Bank Complex 93 - Ground Floor 102<br/>
+                Q. Nour St. - Welbdeh - Amman - Jordan<br/>
+                Phone: +962 (0) 795144821
+              </div>
+            </div>
           </div>
 
           <div class="project-info">
-            <p><strong>Client Name:</strong> ${noiseControlQuotation.clientName || 'N/A'}</p>
-            <p><strong>Project Name:</strong> ${noiseControlQuotation.projectName || 'N/A'}</p>
+            <strong>Client:</strong> ${noiseControlQuotation.clientName || 'Client Name'}<br/>
+            <strong>Project:</strong> ${noiseControlQuotation.projectName || 'Project Name'}<br/>
+            <strong>Date:</strong> ${new Date().toLocaleDateString()}<br/>
           </div>
 
+          <h3>Noise Control Items</h3>
           <table class="equipment-table">
             <thead>
               <tr>
-                <th>Item Description</th>
+                <th>Description</th>
                 <th>Quantity</th>
                 <th>Unit Price (JOD)</th>
                 <th>Total (JOD)</th>
@@ -1446,28 +1455,43 @@ This quotation is valid for 30 days from the date of issue`
               ${ncResults.items.map(item => `
                 <tr>
                   <td>${item.name || 'Unnamed Item'}</td>
-                  <td style="text-align: center;">${item.quantity || 0}</td>
-                  <td style="text-align: right;">${(item.clientPrice || 0).toFixed(2)}</td>
-                  <td style="text-align: right;">${((item.clientPrice || 0) * (item.quantity || 0)).toFixed(2)}</td>
+                  <td>${item.quantity || 0}</td>
+                  <td>${Math.round(item.clientPrice || 0)}</td>
+                  <td>${Math.round((item.clientPrice || 0) * (item.quantity || 0))}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
 
-          <div class="totals-section">
-            <div class="totals-row">
-              <span>Subtotal:</span>
-              <span>${ncResults.subtotal.toFixed(2)} JOD</span>
-            </div>
+          <div class="totals">
+            ${noiseControlQuotation.globalDiscount > 0 ? `
+              <div class="totals-row">
+                <span>Subtotal (before discount):</span>
+                <span>${Math.round(ncResults.totalRevenueBeforeDiscount || 0)} JOD</span>
+              </div>
+              <div class="totals-row discount">
+                <span>Discount (${(parseFloat(noiseControlQuotation.globalDiscount) || 0).toFixed(2)}%):</span>
+                <span>-${Math.round(ncResults.discountAmount || 0)} JOD</span>
+              </div>
+              <div class="totals-row">
+                <span>Subtotal (after discount):</span>
+                <span>${Math.round(ncResults.subtotal || 0)} JOD</span>
+              </div>
+            ` : `
+              <div class="totals-row">
+                <span>Subtotal:</span>
+                <span>${Math.round(ncResults.subtotal || 0)} JOD</span>
+              </div>
+            `}
             ${noiseControlQuotation.includeTax ? `
             <div class="totals-row">
               <span>VAT (16%):</span>
-              <span>${ncResults.tax.toFixed(2)} JOD</span>
+              <span>${Math.round(ncResults.tax || 0)} JOD</span>
             </div>
             ` : ''}
             <div class="totals-row total-final">
               <span>TOTAL:</span>
-              <span>${ncResults.total.toFixed(2)} JOD</span>
+              <span>${Math.round(ncResults.total || 0)} JOD</span>
             </div>
           </div>
 
@@ -2380,6 +2404,27 @@ This quotation is valid for 30 days from the date of issue"
                   </div>
                 )}
 
+                {/* Global Discount */}
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Global Discount (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    value={noiseControlQuotation.globalDiscount}
+                    onChange={(e) => {
+                      const value = Math.min(100, Math.max(0, parseFloat(e.target.value) || 0));
+                      setNoiseControlQuotation(prev => ({
+                        ...prev,
+                        globalDiscount: value
+                      }));
+                      setNcCalculated(false);
+                    }}
+                    className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                  />
+                </div>
+
                 {/* Tax Toggle */}
                 <div className="mt-6">
                   <label className="flex items-center space-x-3 cursor-pointer">
@@ -2466,8 +2511,20 @@ This quotation is valid for 30 days from the date of issue"
 
                   {/* Totals */}
                   <div className="border-t border-gray-300 pt-4">
+                    {noiseControlQuotation.globalDiscount > 0 && (
+                      <>
+                        <div className="flex justify-between mb-2">
+                          <span className="font-medium">Subtotal (before discount):</span>
+                          <span>{ncResults.totalRevenueBeforeDiscount.toFixed(2)} JOD</span>
+                        </div>
+                        <div className="flex justify-between mb-2 text-red-600">
+                          <span className="font-medium">Discount ({noiseControlQuotation.globalDiscount}%):</span>
+                          <span>-{ncResults.discountAmount.toFixed(2)} JOD</span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex justify-between mb-2">
-                      <span className="font-medium">Subtotal:</span>
+                      <span className="font-medium">Subtotal{noiseControlQuotation.globalDiscount > 0 ? ' (after discount)' : ''}:</span>
                       <span>{ncResults.subtotal.toFixed(2)} JOD</span>
                     </div>
                     {noiseControlQuotation.includeTax && (
@@ -2476,50 +2533,10 @@ This quotation is valid for 30 days from the date of issue"
                         <span>{ncResults.tax.toFixed(2)} JOD</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2">
+                    <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2 mt-2">
                       <span>Total:</span>
                       <span className="text-green-600">{ncResults.total.toFixed(2)} JOD</span>
                     </div>
-                  </div>
-
-                  {/* Profit Analysis - Only for Admin */}
-                  {userRole === 'admin' && (
-                    <div className="bg-white border border-gray-200 rounded-lg p-6 mt-4">
-                      <h4 className="font-semibold text-gray-900 mb-4">Profit Analysis</h4>
-                      <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Total Cost:</span>
-                          <span className="font-medium">{ncResults.totalCost.toFixed(2)} JOD</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Total Revenue:</span>
-                          <span className="font-medium">{ncResults.totalRevenue.toFixed(2)} JOD</span>
-                        </div>
-                        <div className="flex justify-between border-t border-gray-200 pt-2">
-                          <span className="font-semibold text-gray-900">Profit:</span>
-                          <span className={`font-bold ${ncResults.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {ncResults.profit.toFixed(2)} JOD
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-semibold text-gray-900">Profit Margin:</span>
-                          <span className={`font-bold ${ncResults.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {ncResults.profitMargin.toFixed(2)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Download Button */}
-                  <div className="flex justify-end">
-                    <button
-                      onClick={downloadNoiseControlPDF}
-                      className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-                    >
-                      <Download size={16} />
-                      <span>Download Quotation PDF</span>
-                    </button>
                   </div>
                 </div>
               )}
@@ -3556,6 +3573,74 @@ This quotation is valid for 30 days from the date of issue"
                       <span>Download Quotation PDF</span>
                     </button>
                   </div>
+
+                  {/* Noise Control Quotation */}
+                  {ncCalculated && ncResults && (
+                    <div className="border border-gray-200 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3">Noise Control Quotation</h4>
+                      <div className="bg-white border rounded-lg p-4 text-sm space-y-2">
+                        <div className="border-b pb-2 mb-3">
+                          <h5 className="font-bold">Deep Sound For Technical Consultations</h5>
+                          <p className="text-xs text-gray-600">Housing Bank Complex 93 - Ground Floor 102</p>
+                          <p className="text-xs text-gray-600">Q. Nour St. - Welbdeh - Amman - Jordan</p>
+                          <p className="text-xs text-gray-600">+962 (0) 795144821</p>
+                        </div>
+
+                        <div className="flex justify-between text-xs">
+                          <span>Client: {noiseControlQuotation.clientName || 'Client Name'}</span>
+                          <span>Date: {new Date().toLocaleDateString()}</span>
+                        </div>
+                        <div className="text-xs">Project: {noiseControlQuotation.projectName || 'Project Name'}</div>
+
+                        <div className="mt-4">
+                          <h6 className="font-semibold mb-2">Noise Control Items:</h6>
+                          {ncResults.items.map((item, index) => (
+                            <div key={index} className="flex justify-between text-xs">
+                              <span>{item.name} x{item.quantity}</span>
+                              <span>{Math.round((item.clientPrice || 0) * (item.quantity || 0))} JOD</span>
+                            </div>
+                          ))}
+
+                          <div className="border-t mt-3 pt-2">
+                            {noiseControlQuotation.globalDiscount > 0 && (
+                              <>
+                                <div className="flex justify-between text-xs">
+                                  <span>Subtotal (before discount):</span>
+                                  <span>{Math.round(ncResults.totalRevenueBeforeDiscount || 0)} JOD</span>
+                                </div>
+                                <div className="flex justify-between text-xs text-red-600">
+                                  <span>Discount ({noiseControlQuotation.globalDiscount}%):</span>
+                                  <span>-{Math.round(ncResults.discountAmount || 0)} JOD</span>
+                                </div>
+                              </>
+                            )}
+                            <div className="flex justify-between text-xs">
+                              <span>Subtotal{noiseControlQuotation.globalDiscount > 0 ? ' (after discount)' : ''}:</span>
+                              <span>{Math.round(ncResults.subtotal || 0)} JOD</span>
+                            </div>
+                            {noiseControlQuotation.includeTax && (
+                              <div className="flex justify-between text-xs">
+                                <span>VAT (16%):</span>
+                                <span>{Math.round(ncResults.tax || 0)} JOD</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between font-semibold">
+                              <span>Total:</span>
+                              <span>{Math.round(ncResults.total || 0)} JOD</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={downloadNoiseControlPDF}
+                        className="mt-3 w-full flex items-center justify-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                      >
+                        <Download size={16} />
+                        <span>Download Noise Control Quotation PDF</span>
+                      </button>
+                    </div>
+                  )}
 
                   {/* Internal Project Plan */}
                   <div className="border border-gray-200 rounded-xl p-4">
