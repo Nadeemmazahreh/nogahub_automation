@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Users, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, RefreshCw, Download, Building2, Zap, Save, FolderOpen, ChevronDown } from 'lucide-react';
+import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, RefreshCw, Download, Building2, Zap, Save, FolderOpen, ChevronDown } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import apiService from './services/api';
 import logoImage from './logo-no-background.png';
