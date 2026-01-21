@@ -433,39 +433,83 @@ This quotation is valid for 30 days from the date of issue`
 
   // Function to load saved project
   const loadSavedProject = (savedProject) => {
-    setProject({
-      clientName: savedProject.clientName || '',
-      projectName: savedProject.projectName || '',
-      equipment: savedProject.equipment || [],
-      globalDiscount: savedProject.globalDiscount || 0,
-      services: savedProject.services ? {
-        commissioning: savedProject.services.commissioning?.enabled !== undefined 
-          ? savedProject.services.commissioning 
-          : { enabled: savedProject.services.commissioning || false, customValue: 0 },
-        noiseControl: savedProject.services.noiseControl?.enabled !== undefined 
-          ? savedProject.services.noiseControl 
-          : { enabled: savedProject.services.noiseControl || false, customValue: 0 },
-        soundDesign: savedProject.services.soundDesign?.enabled !== undefined 
-          ? savedProject.services.soundDesign 
-          : { enabled: savedProject.services.soundDesign || false, customValue: 0 }
-      } : { 
-        commissioning: { enabled: false, customValue: 0 }, 
-        noiseControl: { enabled: false, customValue: 0 }, 
-        soundDesign: { enabled: false, customValue: 0 } 
-      },
-      customServices: savedProject.customServices || [],
-      customEquipment: savedProject.customEquipment || [],
-      roles: savedProject.roles || { producer: '', projectManager: '' }
-    });
-    if (savedProject.hasCalculation) {
-      setIsCalculated(true);
-      setCalculationResults(savedProject.calculationResults || null);
+    // Check if this is a noise control project
+    if (savedProject.projectType === 'noiseControl') {
+      // Load noise control project
+      const noiseControlItems = (savedProject.customEquipment || []).map(item => {
+        // Extract quantity from name if it was saved with quantity in parentheses
+        const quantityMatch = item.name.match(/\(x(\d+)\)$/);
+        const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
+        const name = quantityMatch ? item.name.replace(/\s*\(x\d+\)$/, '') : item.name;
+
+        return {
+          name: name,
+          cost: 0, // We don't store cost separately for loaded projects
+          clientPrice: item.price / quantity, // Calculate unit price
+          quantity: quantity
+        };
+      });
+
+      setNoiseControlQuotation({
+        clientName: savedProject.clientName || '',
+        projectName: savedProject.projectName || '',
+        items: noiseControlItems,
+        globalDiscount: savedProject.globalDiscount || 0,
+        includeTax: savedProject.includeTax !== undefined ? savedProject.includeTax : true,
+        terms: savedProject.terms || `All prices are in Jordanian Dinars (JOD)
+Equipment prices include door-to-door delivery
+VAT is calculated at 16% as per Jordanian tax regulations
+Subject to ±10% change after technical study
+Payment terms: 90% down payment, 10% after project completion
+This quotation is valid for 30 days from the date of issue`
+      });
+
+      if (savedProject.calculationResults) {
+        setNcCalculated(true);
+        setNcResults(savedProject.calculationResults);
+      } else {
+        setNcCalculated(false);
+        setNcResults(null);
+      }
+
+      setActiveTab('noise-control');
+      toast.success('Noise control project loaded successfully!');
     } else {
-      setIsCalculated(false);
-      setCalculationResults(null);
+      // Load sound design project (default behavior)
+      setProject({
+        clientName: savedProject.clientName || '',
+        projectName: savedProject.projectName || '',
+        equipment: savedProject.equipment || [],
+        globalDiscount: savedProject.globalDiscount || 0,
+        services: savedProject.services ? {
+          commissioning: savedProject.services.commissioning?.enabled !== undefined
+            ? savedProject.services.commissioning
+            : { enabled: savedProject.services.commissioning || false, customValue: 0 },
+          noiseControl: savedProject.services.noiseControl?.enabled !== undefined
+            ? savedProject.services.noiseControl
+            : { enabled: savedProject.services.noiseControl || false, customValue: 0 },
+          soundDesign: savedProject.services.soundDesign?.enabled !== undefined
+            ? savedProject.services.soundDesign
+            : { enabled: savedProject.services.soundDesign || false, customValue: 0 }
+        } : {
+          commissioning: { enabled: false, customValue: 0 },
+          noiseControl: { enabled: false, customValue: 0 },
+          soundDesign: { enabled: false, customValue: 0 }
+        },
+        customServices: savedProject.customServices || [],
+        customEquipment: savedProject.customEquipment || [],
+        roles: savedProject.roles || { producer: '', projectManager: '' }
+      });
+      if (savedProject.hasCalculation) {
+        setIsCalculated(true);
+        setCalculationResults(savedProject.calculationResults || null);
+      } else {
+        setIsCalculated(false);
+        setCalculationResults(null);
+      }
+      setActiveTab('quotation');
+      toast.success('Project loaded successfully!');
     }
-    setActiveTab('quotation');
-    toast.success('Project loaded successfully!');
   };
 
   // Function to delete saved project
@@ -1590,7 +1634,7 @@ This quotation is valid for 30 days from the date of issue`
         <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 w-full max-w-md border border-gray-100">
           <div className="text-center mb-6 sm:mb-8">
             <NogaHubLogo size={window.innerWidth < 640 ? 80 : 120} className="justify-center mb-3 sm:mb-4" />
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Project Automation</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Nogahub Administration</h1>
             <p className="text-sm sm:text-base text-gray-600">Deep Sound Technical Consultations</p>
           </div>
 
@@ -1640,7 +1684,7 @@ This quotation is valid for 30 days from the date of issue`
             <div className="flex items-center">
               <NogaHubLogo size={window.innerWidth < 640 ? 60 : 80} />
               <div className="ml-3 sm:ml-4">
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Project Automation</h1>
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Nogahub Administration</h1>
                 <p className="text-xs sm:text-base text-gray-600 mt-1">
                   Welcome, {userRole === 'admin' ? 'Administrator' : 'User'} | Deep Sound Technical Consultations
                 </p>
@@ -2368,7 +2412,7 @@ This quotation is valid for 30 days from the date of issue"
               {/* Items Section */}
               <div className="bg-white border border-gray-200 rounded-xl p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Noise Control Items</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Noise Control Equipment</h3>
                   <button
                     onClick={addNoiseControlItem}
                     className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -3673,7 +3717,7 @@ This quotation is valid for 30 days from the date of issue"
                         <div className="text-xs">Project: {noiseControlQuotation.projectName || 'Project Name'}</div>
 
                         <div className="mt-4">
-                          <h6 className="font-semibold mb-2">Noise Control Items:</h6>
+                          <h6 className="font-semibold mb-2">Noise Control Equipment:</h6>
                           {ncResults.items.map((item, index) => (
                             <div key={index} className="flex justify-between text-xs">
                               <span>{item.name} x{item.quantity}</span>
