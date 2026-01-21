@@ -3714,7 +3714,7 @@ This quotation is valid for 30 days from the date of issue"
                   )}
 
                   {/* Void UK Purchase Order - Admin Only */}
-                  {userRole === 'admin' && (
+                  {userRole === 'admin' && isCalculated && calculationResults && (
                   <div className="border border-gray-200 rounded-xl p-4">
                     <h4 className="font-semibold text-gray-900 mb-3">Void UK Purchase Order</h4>
                     <div className="bg-white border rounded-lg p-6 text-sm">
