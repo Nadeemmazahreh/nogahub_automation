@@ -196,6 +196,11 @@ const Project = sequelize.define('Project', {
   calculationResults: {
     type: DataTypes.JSON,
     defaultValue: null
+  },
+  projectType: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Type of project: soundDesign, noiseControl, or null for legacy projects'
   }
 });
 
@@ -233,6 +238,10 @@ const runMigrations = async () => {
     // Import and run the tax and terms migration
     const { addTaxAndTermsColumns } = require('../add-tax-and-terms-columns');
     await addTaxAndTermsColumns();
+
+    // Import and run the project type migration
+    const { addProjectTypeColumn } = require('../add-project-type-column');
+    await addProjectTypeColumn();
 
     console.log('✅ Migrations completed successfully.');
   } catch (error) {

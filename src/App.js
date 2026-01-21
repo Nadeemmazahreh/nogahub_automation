@@ -8,12 +8,13 @@ const NogaHubAutomation = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [loginData, setLoginData] = useState({ username: '', password: '', isSignup: false });
-  const [activeTab, setActiveTab] = useState('quotation');
+  const [activeTab, setActiveTab] = useState('documents');
   const [activeSection, setActiveSection] = useState('installation');
   const [isCalculated, setIsCalculated] = useState(false);
   const [calculationResults, setCalculationResults] = useState(null);
   const [savedProjects, setSavedProjects] = useState([]);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showNcSaveModal, setShowNcSaveModal] = useState(false);
 
   // NogaHub Logo Component
   const NogaHubLogo = ({ size = 100, className = "" }) => (
@@ -344,7 +345,8 @@ This quotation is valid for 30 days from the date of issue`
           },
           total: calculationResults ? (calculationResults.projectTotalJOD || calculationResults.totalCostUSD || 0) : 0,
           isCalculated: isCalculated,
-          calculationResults: calculationResults
+          calculationResults: calculationResults,
+          projectType: 'soundDesign'
         };
 
         console.log('🔧 Original project.equipment:', project.equipment);
@@ -366,6 +368,57 @@ This quotation is valid for 30 days from the date of issue`
       }
     } else {
       toast.error('Please ensure project has a name, client name, and at least one equipment item before saving.');
+    }
+  };
+
+  // Function to save noise control quotation
+  const saveNoiseControlProject = async () => {
+    if (noiseControlQuotation.projectName.trim() && noiseControlQuotation.clientName.trim() && noiseControlQuotation.items.length > 0) {
+      if (!apiService.isAuthenticated()) {
+        toast.error('Please log in to save projects.');
+        return;
+      }
+
+      try {
+        const projectData = {
+          clientName: noiseControlQuotation.clientName,
+          projectName: noiseControlQuotation.projectName,
+          equipment: [],
+          customEquipment: noiseControlQuotation.items.map(item => ({
+            name: item.name,
+            dealerUSD: item.cost,
+            clientUSD: item.clientPrice,
+            quantity: item.quantity
+          })),
+          globalDiscount: noiseControlQuotation.globalDiscount,
+          includeTax: noiseControlQuotation.includeTax,
+          terms: noiseControlQuotation.terms,
+          services: {
+            commissioning: false,
+            noiseControl: false,
+            soundDesign: false
+          },
+          total: ncResults ? ncResults.total : 0,
+          isCalculated: ncCalculated,
+          calculationResults: ncResults,
+          projectType: 'noiseControl'
+        };
+
+        console.log('🔧 Saving noise control project:', JSON.stringify(projectData, null, 2));
+
+        const response = await apiService.saveProject(projectData);
+
+        // Reload projects from backend to get updated list
+        await loadSavedProjects();
+
+        setShowNcSaveModal(false);
+        toast.success(response.message || 'Noise control project saved successfully!');
+      } catch (error) {
+        console.error('Failed to save noise control project:', error);
+        toast.error('Failed to save project. Please try again.');
+      }
+    } else {
+      toast.error('Please ensure project has a name, client name, and at least one item before saving.');
     }
   };
 
@@ -1653,12 +1706,11 @@ This quotation is valid for 30 days from the date of issue`
           <div className="border-b border-gray-200">
             <nav className="flex flex-wrap gap-2 sm:gap-0 sm:space-x-8 px-3 sm:px-6 overflow-x-auto">
               {[
-                { id: 'quotation', label: 'Quotation Builder', icon: Calculator, roles: ['admin', 'user'] },
+                { id: 'documents', label: 'Documentation', icon: FileText, roles: ['admin', 'user'] },
+                { id: 'quotation', label: 'Sound Design Quote', icon: Calculator, roles: ['admin', 'user'] },
                 { id: 'noise-control', label: 'Noise Control Quote', icon: Zap, roles: ['admin', 'user'] },
                 { id: 'saved-projects', label: 'Saved Projects', icon: FolderOpen, roles: ['admin', 'user'] },
-                { id: 'roles', label: 'Role Assignment', icon: Users, roles: ['admin', 'user'] },
                 { id: 'results', label: 'Financial Analysis', icon: TrendingUp, roles: ['admin'] },
-                { id: 'documents', label: 'Documentation', icon: FileText, roles: ['admin', 'user'] },
                 { id: 'entities', label: 'Business Entities', icon: Building2, roles: ['admin'] }
               ].filter(tab => tab.roles.includes(userRole)).map(tab => {
                 const Icon = tab.icon;
@@ -2342,7 +2394,7 @@ This quotation is valid for 30 days from the date of issue"
                         />
                         <input
                           type="number"
-                          placeholder="Cost (JOD)"
+                          placeholder="Cost"
                           value={item.cost}
                           onChange={(e) => {
                             setNoiseControlQuotation(prev => ({
@@ -2357,7 +2409,7 @@ This quotation is valid for 30 days from the date of issue"
                         />
                         <input
                           type="number"
-                          placeholder="Client Price (JOD)"
+                          placeholder="Price"
                           value={item.clientPrice}
                           onChange={(e) => {
                             setNoiseControlQuotation(prev => ({
@@ -2373,7 +2425,7 @@ This quotation is valid for 30 days from the date of issue"
                         <div className="flex items-center space-x-2">
                           <input
                             type="number"
-                            placeholder="Qty"
+                            placeholder="Quantity"
                             value={item.quantity}
                             onChange={(e) => {
                               setNoiseControlQuotation(prev => ({
@@ -2478,6 +2530,14 @@ This quotation is valid for 30 days from the date of issue"
                   <Calculator size={16} />
                   <span>Calculate</span>
                 </button>
+                <button
+                  onClick={() => setShowNcSaveModal(true)}
+                  disabled={noiseControlQuotation.items.length === 0}
+                  className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  <Save size={16} />
+                  <span>Save Project</span>
+                </button>
               </div>
 
               {/* Results Display */}
@@ -2568,6 +2628,16 @@ This quotation is valid for 30 days from the date of issue"
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h4 className="text-lg font-semibold text-gray-900">{savedProject.projectName}</h4>
+                            {savedProject.projectType === 'soundDesign' && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                                Sound Design
+                              </span>
+                            )}
+                            {savedProject.projectType === 'noiseControl' && (
+                              <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">
+                                Noise Control
+                              </span>
+                            )}
                             {savedProject.hasCalculation && (
                               <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                                 Calculated
@@ -3445,18 +3515,18 @@ This quotation is valid for 30 days from the date of issue"
           {activeTab === 'documents' && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Project Documentation</h3>
-              
-              {!isCalculated && (
+
+              {!isCalculated && !ncCalculated && (
                 <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                  <p className="text-orange-800">Please calculate the project first to generate documents.</p>
+                  <p className="text-orange-800">Please calculate a project first to generate documents.</p>
                 </div>
               )}
 
-              {isCalculated && calculationResults && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Client Quotation */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Sound Design Quotation */}
+                {isCalculated && calculationResults && (
                   <div className="border border-gray-200 rounded-xl p-4">
-                    <h4 className="font-semibold text-gray-900 mb-3">Client Quotation</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3">Sound Design Quotation</h4>
                     <div className="bg-white border rounded-lg p-4 text-sm space-y-2">
                       <div className="border-b pb-2 mb-3">
                         <h5 className="font-bold">Deep Sound For Technical Consultations</h5>
@@ -3573,9 +3643,10 @@ This quotation is valid for 30 days from the date of issue"
                       <span>Download Quotation PDF</span>
                     </button>
                   </div>
+                )}
 
-                  {/* Noise Control Quotation */}
-                  {ncCalculated && ncResults && (
+                {/* Noise Control Quotation */}
+                {ncCalculated && ncResults && (
                     <div className="border border-gray-200 rounded-xl p-4">
                       <h4 className="font-semibold text-gray-900 mb-3">Noise Control Quotation</h4>
                       <div className="bg-white border rounded-lg p-4 text-sm space-y-2">
@@ -3641,71 +3712,6 @@ This quotation is valid for 30 days from the date of issue"
                       </button>
                     </div>
                   )}
-
-                  {/* Internal Project Plan */}
-                  <div className="border border-gray-200 rounded-xl p-4">
-                    <h4 className="font-semibold text-gray-900 mb-3">Internal Project Plan</h4>
-                    <div className="bg-gray-50 border rounded-lg p-4 text-sm space-y-3">
-                      <div>
-                        <h6 className="font-semibold text-gray-800">Project Overview</h6>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Project Value: {calculationResults.projectTotalJOD.toFixed(2)} JOD<br/>
-                          Equipment Count: {project.equipment.reduce((sum, item) => sum + (item.quantity || 0), 0)} pieces<br/>
-                          Total Weight: {calculationResults.totalWeight.toFixed(1)} kg<br/>
-                          Door-to-Door Cost: {calculationResults.doorToDoorCostJOD.toFixed(2)} JOD<br/>
-                          Void Sales Profit: {calculationResults.voidSalesProfit.toFixed(2)} JOD
-                        </p>
-                      </div>
-
-                      <div>
-                        <h6 className="font-semibold text-gray-800">Team Assignment</h6>
-                        <div className="text-xs text-gray-600 space-y-1 mt-1">
-                          <p>Producer: {project.roles.producer || 'Not assigned'}</p>
-                          <p>Project Manager: {project.roles.projectManager || 'Not assigned'}</p>
-                          <p>Finance: Ammar Heis</p>
-                          <p>Legal: Omar Bakri</p>
-                          <p>Logistics: Dima Amer</p>
-                        </div>
-                      </div>
-
-                      {userRole === 'admin' && (
-                        <div>
-                          <h6 className="font-semibold text-gray-800">Profit Distribution</h6>
-                          <div className="text-xs text-gray-600 space-y-1 mt-1">
-                            {Object.entries(calculationResults.distribution).map(([person, amount]) => (
-                              <p key={person} className="flex justify-between">
-                                <span className="capitalize">{person}:</span>
-                                <span>{amount.toFixed(2)} JOD</span>
-                              </p>
-                            ))}
-                            <div className="border-t pt-1 mt-1">
-                              <p className="flex justify-between font-semibold">
-                                <span>Total Distributed:</span>
-                                <span>{Object.values(calculationResults.distribution).reduce((a, b) => a + b, 0).toFixed(2)} JOD</span>
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div>
-                        <h6 className="font-semibold text-gray-800">Key Milestones</h6>
-                        <div className="text-xs text-gray-600 space-y-1 mt-1">
-                          <p>• Contract Signing & Payment Terms</p>
-                          <p>• Equipment Procurement from Void UK</p>
-                          <p>• Shipping & Customs Clearance</p>
-                          <p>• Site Preparation & Technical Design</p>
-                          <p>• Installation & Commissioning</p>
-                          <p>• Testing, Training & Handover</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <button className="mt-3 w-full flex items-center justify-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
-                      <Download size={16} />
-                      <span>Export Project Plan</span>
-                    </button>
-                  </div>
 
                   {/* Void UK Purchase Order - Admin Only */}
                   {userRole === 'admin' && (
@@ -3905,8 +3911,7 @@ This quotation is valid for 30 days from the date of issue"
                     </button>
                   </div>
                   )}
-                </div>
-              )}
+              </div>
 
               {/* Action Items */}
               {isCalculated && calculationResults && (
@@ -4020,7 +4025,53 @@ This quotation is valid for 30 days from the date of issue"
           </div>
         </div>
       )}
-      
+
+      {/* Save Noise Control Project Modal */}
+      {showNcSaveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Save Noise Control Project</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+                <input
+                  type="text"
+                  value={noiseControlQuotation.projectName}
+                  onChange={(e) => setNoiseControlQuotation(prev => ({ ...prev, projectName: e.target.value }))}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter project name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+                <input
+                  type="text"
+                  value={noiseControlQuotation.clientName}
+                  onChange={(e) => setNoiseControlQuotation(prev => ({ ...prev, clientName: e.target.value }))}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter client name"
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowNcSaveModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveNoiseControlProject}
+                  disabled={!noiseControlQuotation.projectName.trim() || !noiseControlQuotation.clientName.trim()}
+                  className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Save Project
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notifications */}
       <Toaster
         position="top-center"
