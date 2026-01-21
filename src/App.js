@@ -385,10 +385,9 @@ This quotation is valid for 30 days from the date of issue`
           projectName: noiseControlQuotation.projectName,
           equipment: [],
           customEquipment: noiseControlQuotation.items.map(item => ({
-            name: item.name,
-            dealerUSD: item.cost,
-            clientUSD: item.clientPrice,
-            quantity: item.quantity
+            name: `${item.name} (x${item.quantity})`,
+            price: item.clientPrice * item.quantity,
+            weight: 0 // Noise control items don't have weight
           })),
           globalDiscount: noiseControlQuotation.globalDiscount,
           includeTax: noiseControlQuotation.includeTax,
@@ -397,6 +396,16 @@ This quotation is valid for 30 days from the date of issue`
             commissioning: false,
             noiseControl: false,
             soundDesign: false
+          },
+          roles: {
+            producer: '',
+            director: '',
+            projectManager: '',
+            juniorProjectManager: '',
+            accountant: '',
+            logisticsManager: '',
+            noiseControlEngineer: '',
+            soundSystemDesigner: ''
           },
           total: ncResults ? ncResults.total : 0,
           isCalculated: ncCalculated,
