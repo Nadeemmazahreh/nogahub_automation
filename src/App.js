@@ -5,6 +5,7 @@ import apiService from './services/api';
 import logoImage from './logo-no-background.png';
 import SearchableDropdown from './components/shared/SearchableDropdown';
 import NogaHubLogo from './components/shared/NogaHubLogo';
+import { BUSINESS_CONSTANTS, SERVICE_PRICING, ROLE_FEES, SHIPPING_CUSTOMS, TAX_RATES, VOID_PROFIT_DISTRIBUTION, NOGAHUB_PROFIT_DISTRIBUTION } from './config/constants';
 
 const NogaHubAutomation = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -402,23 +403,23 @@ This quotation is valid for 30 days from the date of issue`
     }
   };
 
-  // Constants based on business report
-  const exchangeRate = 0.71; // USD to JOD
-  const shippingRatePerKg = 4.5; // JOD per kg
+  // Constants from centralized config
+  const exchangeRate = BUSINESS_CONSTANTS.EXCHANGE_RATE_USD_TO_JOD;
+  const shippingRatePerKg = BUSINESS_CONSTANTS.SHIPPING_RATE_PER_KG;
 
-  // Service pricing based on business report percentages
+  // Service pricing from centralized config
   const servicePricing = useMemo(() => ({
-    commissioning: 0.06, // 6% of equipment dealer price
-    noiseControl: 5000,  // Fixed 5000 JOD
-    soundDesign: 0.03,   // 3% of equipment dealer price
-    projectManagement: 0.10 // 10% of equipment MSRP
+    commissioning: SERVICE_PRICING.COMMISSIONING,
+    noiseControl: SERVICE_PRICING.NOISE_CONTROL,
+    soundDesign: SERVICE_PRICING.SOUND_DESIGN,
+    projectManagement: SERVICE_PRICING.PROJECT_MANAGEMENT
   }), []);
 
-  // Role-based fees from business report
+  // Role-based fees from centralized config
   const roleFees = useMemo(() => ({
-    producer: 0.05,      // 5% of void sales profit
-    projectManager: 0.225, // 22.5% of total project value (this needs to be updated)
-    nogahubFee: 0.375    // 37.5% of void sales profit
+    producer: ROLE_FEES.PRODUCER,
+    projectManager: ROLE_FEES.PROJECT_MANAGER,
+    nogahubFee: ROLE_FEES.NOGAHUB_FEE
   }), []);
 
    // Updated calculation based on new logic - v2
@@ -448,20 +449,20 @@ This quotation is valid for 30 days from the date of issue`
 
     // Step 2: Calculate door-to-door cost for internal use (keeping old logic for profit calculations)
     const shippingCost = totalWeight * shippingRatePerKg;
-    const clearanceCost = 35;
-    const transportCost = 70;
-    const deliveryOrderCost = 45;
+    const clearanceCost = SHIPPING_CUSTOMS.CLEARANCE_COST;
+    const transportCost = SHIPPING_CUSTOMS.TRANSPORT_COST;
+    const deliveryOrderCost = SHIPPING_CUSTOMS.DELIVERY_ORDER_COST;
     const totalShippingCost = shippingCost + clearanceCost + transportCost + deliveryOrderCost;
-    
+
     const taxableAmount = equipmentDealerTotalJOD + totalShippingCost;
-    const tax001 = taxableAmount * 0.05;
-    const tax020 = (taxableAmount + tax001) * 0.16;
-    const tax215 = equipmentDealerTotalJOD * 0.01;
-    const tax301 = 50;
-    const tax111 = shippingCost * 0.003;
-    const tax016 = 23.2;
-    const tax019 = 25;
-    const tax070 = taxableAmount * 0.05;
+    const tax001 = taxableAmount * TAX_RATES.TAX_001;
+    const tax020 = (taxableAmount + tax001) * TAX_RATES.TAX_020;
+    const tax215 = equipmentDealerTotalJOD * TAX_RATES.TAX_215;
+    const tax301 = TAX_RATES.TAX_301;
+    const tax111 = shippingCost * TAX_RATES.TAX_111;
+    const tax016 = TAX_RATES.TAX_016;
+    const tax019 = TAX_RATES.TAX_019;
+    const tax070 = taxableAmount * TAX_RATES.TAX_070;
     
     const totalCustoms = tax001 + tax020 + tax215 + tax301 + tax111 + tax016 + tax019 + tax070;
     const totalCustomsExclTax020 = tax001 + tax215 + tax301 + tax111 + tax016 + tax019 + tax070;
@@ -609,15 +610,15 @@ This quotation is valid for 30 days from the date of issue`
     const noiseControlEngineerFee = noiseControlServiceCost * 0.40; // 40% of noise control service cost
     const soundSystemDesignerFee = soundDesignServiceCost * 0.50; // 50% of sound design service cost
 
-    // Step 8: Void profit distribution (updated percentages)
-    const voidRetainedEarnings = voidSalesProfit * 0.05; // 5%
-    const voidShareholderDistribution = voidSalesProfit * 0.525; // 52.5%
+    // Step 8: Void profit distribution (from centralized config)
+    const voidRetainedEarnings = voidSalesProfit * VOID_PROFIT_DISTRIBUTION.RETAINED_EARNINGS;
+    const voidShareholderDistribution = voidSalesProfit * VOID_PROFIT_DISTRIBUTION.SHAREHOLDER_DISTRIBUTION;
     // No separate void expenses in new distribution - all allocated to specific categories
 
     // Void shareholder distribution
-    const nadeemVoidShare = voidShareholderDistribution * 0.50; // 50%
-    const issaVoidShare = voidShareholderDistribution * 0.225; // 22.5%
-    const bakriVoidShare = voidShareholderDistribution * 0.225; // 22.5%
+    const nadeemVoidShare = voidShareholderDistribution * VOID_PROFIT_DISTRIBUTION.NADEEM_SHARE;
+    const issaVoidShare = voidShareholderDistribution * VOID_PROFIT_DISTRIBUTION.ISSA_SHARE;
+    const bakriVoidShare = voidShareholderDistribution * VOID_PROFIT_DISTRIBUTION.BAKRI_SHARE;
 
     // Step 9: Nogahub profit distribution (from Excel distribution)
     const nogahubProjectDirector = nogahubFee * 0.20; // 20% Project Director
@@ -627,13 +628,13 @@ This quotation is valid for 30 days from the date of issue`
     const nogahubAccounting = nogahubFee * 0.02; // 2% Accounting & Finance
     const nogahubLegal = nogahubFee * 0.03; // 3% Legal
     const nogahubAdmin = nogahubFee * 0.02; // 2% Admin Fees
-    const nogahubRetainedEarnings = nogahubFee * 0.27; // 27% Retained Earnings
-    const nogahubShareholderDistribution = nogahubFee * 0.20; // 20% Shareholder Distribution
-    
-    // Nogahub shareholder distribution (40% Nadeem, 40% Issa, 20% Wewealth)
-    const nadeemNogahubShare = nogahubShareholderDistribution * 0.40;
-    const issaNogahubShare = nogahubShareholderDistribution * 0.40;
-    const wewealthNogahubShare = nogahubShareholderDistribution * 0.20;
+    const nogahubRetainedEarnings = nogahubFee * NOGAHUB_PROFIT_DISTRIBUTION.RETAINED_EARNINGS;
+    const nogahubShareholderDistribution = nogahubFee * NOGAHUB_PROFIT_DISTRIBUTION.SHAREHOLDER_DISTRIBUTION;
+
+    // Nogahub shareholder distribution (from centralized config)
+    const nadeemNogahubShare = nogahubShareholderDistribution * NOGAHUB_PROFIT_DISTRIBUTION.NADEEM_SHARE;
+    const issaNogahubShare = nogahubShareholderDistribution * NOGAHUB_PROFIT_DISTRIBUTION.ISSA_SHARE;
+    const wewealthNogahubShare = nogahubShareholderDistribution * NOGAHUB_PROFIT_DISTRIBUTION.WEWEALTH_SHARE;
 
     // Step 10: Calculate final individual totals
     const distribution = {
