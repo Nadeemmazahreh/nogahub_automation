@@ -3,8 +3,6 @@
  * Shared utilities for generating PDF documents
  */
 
-import DOMPurify from 'dompurify';
-
 /**
  * Common PDF styles used across all document types
  */
@@ -196,32 +194,39 @@ export const generateNotesSection = () => `
 
 /**
  * Sanitize HTML content to prevent XSS attacks
+ * Uses dynamic import to avoid build-time issues with DOMPurify
  */
-export const sanitizeHTML = (htmlContent) => {
-  return DOMPurify.sanitize(htmlContent, {
-    ALLOWED_TAGS: [
-      'html', 'head', 'body', 'title', 'style', 'meta',
-      'div', 'p', 'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
-      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'ul', 'ol', 'li', 'br', 'strong', 'em', 'b', 'i'
-    ],
-    ALLOWED_ATTR: ['class', 'style', 'id'],
-    ALLOW_DATA_ATTR: false,
-  });
+export const sanitizeHTML = async (htmlContent) => {
+  // Only import DOMPurify in browser environment
+  if (typeof window !== 'undefined') {
+    const DOMPurify = (await import('dompurify')).default;
+    return DOMPurify.sanitize(htmlContent, {
+      ALLOWED_TAGS: [
+        'html', 'head', 'body', 'title', 'style', 'meta',
+        'div', 'p', 'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li', 'br', 'strong', 'em', 'b', 'i'
+      ],
+      ALLOWED_ATTR: ['class', 'style', 'id'],
+      ALLOW_DATA_ATTR: false,
+    });
+  }
+  // Fallback for non-browser environments (shouldn't happen in practice)
+  return htmlContent;
 };
 
 /**
  * Open a new window and write PDF content
  * Sanitizes HTML content before writing to prevent XSS attacks
  */
-export const openPDFWindow = (htmlContent, title) => {
+export const openPDFWindow = async (htmlContent, title) => {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
     throw new Error('Failed to open print window. Please allow popups for this site.');
   }
 
   // Sanitize HTML content to prevent XSS attacks
-  const sanitizedContent = sanitizeHTML(htmlContent);
+  const sanitizedContent = await sanitizeHTML(htmlContent);
 
   printWindow.document.open();
   printWindow.document.write(sanitizedContent);
