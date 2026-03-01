@@ -5,8 +5,6 @@ import apiService from './services/api';
 import logoImage from './logo-no-background.png';
 import SearchableDropdown from './components/shared/SearchableDropdown';
 import NogaHubLogo from './components/shared/NogaHubLogo';
-import LoginPage from './components/auth/LoginPage';
-import Header from './components/layout/Header';
 
 const NogaHubAutomation = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
