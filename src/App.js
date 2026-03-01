@@ -4,6 +4,9 @@ import toast, { Toaster } from 'react-hot-toast';
 import apiService from './services/api';
 import logoImage from './logo-no-background.png';
 import SearchableDropdown from './components/shared/SearchableDropdown';
+import NogaHubLogo from './components/shared/NogaHubLogo';
+import LoginPage from './components/auth/LoginPage';
+import Header from './components/layout/Header';
 
 const NogaHubAutomation = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -16,19 +19,6 @@ const NogaHubAutomation = () => {
   const [savedProjects, setSavedProjects] = useState([]);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showNcSaveModal, setShowNcSaveModal] = useState(false);
-
-  // NogaHub Logo Component
-  const NogaHubLogo = ({ size = 100, className = "" }) => (
-    <div className={`flex items-center ${className}`}>
-      <img 
-        src={logoImage} 
-        alt="NogaHub Logo" 
-        width={size} 
-        height={size} 
-        className="mr-3 object-contain"
-      />
-    </div>
-  );
 
   // Equipment data will be fetched from secure backend API
   const [equipmentDatabase, setEquipmentDatabase] = useState([]);
