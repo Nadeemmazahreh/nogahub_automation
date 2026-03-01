@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, RefreshCw, Download, Building2, Zap, Save, FolderOpen, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, RefreshCw, Download, Building2, Zap, Save, FolderOpen } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import apiService from './services/api';
 import logoImage from './logo-no-background.png';
+import SearchableDropdown from './components/shared/SearchableDropdown';
 
 const NogaHubAutomation = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -28,173 +29,6 @@ const NogaHubAutomation = () => {
       />
     </div>
   );
-
-  // SearchableDropdown component - Integrated search input with dropdown
-  const SearchableDropdown = ({ options, value, onChange, placeholder = "Search equipment...", disabled = false }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filteredOptions, setFilteredOptions] = useState(options);
-    
-    useEffect(() => {
-      if (searchTerm) {
-        // More precise search: split search terms and require better matching
-        const searchTerms = searchTerm.toLowerCase().trim().split(/\s+/).filter(term => term.length > 0);
-        const filtered = options.filter(option => {
-          const optionName = option.name.toLowerCase();
-          const optionCode = option.code.toLowerCase();
-          
-          // Each search term must match as:
-          // 1. Word boundary in name/code, OR
-          // 2. Start of a word, OR  
-          // 3. Exact substring (but with priority to word boundaries)
-          return searchTerms.every(term => {
-            // Check in option name
-            const nameWords = optionName.split(/[\s\-.]+/); // Split on space, dash, dot
-            const codeWords = optionCode.split(/[\s\-.]+/);
-            
-            // Check if term matches start of any word or is contained
-            const matchesName = nameWords.some(word => word.startsWith(term)) || optionName.includes(term);
-            const matchesCode = codeWords.some(word => word.startsWith(term)) || optionCode.includes(term);
-            
-            return matchesName || matchesCode;
-          });
-        });
-        setFilteredOptions(filtered);
-        setIsOpen(true);
-      } else {
-        setFilteredOptions(options);
-      }
-    }, [searchTerm, options]);
-
-    const selectedOption = options.find(opt => opt.code === value);
-
-    // If we have a selection and no search term, show the selected name
-    // If we have a search term, show that instead (user is actively searching)
-    const displayValue = searchTerm !== '' ? searchTerm : (selectedOption ? selectedOption.name : '');
-
-    const handleInputChange = (e) => {
-      const newValue = e.target.value;
-      setSearchTerm(newValue);
-      
-      // Always keep dropdown open when user is actively typing/editing
-      setIsOpen(true);
-    };
-
-    const handleKeyDown = (e) => {
-      // Prevent dropdown from closing on backspace or any other key
-      if (e.key === 'Backspace' || e.key === 'Delete') {
-        // Keep dropdown open
-        if (!isOpen) {
-          setIsOpen(true);
-        }
-      }
-      if (e.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
-
-    const handleSelectOption = (optionCode) => {
-      onChange(optionCode);
-      setSearchTerm('');
-      setIsOpen(false);
-    };
-
-    const handleInputFocus = () => {
-      if (!disabled) {
-        setIsOpen(true);
-        // If there's a selected option and no search term, set the search term to the selected name
-        // This allows users to edit the selected text without losing the dropdown
-        if (selectedOption && searchTerm === '') {
-          setSearchTerm(selectedOption.name);
-        }
-      }
-    };
-
-    const handleClickOutside = () => {
-      setIsOpen(false);
-      // Simple logic: if user has a selection, show it; otherwise keep search term for continued editing
-      if (selectedOption && searchTerm !== selectedOption.name) {
-        setSearchTerm(''); // Show the selected item name
-      }
-      // Never clear the selection when clicking outside - let user continue searching
-    };
-
-    return (
-      <div className="relative">
-        <div className="relative">
-          <input
-            type="text"
-            value={displayValue}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            onFocus={handleInputFocus}
-            onBlur={handleClickOutside}
-            placeholder={disabled ? 'Loading equipment...' : placeholder}
-            disabled={disabled}
-            className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black bg-white"
-          />
-          <div 
-            className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
-            onClick={() => !disabled && setIsOpen(!isOpen)}
-          >
-            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-          </div>
-        </div>
-        
-        {isOpen && !disabled && (
-          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
-            <div className="max-h-60 overflow-y-auto">
-              {filteredOptions.length > 0 ? (
-                <>
-                  {/* Void Equipment */}
-                  {filteredOptions.filter(eq => eq.category === 'void').length > 0 && (
-                    <>
-                      <div className="px-3 py-2 text-sm font-semibold text-gray-600 bg-gray-50 sticky top-0">
-                        Void Acoustics Equipment
-                      </div>
-                      {filteredOptions.filter(eq => eq.category === 'void').map(option => (
-                        <div
-                          key={option.code}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100"
-                          onMouseDown={(e) => e.preventDefault()} // Prevent blur
-                          onClick={() => handleSelectOption(option.code)}
-                        >
-                          <div className="font-medium">{option.name}</div>
-                          <div className="text-gray-500 text-xs">${option.msrpUSD || option.price} USD • {option.weight}kg</div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                  
-                  {/* Accessories */}
-                  {filteredOptions.filter(eq => eq.category === 'accessory').length > 0 && (
-                    <>
-                      <div className="px-3 py-2 text-sm font-semibold text-gray-600 bg-gray-50 sticky top-0">
-                        Accessories
-                      </div>
-                      {filteredOptions.filter(eq => eq.category === 'accessory').map(option => (
-                        <div
-                          key={option.code}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100"
-                          onMouseDown={(e) => e.preventDefault()} // Prevent blur
-                          onClick={() => handleSelectOption(option.code)}
-                        >
-                          <div className="font-medium">{option.name}</div>
-                          <div className="text-gray-500 text-xs">${option.msrpUSD || option.price} USD • {option.weight}kg</div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </>
-              ) : (
-                <div className="px-3 py-4 text-gray-500 text-sm text-center">No equipment found</div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // Equipment data will be fetched from secure backend API
   const [equipmentDatabase, setEquipmentDatabase] = useState([]);
@@ -253,10 +87,7 @@ This quotation is valid for 30 days from the date of issue`
     if (!apiService.isAuthenticated()) return;
     
     try {
-      console.log('Loading saved projects...');
       const response = await apiService.getProjects();
-      console.log('API Response:', response);
-      console.log('Projects found:', response.projects?.length || 0);
       setSavedProjects(response.projects || []);
     } catch (error) {
       console.error('Failed to load saved projects:', error);
@@ -298,14 +129,12 @@ This quotation is valid for 30 days from the date of issue`
       // Validate token first
       const isValidToken = await apiService.validateToken();
       if (!isValidToken) {
-        console.log('Token validation failed, redirecting to login');
         window.location.href = '/login';
         return;
       }
-      
+
       const response = await apiService.getEquipment({ limit: 1000 }); // Load all equipment
       setEquipmentDatabase(response.equipment || []);
-      console.log(`Loaded ${response.equipment?.length || 0} equipment items`);
     } catch (error) {
       console.error('Failed to load equipment:', error);
       
@@ -348,12 +177,6 @@ This quotation is valid for 30 days from the date of issue`
           calculationResults: calculationResults,
           projectType: 'soundDesign'
         };
-
-        console.log('🔧 Original project.equipment:', project.equipment);
-        console.log('🔧 Original project.services:', project.services);
-        console.log('🔧 Transformed projectData.equipment:', projectData.equipment);
-        console.log('🔧 Transformed projectData.services:', projectData.services);
-        console.log('🔧 Full projectData being sent:', JSON.stringify(projectData, null, 2));
 
         const response = await apiService.saveProject(projectData);
         
@@ -412,8 +235,6 @@ This quotation is valid for 30 days from the date of issue`
           calculationResults: ncResults,
           projectType: 'noiseControl'
         };
-
-        console.log('🔧 Saving noise control project:', JSON.stringify(projectData, null, 2));
 
         const response = await apiService.saveProject(projectData);
 
@@ -598,22 +419,22 @@ This quotation is valid for 30 days from the date of issue`
   const shippingRatePerKg = 4.5; // JOD per kg
 
   // Service pricing based on business report percentages
-  const servicePricing = {
+  const servicePricing = useMemo(() => ({
     commissioning: 0.06, // 6% of equipment dealer price
     noiseControl: 5000,  // Fixed 5000 JOD
     soundDesign: 0.03,   // 3% of equipment dealer price
     projectManagement: 0.10 // 10% of equipment MSRP
-  };
+  }), []);
 
   // Role-based fees from business report
-  const roleFees = {
+  const roleFees = useMemo(() => ({
     producer: 0.05,      // 5% of void sales profit
     projectManager: 0.225, // 22.5% of total project value (this needs to be updated)
     nogahubFee: 0.375    // 37.5% of void sales profit
-  };
+  }), []);
 
    // Updated calculation based on new logic - v2
-  const calculateProjectCosts = () => {
+  const calculateProjectCosts = useCallback(() => {
     if (project.equipment.length === 0 && project.customEquipment.length === 0) return null;
 
     // Step 1: First pass - calculate basic equipment totals
@@ -662,11 +483,6 @@ This quotation is valid for 30 days from the date of issue`
     
     // Door-to-door cost excluding tax020 (for final equipment pricing to avoid tax duplication)
     const doorToDoorCostExclTax020JOD = equipmentDealerTotalJOD + totalShippingCost + totalCustomsExclTax020;
-    console.log("equipmentDealerTotalJOD (JOD):", equipmentDealerTotalJOD);
-    console.log("Total Customs (JOD):", totalCustoms);
-    console.log("Total Shipping Cost (JOD):", totalShippingCost);
-    console.log("Door to Door Cost (JOD):", doorToDoorCostJOD);
-    console.log("Door to Door Cost Excl Tax020 (JOD):", doorToDoorCostExclTax020JOD);
 
     // Step 3: Calculate shipping and customs shares based on total costs
     const shippingShare = totalShippingCost / equipmentDealerTotalJOD;
@@ -681,9 +497,7 @@ This quotation is valid for 30 days from the date of issue`
         const clientPriceJOD = (equipment.msrpUSD || equipment.dealerUSD) * exchangeRate;
         // Use MSRP if available, otherwise fall back to dealerUSD
         const msrpPriceJOD = (equipment.msrpUSD || equipment.dealerUSD) * exchangeRate;
-        
-        console.log(`${equipment.name}: MSRP=$${equipment.msrpUSD}, Dealer=$${equipment.dealerUSD}, MSRP_JOD=${msrpPriceJOD.toFixed(2)}`);
-        
+
         // Calculate shipping cost per unit (dealer cost × shipping share)
         const shippingPerUnit = dealerPriceJOD * shippingShare;
         
@@ -721,7 +535,6 @@ This quotation is valid for 30 days from the date of issue`
 
     // Step 5: Calculate totals without discount for BOQ
     const equipmentTotalJODBeforeDiscount = equipmentDetails.reduce((sum, item) => sum + item.finalTotalJOD, 0);
-    console.log("Equipment Total JOD Before Discount:", equipmentTotalJODBeforeDiscount);
     // Keep original pricing for BOQ display (no discount applied)
     const equipmentDetailsFinal = equipmentDetails;
     
@@ -963,10 +776,10 @@ This quotation is valid for 30 days from the date of issue`
         wewealthNogahubShare
       }
     };
-  };
+  }, [project, equipmentDatabase, exchangeRate, shippingRatePerKg, servicePricing, roleFees]);
 
   // Handle calculate button
-  const handleCalculate = () => {
+  const handleCalculate = useCallback(() => {
     const results = calculateProjectCosts();
     if (results) {
       setCalculationResults(results);
@@ -974,7 +787,7 @@ This quotation is valid for 30 days from the date of issue`
     } else {
       toast.error('Please add equipment before calculating');
     }
-  };
+  }, [calculateProjectCosts]);
 
   // PDF Download function
   const downloadQuotationPDF = (calculationResults, project) => {

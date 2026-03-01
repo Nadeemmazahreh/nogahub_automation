@@ -1,11 +1,12 @@
 // API Service for NogaHub Backend
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
-// Debug logging for deployment troubleshooting
-console.log('🔗 API_BASE_URL:', API_BASE_URL);
-console.log('🌍 Environment:', process.env.NODE_ENV);
-console.log('🔧 REACT_APP_API_URL from env:', process.env.REACT_APP_API_URL);
-console.log('🖼️ Logo should be at: /logo-no-background.png');
+// Debug logging only in development
+if (process.env.NODE_ENV === 'development') {
+  console.log('🔗 API_BASE_URL:', API_BASE_URL);
+  console.log('🌍 Environment:', process.env.NODE_ENV);
+  console.log('🔧 REACT_APP_API_URL from env:', process.env.REACT_APP_API_URL);
+}
 
 class ApiService {
   constructor() {
