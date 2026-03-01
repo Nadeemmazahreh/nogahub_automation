@@ -3,6 +3,8 @@
  * Shared utilities for generating PDF documents
  */
 
+import DOMPurify from 'dompurify';
+
 /**
  * Common PDF styles used across all document types
  */
@@ -193,7 +195,24 @@ export const generateNotesSection = () => `
 `;
 
 /**
+ * Sanitize HTML content to prevent XSS attacks
+ */
+export const sanitizeHTML = (htmlContent) => {
+  return DOMPurify.sanitize(htmlContent, {
+    ALLOWED_TAGS: [
+      'html', 'head', 'body', 'title', 'style', 'meta',
+      'div', 'p', 'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'ul', 'ol', 'li', 'br', 'strong', 'em', 'b', 'i'
+    ],
+    ALLOWED_ATTR: ['class', 'style', 'id'],
+    ALLOW_DATA_ATTR: false,
+  });
+};
+
+/**
  * Open a new window and write PDF content
+ * Sanitizes HTML content before writing to prevent XSS attacks
  */
 export const openPDFWindow = (htmlContent, title) => {
   const printWindow = window.open('', '_blank');
@@ -201,8 +220,11 @@ export const openPDFWindow = (htmlContent, title) => {
     throw new Error('Failed to open print window. Please allow popups for this site.');
   }
 
+  // Sanitize HTML content to prevent XSS attacks
+  const sanitizedContent = sanitizeHTML(htmlContent);
+
   printWindow.document.open();
-  printWindow.document.write(htmlContent);
+  printWindow.document.write(sanitizedContent);
   printWindow.document.close();
   printWindow.document.title = title;
 
