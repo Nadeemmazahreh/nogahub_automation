@@ -1686,7 +1686,7 @@ This quotation is valid for 30 days from the date of issue`
                       setIsCalculated(false);
                     }}
                     className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
-                    placeholder="Enter discount percentage (0-50)"
+                    placeholder="0-50%"
                   />
                 </div>
                 
@@ -1708,7 +1708,7 @@ This quotation is valid for 30 days from the date of issue`
                         value={item.quantity}
                         onChange={(e) => updateEquipment(index, 'quantity', e.target.value)}
                         className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
-                        placeholder="Enter quantity"
+                        placeholder="Qty"
                       />
                       <button
                         onClick={() => removeEquipment(index)}
@@ -1938,7 +1938,7 @@ This quotation is valid for 30 days from the date of issue`
                     <div key={index} className="flex items-center space-x-3 mb-2">
                       <input
                         type="text"
-                        placeholder="Enter equipment name"
+                        placeholder="Equipment name"
                         value={equipment.name}
                         onChange={(e) => {
                           setProject(prev => ({
@@ -1953,7 +1953,7 @@ This quotation is valid for 30 days from the date of issue`
                       />
                       <input
                         type="number"
-                        placeholder="Enter unit price (JOD)"
+                        placeholder="Price (JOD)"
                         value={equipment.price}
                         onChange={(e) => {
                           setProject(prev => ({
@@ -1968,7 +1968,7 @@ This quotation is valid for 30 days from the date of issue`
                       />
                       <input
                         type="number"
-                        placeholder="Enter quantity"
+                        placeholder="Qty"
                         value={equipment.weight}
                         onChange={(e) => {
                           setProject(prev => ({
@@ -2013,7 +2013,7 @@ This quotation is valid for 30 days from the date of issue`
                     <div key={index} className="flex items-center space-x-3 mb-2">
                       <input
                         type="text"
-                        placeholder="Enter service name"
+                        placeholder="Service name"
                         value={service.name}
                         onChange={(e) => {
                           setProject(prev => ({
@@ -2028,7 +2028,7 @@ This quotation is valid for 30 days from the date of issue`
                       />
                       <input
                         type="number"
-                        placeholder="Enter price (JOD)"
+                        placeholder="Price (JOD)"
                         value={service.price}
                         onChange={(e) => {
                           setProject(prev => ({
@@ -2323,7 +2323,7 @@ This quotation is valid for 30 days from the date of issue`
                       <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-3 items-center p-4 bg-gray-50 rounded-lg">
                         <input
                           type="text"
-                          placeholder="Enter item name or description"
+                          placeholder="Item name/description"
                           value={item.name}
                           onChange={(e) => {
                             setNoiseControlQuotation(prev => ({
@@ -2338,7 +2338,7 @@ This quotation is valid for 30 days from the date of issue`
                         />
                         <input
                           type="number"
-                          placeholder="Enter cost price"
+                          placeholder="Cost price"
                           value={item.cost}
                           onChange={(e) => {
                             setNoiseControlQuotation(prev => ({
@@ -2353,7 +2353,7 @@ This quotation is valid for 30 days from the date of issue`
                         />
                         <input
                           type="number"
-                          placeholder="Enter selling price"
+                          placeholder="Selling price"
                           value={item.clientPrice}
                           onChange={(e) => {
                             setNoiseControlQuotation(prev => ({
@@ -2369,7 +2369,7 @@ This quotation is valid for 30 days from the date of issue`
                         <div className="flex items-center space-x-2">
                           <input
                             type="number"
-                            placeholder="Enter quantity"
+                            placeholder="Qty"
                             value={item.quantity}
                             onChange={(e) => {
                               setNoiseControlQuotation(prev => ({
@@ -2407,7 +2407,7 @@ This quotation is valid for 30 days from the date of issue`
                     type="number"
                     min="0"
                     max="100"
-                    placeholder="Enter discount percentage (0-100)"
+                    placeholder="0-100%"
                     value={noiseControlQuotation.globalDiscount}
                     onChange={(e) => {
                       const value = Math.min(100, Math.max(0, parseFloat(e.target.value) || 0));
