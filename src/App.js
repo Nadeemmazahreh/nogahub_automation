@@ -1,11 +1,45 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, RefreshCw, Download, Building2, Zap, Save, FolderOpen } from 'lucide-react';
+import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, Download, Building2, Zap, Save, FolderOpen } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import apiService from './services/api';
 import logoImage from './logo-no-background.png';
 import SearchableDropdown from './components/shared/SearchableDropdown';
 import NogaHubLogo from './components/shared/NogaHubLogo';
 import { BUSINESS_CONSTANTS, SERVICE_PRICING, ROLE_FEES, SHIPPING_CUSTOMS, TAX_RATES, VOID_PROFIT_DISTRIBUTION, NOGAHUB_PROFIT_DISTRIBUTION } from './config/constants';
+
+// Helper function to get full currency name
+const getCurrencyName = (currencyCode) => {
+  const currencyNames = {
+    'JOD': 'Jordanian Dinars (JOD)',
+    'AED': 'UAE Dirhams (AED)',
+    'SAR': 'Saudi Riyals (SAR)',
+    'EGP': 'Egyptian Pounds (EGP)',
+    'KWD': 'Kuwaiti Dinars (KWD)',
+    'QAR': 'Qatari Riyals (QAR)',
+    'BHD': 'Bahraini Dinars (BHD)',
+    'OMR': 'Omani Rials (OMR)',
+    'LBP': 'Lebanese Pounds (LBP)',
+    'IQD': 'Iraqi Dinars (IQD)',
+    'TND': 'Tunisian Dinars (TND)',
+    'MAD': 'Moroccan Dirhams (MAD)',
+    'DZD': 'Algerian Dinars (DZD)',
+    'LYD': 'Libyan Dinars (LYD)',
+    'SYP': 'Syrian Pounds (SYP)',
+    'YER': 'Yemeni Rials (YER)',
+    'SDG': 'Sudanese Pounds (SDG)',
+    'USD': 'US Dollars (USD)',
+    'EUR': 'Euros (EUR)',
+    'GBP': 'British Pounds (GBP)',
+    'JPY': 'Japanese Yen (JPY)',
+    'CNY': 'Chinese Yuan (CNY)',
+    'CHF': 'Swiss Francs (CHF)',
+    'CAD': 'Canadian Dollars (CAD)',
+    'AUD': 'Australian Dollars (AUD)',
+    'INR': 'Indian Rupees (INR)',
+    'SGD': 'Singapore Dollars (SGD)',
+  };
+  return currencyNames[currencyCode] || currencyCode;
+};
 
 const NogaHubAutomation = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -58,6 +92,7 @@ This quotation is valid for 30 days from the date of issue`,
   const [noiseControlQuotation, setNoiseControlQuotation] = useState({
     clientName: '',
     projectName: '',
+    currency: 'JOD',
     items: [],
     globalDiscount: 0,
     includeTax: true,
@@ -1355,8 +1390,8 @@ This quotation is valid for 30 days from the date of issue`
               <tr>
                 <th>Description</th>
                 <th>Quantity</th>
-                <th>Unit Price (JOD)</th>
-                <th>Total (JOD)</th>
+                <th>Unit Price (${noiseControlQuotation.currency})</th>
+                <th>Total (${noiseControlQuotation.currency})</th>
               </tr>
             </thead>
             <tbody>
@@ -1375,31 +1410,31 @@ This quotation is valid for 30 days from the date of issue`
             ${noiseControlQuotation.globalDiscount > 0 ? `
               <div class="totals-row">
                 <span>Subtotal (before discount):</span>
-                <span>${Math.round(ncResults.totalRevenueBeforeDiscount || 0)} JOD</span>
+                <span>${Math.round(ncResults.totalRevenueBeforeDiscount || 0)} ${noiseControlQuotation.currency}</span>
               </div>
               <div class="totals-row discount">
                 <span>Discount (${(parseFloat(noiseControlQuotation.globalDiscount) || 0).toFixed(2)}%):</span>
-                <span>-${Math.round(ncResults.discountAmount || 0)} JOD</span>
+                <span>-${Math.round(ncResults.discountAmount || 0)} ${noiseControlQuotation.currency}</span>
               </div>
               <div class="totals-row">
                 <span>Subtotal (after discount):</span>
-                <span>${Math.round(ncResults.subtotal || 0)} JOD</span>
+                <span>${Math.round(ncResults.subtotal || 0)} ${noiseControlQuotation.currency}</span>
               </div>
             ` : `
               <div class="totals-row">
                 <span>Subtotal:</span>
-                <span>${Math.round(ncResults.subtotal || 0)} JOD</span>
+                <span>${Math.round(ncResults.subtotal || 0)} ${noiseControlQuotation.currency}</span>
               </div>
             `}
             ${noiseControlQuotation.includeTax ? `
             <div class="totals-row">
               <span>VAT (16%):</span>
-              <span>${Math.round(ncResults.tax || 0)} JOD</span>
+              <span>${Math.round(ncResults.tax || 0)} ${noiseControlQuotation.currency}</span>
             </div>
             ` : ''}
             <div class="totals-row total-final">
               <span>TOTAL:</span>
-              <span>${Math.round(ncResults.total || 0)} JOD</span>
+              <span>${Math.round(ncResults.total || 0)} ${noiseControlQuotation.currency}</span>
             </div>
           </div>
 
@@ -1629,30 +1664,13 @@ This quotation is valid for 30 days from the date of issue`
                   {!equipmentLoading && equipmentDatabase.length === 0 && (
                     <div className="text-sm text-red-500">Equipment database not loaded</div>
                   )}
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={addEquipment}
-                      className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      <Plus size={16} />
-                      <span>Add Equipment</span>
-                    </button>
-                    <button
-                      onClick={handleCalculate}
-                      className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      <RefreshCw size={16} />
-                      <span>Calculate</span>
-                    </button>
-                    <button
-                      onClick={() => setShowSaveModal(true)}
-                      disabled={project.equipment.length === 0 && project.customEquipment.length === 0}
-                      className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      <Save size={16} />
-                      <span>Save Project</span>
-                    </button>
-                  </div>
+                  <button
+                    onClick={addEquipment}
+                    className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    <Plus size={16} />
+                    <span>Add Equipment</span>
+                  </button>
                 </div>
                 
                 {/* Global Discount */}
@@ -2081,6 +2099,25 @@ This quotation is valid for 30 days from the date of issue"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black resize-y"
                   />
                 </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-4 mt-6">
+                  <button
+                    onClick={handleCalculate}
+                    className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    <Calculator size={16} />
+                    <span>Calculate</span>
+                  </button>
+                  <button
+                    onClick={() => setShowSaveModal(true)}
+                    disabled={project.equipment.length === 0 && project.customEquipment.length === 0}
+                    className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    <Save size={16} />
+                    <span>Save Project</span>
+                  </button>
+                </div>
               </div>
 
               {/* BOQ Display */}
@@ -2215,13 +2252,65 @@ This quotation is valid for 30 days from the date of issue"
               <div className="bg-white border border-gray-200 rounded-xl p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Noise Control Equipment</h3>
-                  <button
-                    onClick={addNoiseControlItem}
-                    className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-                  >
-                    <Plus size={16} />
-                    <span>Add Item</span>
-                  </button>
+                  <div className="flex items-center space-x-3">
+                    <select
+                      value={noiseControlQuotation.currency}
+                      onChange={(e) => {
+                        const newCurrency = e.target.value;
+                        setNoiseControlQuotation(prev => ({
+                          ...prev,
+                          currency: newCurrency,
+                          terms: `All prices are in ${getCurrencyName(newCurrency)}
+Equipment prices include door-to-door delivery
+VAT is calculated at 16% as per Jordanian tax regulations
+Subject to ±10% change after technical study
+Payment terms: 90% down payment, 10% after project completion
+This quotation is valid for 30 days from the date of issue`
+                        }));
+                        setNcCalculated(false);
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm"
+                    >
+                      <optgroup label="MENA Currencies">
+                        <option value="JOD">JOD - Jordanian Dinar</option>
+                        <option value="AED">AED - UAE Dirham</option>
+                        <option value="SAR">SAR - Saudi Riyal</option>
+                        <option value="EGP">EGP - Egyptian Pound</option>
+                        <option value="KWD">KWD - Kuwaiti Dinar</option>
+                        <option value="QAR">QAR - Qatari Riyal</option>
+                        <option value="BHD">BHD - Bahraini Dinar</option>
+                        <option value="OMR">OMR - Omani Rial</option>
+                        <option value="LBP">LBP - Lebanese Pound</option>
+                        <option value="IQD">IQD - Iraqi Dinar</option>
+                        <option value="TND">TND - Tunisian Dinar</option>
+                        <option value="MAD">MAD - Moroccan Dirham</option>
+                        <option value="DZD">DZD - Algerian Dinar</option>
+                        <option value="LYD">LYD - Libyan Dinar</option>
+                        <option value="SYP">SYP - Syrian Pound</option>
+                        <option value="YER">YER - Yemeni Rial</option>
+                        <option value="SDG">SDG - Sudanese Pound</option>
+                      </optgroup>
+                      <optgroup label="Global Currencies">
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="GBP">GBP - British Pound</option>
+                        <option value="JPY">JPY - Japanese Yen</option>
+                        <option value="CNY">CNY - Chinese Yuan</option>
+                        <option value="CHF">CHF - Swiss Franc</option>
+                        <option value="CAD">CAD - Canadian Dollar</option>
+                        <option value="AUD">AUD - Australian Dollar</option>
+                        <option value="INR">INR - Indian Rupee</option>
+                        <option value="SGD">SGD - Singapore Dollar</option>
+                      </optgroup>
+                    </select>
+                    <button
+                      onClick={addNoiseControlItem}
+                      className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                    >
+                      <Plus size={16} />
+                      <span>Add Item</span>
+                    </button>
+                  </div>
                 </div>
 
                 {noiseControlQuotation.items.length === 0 ? (
@@ -2416,8 +2505,8 @@ This quotation is valid for 30 days from the date of issue"
                           <tr key={index} className="border-b border-gray-200">
                             <td className="p-3">{item.name || 'Unnamed Item'}</td>
                             <td className="text-center p-3">{item.quantity}</td>
-                            <td className="text-right p-3">{(item.clientPrice || 0).toFixed(2)} JOD</td>
-                            <td className="text-right p-3">{((item.clientPrice || 0) * (item.quantity || 0)).toFixed(2)} JOD</td>
+                            <td className="text-right p-3">{(item.clientPrice || 0).toFixed(2)} {noiseControlQuotation.currency}</td>
+                            <td className="text-right p-3">{((item.clientPrice || 0) * (item.quantity || 0)).toFixed(2)} {noiseControlQuotation.currency}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -2430,27 +2519,27 @@ This quotation is valid for 30 days from the date of issue"
                       <>
                         <div className="flex justify-between mb-2">
                           <span className="font-medium">Subtotal (before discount):</span>
-                          <span>{ncResults.totalRevenueBeforeDiscount.toFixed(2)} JOD</span>
+                          <span>{ncResults.totalRevenueBeforeDiscount.toFixed(2)} {noiseControlQuotation.currency}</span>
                         </div>
                         <div className="flex justify-between mb-2 text-red-600">
                           <span className="font-medium">Discount ({noiseControlQuotation.globalDiscount}%):</span>
-                          <span>-{ncResults.discountAmount.toFixed(2)} JOD</span>
+                          <span>-{ncResults.discountAmount.toFixed(2)} {noiseControlQuotation.currency}</span>
                         </div>
                       </>
                     )}
                     <div className="flex justify-between mb-2">
                       <span className="font-medium">Subtotal{noiseControlQuotation.globalDiscount > 0 ? ' (after discount)' : ''}:</span>
-                      <span>{ncResults.subtotal.toFixed(2)} JOD</span>
+                      <span>{ncResults.subtotal.toFixed(2)} {noiseControlQuotation.currency}</span>
                     </div>
                     {noiseControlQuotation.includeTax && (
                       <div className="flex justify-between mb-2">
                         <span className="font-medium">VAT (16%):</span>
-                        <span>{ncResults.tax.toFixed(2)} JOD</span>
+                        <span>{ncResults.tax.toFixed(2)} {noiseControlQuotation.currency}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2 mt-2">
                       <span>Total:</span>
-                      <span className="text-green-600">{ncResults.total.toFixed(2)} JOD</span>
+                      <span className="text-green-600">{ncResults.total.toFixed(2)} {noiseControlQuotation.currency}</span>
                     </div>
                   </div>
                 </div>
