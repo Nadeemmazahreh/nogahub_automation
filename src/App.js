@@ -1244,7 +1244,7 @@ This quotation is valid for 30 days from the date of issue`
   const addEquipment = () => {
     setProject(prev => ({
       ...prev,
-      equipment: [...prev.equipment, { code: '', quantity: 1 }]
+      equipment: [...prev.equipment, { code: '', quantity: '' }]
     }));
     setIsCalculated(false);
   };
@@ -1273,7 +1273,7 @@ This quotation is valid for 30 days from the date of issue`
   const addCustomService = () => {
     setProject(prev => ({
       ...prev,
-      customServices: [...prev.customServices, { name: '', price: 0 }]
+      customServices: [...prev.customServices, { name: '', price: '' }]
     }));
     setIsCalculated(false);
   };
@@ -1282,7 +1282,7 @@ This quotation is valid for 30 days from the date of issue`
   const addCustomEquipment = () => {
     setProject(prev => ({
       ...prev,
-      customEquipment: [...prev.customEquipment, { name: '', price: 0, weight: 0 }]
+      customEquipment: [...prev.customEquipment, { name: '', price: '', weight: '' }]
     }));
     setIsCalculated(false);
   };
@@ -1291,7 +1291,7 @@ This quotation is valid for 30 days from the date of issue`
   const addNoiseControlItem = () => {
     setNoiseControlQuotation(prev => ({
       ...prev,
-      items: [...prev.items, { name: '', cost: 0, clientPrice: 0, quantity: 1 }]
+      items: [...prev.items, { name: '', cost: '', clientPrice: '', quantity: '' }]
     }));
     setNcCalculated(false);
   };
@@ -1686,7 +1686,7 @@ This quotation is valid for 30 days from the date of issue`
                       setIsCalculated(false);
                     }}
                     className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
-                    placeholder="0"
+                    placeholder="Enter discount percentage (0-50)"
                   />
                 </div>
                 
@@ -1706,9 +1706,9 @@ This quotation is valid for 30 days from the date of issue`
                         type="number"
                         min="1"
                         value={item.quantity}
-                        onChange={(e) => updateEquipment(index, 'quantity', parseInt(e.target.value) || 1)}
+                        onChange={(e) => updateEquipment(index, 'quantity', e.target.value)}
                         className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
-                        placeholder="Qty"
+                        placeholder="Enter quantity"
                       />
                       <button
                         onClick={() => removeEquipment(index)}
@@ -1938,12 +1938,12 @@ This quotation is valid for 30 days from the date of issue`
                     <div key={index} className="flex items-center space-x-3 mb-2">
                       <input
                         type="text"
-                        placeholder="Equipment name"
+                        placeholder="Enter equipment name"
                         value={equipment.name}
                         onChange={(e) => {
                           setProject(prev => ({
                             ...prev,
-                            customEquipment: prev.customEquipment.map((eq, i) => 
+                            customEquipment: prev.customEquipment.map((eq, i) =>
                               i === index ? { ...eq, name: e.target.value } : eq
                             )
                           }));
@@ -1952,14 +1952,14 @@ This quotation is valid for 30 days from the date of issue`
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                       />
                       <input
-                        type="text"
-                        placeholder="Price"
+                        type="number"
+                        placeholder="Enter unit price (JOD)"
                         value={equipment.price}
                         onChange={(e) => {
                           setProject(prev => ({
                             ...prev,
-                            customEquipment: prev.customEquipment.map((eq, i) => 
-                              i === index ? { ...eq, price: parseFloat(e.target.value) || 0 } : eq
+                            customEquipment: prev.customEquipment.map((eq, i) =>
+                              i === index ? { ...eq, price: e.target.value } : eq
                             )
                           }));
                           setIsCalculated(false);
@@ -1968,13 +1968,13 @@ This quotation is valid for 30 days from the date of issue`
                       />
                       <input
                         type="number"
-                        placeholder="Qty"
+                        placeholder="Enter quantity"
                         value={equipment.weight}
                         onChange={(e) => {
                           setProject(prev => ({
                             ...prev,
-                            customEquipment: prev.customEquipment.map((eq, i) => 
-                              i === index ? { ...eq, weight: parseFloat(e.target.value) || 0 } : eq
+                            customEquipment: prev.customEquipment.map((eq, i) =>
+                              i === index ? { ...eq, weight: e.target.value } : eq
                             )
                           }));
                           setIsCalculated(false);
@@ -2013,12 +2013,12 @@ This quotation is valid for 30 days from the date of issue`
                     <div key={index} className="flex items-center space-x-3 mb-2">
                       <input
                         type="text"
-                        placeholder="Service name"
+                        placeholder="Enter service name"
                         value={service.name}
                         onChange={(e) => {
                           setProject(prev => ({
                             ...prev,
-                            customServices: prev.customServices.map((s, i) => 
+                            customServices: prev.customServices.map((s, i) =>
                               i === index ? { ...s, name: e.target.value } : s
                             )
                           }));
@@ -2028,13 +2028,13 @@ This quotation is valid for 30 days from the date of issue`
                       />
                       <input
                         type="number"
-                        placeholder="Price (JOD)"
+                        placeholder="Enter price (JOD)"
                         value={service.price}
                         onChange={(e) => {
                           setProject(prev => ({
                             ...prev,
-                            customServices: prev.customServices.map((s, i) => 
-                              i === index ? { ...s, price: parseInt(e.target.value) || 0 } : s
+                            customServices: prev.customServices.map((s, i) =>
+                              i === index ? { ...s, price: e.target.value } : s
                             )
                           }));
                           setIsCalculated(false);
@@ -2344,7 +2344,7 @@ This quotation is valid for 30 days from the date of issue`
                             setNoiseControlQuotation(prev => ({
                               ...prev,
                               items: prev.items.map((itm, i) =>
-                                i === index ? { ...itm, cost: parseFloat(e.target.value) || 0 } : itm
+                                i === index ? { ...itm, cost: e.target.value } : itm
                               )
                             }));
                             setNcCalculated(false);
@@ -2359,7 +2359,7 @@ This quotation is valid for 30 days from the date of issue`
                             setNoiseControlQuotation(prev => ({
                               ...prev,
                               items: prev.items.map((itm, i) =>
-                                i === index ? { ...itm, clientPrice: parseFloat(e.target.value) || 0 } : itm
+                                i === index ? { ...itm, clientPrice: e.target.value } : itm
                               )
                             }));
                             setNcCalculated(false);
@@ -2375,7 +2375,7 @@ This quotation is valid for 30 days from the date of issue`
                               setNoiseControlQuotation(prev => ({
                                 ...prev,
                                 items: prev.items.map((itm, i) =>
-                                  i === index ? { ...itm, quantity: parseInt(e.target.value) || 1 } : itm
+                                  i === index ? { ...itm, quantity: e.target.value } : itm
                                 )
                               }));
                               setNcCalculated(false);
