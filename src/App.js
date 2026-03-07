@@ -2323,7 +2323,7 @@ This quotation is valid for 30 days from the date of issue`
                       <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-3 items-center p-4 bg-gray-50 rounded-lg">
                         <input
                           type="text"
-                          placeholder="Item name/description"
+                          placeholder="Enter item name or description"
                           value={item.name}
                           onChange={(e) => {
                             setNoiseControlQuotation(prev => ({
@@ -2338,7 +2338,7 @@ This quotation is valid for 30 days from the date of issue`
                         />
                         <input
                           type="number"
-                          placeholder="Cost"
+                          placeholder="Enter cost price"
                           value={item.cost}
                           onChange={(e) => {
                             setNoiseControlQuotation(prev => ({
@@ -2353,7 +2353,7 @@ This quotation is valid for 30 days from the date of issue`
                         />
                         <input
                           type="number"
-                          placeholder="Price"
+                          placeholder="Enter selling price"
                           value={item.clientPrice}
                           onChange={(e) => {
                             setNoiseControlQuotation(prev => ({
@@ -2369,7 +2369,7 @@ This quotation is valid for 30 days from the date of issue`
                         <div className="flex items-center space-x-2">
                           <input
                             type="number"
-                            placeholder="Quantity"
+                            placeholder="Enter quantity"
                             value={item.quantity}
                             onChange={(e) => {
                               setNoiseControlQuotation(prev => ({
@@ -2407,7 +2407,7 @@ This quotation is valid for 30 days from the date of issue`
                     type="number"
                     min="0"
                     max="100"
-                    placeholder="0"
+                    placeholder="Enter discount percentage (0-100)"
                     value={noiseControlQuotation.globalDiscount}
                     onChange={(e) => {
                       const value = Math.min(100, Math.max(0, parseFloat(e.target.value) || 0));
