@@ -2,14 +2,32 @@
 
 This guide covers environment variable setup and troubleshooting for Vercel deployments.
 
-## Recent Fix (2026-03-12)
+## Recent Fixes (2026-03-12)
 
-**Issue Resolved**: ERR_CONNECTION_RESET caused by localhost URL in production builds.
+### Fix #1: Localhost URL in Production Builds
+**Issue**: ERR_CONNECTION_RESET caused by localhost URL in production builds.
 
 **Solution**: Updated `src/services/api.js` to be environment-aware:
 - Production builds now default to Railway backend
 - Environment variables take precedence when set
 - Localhost is only used in development
+
+### Fix #2: Vercel Configuration Conflict (CRITICAL)
+**Issue**: ERR_CONNECTION_RESET persisted even after Fix #1. Build succeeded but site was unreachable.
+
+**Root Cause**: Configuration conflict in `vercel.json` where we specified both:
+- `framework: "create-react-app"` (auto-detection)
+- `buildCommand` and `outputDirectory` (explicit settings)
+
+This created ambiguity in Vercel's build pipeline causing the routing/serving layer to fail.
+
+**Solution**: Removed redundant configuration from `vercel.json`:
+- Removed `framework` property
+- Removed `buildCommand` property
+- Removed `outputDirectory` property
+- Vercel now auto-detects Create React App from `package.json`
+
+**Action Required**: After this fix, you MUST manually redeploy on Vercel (see Troubleshooting section below).
 
 ## Environment Variables Setup
 
