@@ -19,10 +19,38 @@ app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+
+// CORS configuration with support for Vercel preview deployments
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // List of allowed origins and patterns
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://nogahub-automation.vercel.app'
+    ];
+
+    // Check if origin matches allowed origins
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Check if origin matches Vercel preview deployment pattern
+    // Pattern: https://nogahub-automation-*.vercel.app
+    const vercelPreviewPattern = /^https:\/\/nogahub-automation-[a-z0-9]+-[a-z0-9-]+\.vercel\.app$/;
+    if (vercelPreviewPattern.test(origin)) {
+      return callback(null, true);
+    }
+
+    // Reject all other origins
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Rate limiting - temporarily disabled for debugging
 // const limiter = rateLimit({
@@ -95,7 +123,7 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV}`);
-      console.log(`🔒 CORS enabled for: ${process.env.FRONTEND_URL}`);
+      console.log(`🔒 CORS enabled for: production + preview deployments`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
