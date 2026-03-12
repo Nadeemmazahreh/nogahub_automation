@@ -300,8 +300,16 @@ const seedInitialData = async () => {
 
     // Check if users exist and create default users
     const userCount = await User.count();
-    if (userCount === 0) {
-      console.log('🧑‍💼 Creating default users...');
+    const forceSeed = process.env.FORCE_SEED === 'true';
+
+    if (userCount === 0 || forceSeed) {
+      if (forceSeed && userCount > 0) {
+        console.log('🔄 FORCE_SEED enabled - recreating default users...');
+        // Delete existing users to avoid duplicates
+        await User.destroy({ where: {} });
+      } else {
+        console.log('🧑‍💼 Creating default users...');
+      }
       
       const bcrypt = require('bcryptjs');
       const defaultUsers = [
@@ -322,8 +330,18 @@ const seedInitialData = async () => {
         });
         console.log(`✅ Created user: ${userData.email} (${userData.role})`);
       }
+
+      // Verify seeding succeeded
+      const finalUserCount = await User.count();
+      console.log(`✅ User seeding completed. Total users: ${finalUserCount}`);
+
+      if (forceSeed) {
+        console.log('⚠️ REMINDER: Remove FORCE_SEED environment variable after verifying users were created');
+      }
+    } else {
+      console.log(`ℹ️ Users already exist (${userCount} users found). Skipping user seeding.`);
     }
-    
+
   } catch (error) {
     console.error('❌ Error seeding initial data:', error);
   }
