@@ -1,5 +1,22 @@
 // API Service for NogaHub Backend
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+// Determine API URL based on environment to prevent localhost in production
+const getApiBaseUrl = () => {
+  // If REACT_APP_API_URL is explicitly set, use it
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  // In production, use the production backend URL
+  if (process.env.NODE_ENV === 'production') {
+    // Default to Railway backend if no env var is set
+    return 'https://nogahubautomation-production.up.railway.app/api';
+  }
+
+  // In development, use localhost
+  return 'http://localhost:5001/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Debug logging only in development
 if (process.env.NODE_ENV === 'development') {
