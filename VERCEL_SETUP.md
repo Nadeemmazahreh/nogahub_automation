@@ -1,4 +1,17 @@
-# Vercel Environment Variables Setup
+# Vercel Deployment Guide
+
+This guide covers environment variable setup and troubleshooting for Vercel deployments.
+
+## Recent Fix (2026-03-12)
+
+**Issue Resolved**: ERR_CONNECTION_RESET caused by localhost URL in production builds.
+
+**Solution**: Updated `src/services/api.js` to be environment-aware:
+- Production builds now default to Railway backend
+- Environment variables take precedence when set
+- Localhost is only used in development
+
+## Environment Variables Setup
 
 After deploying to Vercel, you need to configure the following environment variables in the Vercel dashboard.
 
@@ -65,3 +78,49 @@ After setting the environment variables and redeploying:
 - Rotate credentials periodically
 - Use Vercel's encrypted environment variable storage
 - Consider using a more secure authentication method for production (JWT tokens, OAuth, etc.)
+
+## Troubleshooting
+
+### Force Clean Rebuild on Vercel
+
+If you're still experiencing issues after updating code:
+
+1. Go to **Vercel Dashboard** → **Deployments**
+2. Find the latest deployment
+3. Click the **3-dot menu** (⋮) → **Redeploy**
+4. **IMPORTANT**: Uncheck "Use existing Build Cache"
+5. Click **Redeploy**
+
+This forces Vercel to:
+- Pull latest code from GitHub
+- Run a fresh build with current environment variables
+- Generate new bundles without cached artifacts
+
+### Check Build Logs
+
+If deployment fails:
+1. Go to **Deployments** tab in Vercel
+2. Click on the failed deployment
+3. Review the **Build Logs** for errors
+4. Common issues:
+   - Missing dependencies
+   - Build timeout (increase in project settings)
+   - Environment variable not set
+
+### Verify Production Build
+
+After successful deployment:
+1. Visit your site: https://nogahub-automation.vercel.app
+2. Open DevTools (F12) → **Console** tab
+3. Look for any errors (red messages)
+4. Go to **Network** tab
+5. Perform an action that calls the API
+6. Verify API requests go to production backend (not localhost)
+
+### Still Having Issues?
+
+Check these common problems:
+- ❌ Environment variables not set in Vercel dashboard
+- ❌ Backend API is down or unreachable
+- ❌ CSP headers blocking API requests (check Console for CSP errors)
+- ❌ Cached build from before the fix (force clean rebuild)
