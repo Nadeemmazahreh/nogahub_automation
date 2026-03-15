@@ -46,7 +46,6 @@ const NogaHubAutomation = () => {
   // Use the authentication hook
   const {
     isAuthenticated,
-    user,
     userRole,
     loginData,
     setLoginData,
@@ -421,7 +420,7 @@ This quotation is valid for 30 days from the date of issue`
   // Authentication functions (using the auth hook)
   const handleLogin = async () => {
     console.log('🔐 Login button clicked (using useAuth hook)');
-    const success = await authHandleLogin();
+    await authHandleLogin();
     // Data loading is handled by the useEffect above when isAuthenticated changes
   };
 
