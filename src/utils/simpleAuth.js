@@ -94,22 +94,27 @@ export function logout() {
 export function getCurrentUser() {
   try {
     const sessionData = sessionStorage.getItem(SESSION_KEY);
+    console.log('📦 [getCurrentUser] Session data from storage:', sessionData ? 'Found' : 'Not found');
 
     if (!sessionData) {
+      console.warn('⚠️  [getCurrentUser] No session data in sessionStorage');
       return null;
     }
 
     const session = JSON.parse(sessionData);
+    console.log('📝 [getCurrentUser] Parsed session:', { email: session.email, username: session.username });
 
     // Optional: Check if session is expired (e.g., 24 hours)
     const sessionAge = Date.now() - session.timestamp;
     const maxAge = 24 * 60 * 60 * 1000; // 24 hours
 
     if (sessionAge > maxAge) {
+      console.warn('⏱️  [getCurrentUser] Session expired');
       sessionStorage.removeItem(SESSION_KEY);
       return null;
     }
 
+    console.log('✅ [getCurrentUser] Returning valid session');
     return {
       email: session.email,
       username: session.username,

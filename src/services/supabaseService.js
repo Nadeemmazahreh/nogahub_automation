@@ -510,10 +510,16 @@ class SupabaseService {
   async createProject(projectData) {
     try {
       // Get current user from simpleAuth session
+      console.log('🔍 [createProject] Checking authentication...');
       const currentUser = simpleAuth.getCurrentUser();
+      console.log('👤 [createProject] Current user:', currentUser);
+
       if (!currentUser) {
+        console.error('❌ [createProject] No user found in session');
         throw new Error('Please log in to save projects');
       }
+
+      console.log('✅ [createProject] User authenticated:', currentUser.email);
 
       // Try to get user_id from database, but don't fail if not found
       let userId = null;
