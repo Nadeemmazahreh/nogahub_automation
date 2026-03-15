@@ -509,13 +509,27 @@ class SupabaseService {
    */
   async createProject(projectData) {
     try {
-      // Get current user ID from simpleAuth email lookup
-      const userId = await this._getUserIdFromEmail();
+      // Get current user from simpleAuth session
+      const currentUser = simpleAuth.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('Please log in to save projects');
+      }
+
+      // Try to get user_id from database, but don't fail if not found
+      let userId = null;
+      try {
+        userId = await this._getUserIdFromEmail();
+      } catch (err) {
+        console.warn('Could not get user_id from database, continuing without it');
+      }
 
       const { data, error } = await supabase
         .from(Tables.PROJECTS)
         .insert([{
           user_id: userId,
+          created_by_username: currentUser.username,
+          created_by_email: currentUser.email,
+          created_by_role: currentUser.role,
           project_name: projectData.projectName,
           client_name: projectData.clientName,
           equipment: projectData.equipment || [],

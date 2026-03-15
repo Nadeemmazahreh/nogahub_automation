@@ -2569,8 +2569,10 @@ This quotation is valid for 30 days from the date of issue"
                             )}
                           </div>
                           <p className="text-gray-600 font-medium mb-1">{savedProject.clientName}</p>
-                          {userRole === 'admin' && savedProject.users && (
-                            <p className="text-blue-600 text-sm mb-1">Created by: {savedProject.users.username} ({savedProject.users.email})</p>
+                          {userRole === 'admin' && (savedProject.created_by_username || savedProject.users) && (
+                            <p className="text-blue-600 text-sm mb-1">
+                              Created by: {savedProject.created_by_username || savedProject.users?.username} ({savedProject.created_by_email || savedProject.users?.email})
+                            </p>
                           )}
                           <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
                             <span>{(savedProject.equipment?.length || 0) + (savedProject.customEquipment?.length || 0)} items</span>
