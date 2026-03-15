@@ -7,6 +7,7 @@
  */
 
 import { supabase, Tables, handleSupabaseError } from '../lib/supabase';
+import * as simpleAuth from '../utils/simpleAuth';
 
 class SupabaseService {
   // ==========================================
@@ -386,6 +387,30 @@ class SupabaseService {
   // ==========================================
 
   /**
+   * Get user ID from simpleAuth email lookup
+   * Since we're using environment-based auth, we need to look up users by email
+   */
+  async _getUserIdFromEmail() {
+    const currentUser = simpleAuth.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('Not authenticated');
+    }
+
+    // Look up user in database by email
+    const { data: user, error } = await supabase
+      .from(Tables.USERS)
+      .select('id')
+      .eq('email', currentUser.email)
+      .single();
+
+    if (error || !user) {
+      throw new Error('User not found in database');
+    }
+
+    return user.id;
+  }
+
+  /**
    * Transform project data from snake_case (database) to camelCase (frontend)
    */
   _transformProjectFromDB(project) {
@@ -484,14 +509,13 @@ class SupabaseService {
    */
   async createProject(projectData) {
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      // Get current user ID from simpleAuth email lookup
+      const userId = await this._getUserIdFromEmail();
 
       const { data, error } = await supabase
         .from(Tables.PROJECTS)
         .insert([{
-          user_id: user.id,
+          user_id: userId,
           project_name: projectData.projectName,
           client_name: projectData.clientName,
           equipment: projectData.equipment || [],
