@@ -3,6 +3,7 @@ import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, Download
 import toast, { Toaster } from 'react-hot-toast';
 import supabaseService from './services/supabaseService';
 import { useAuth } from './hooks/useAuth';
+import * as simpleAuth from './utils/simpleAuth';
 import logoImage from './logo-no-background.png';
 import SearchableDropdown from './components/shared/SearchableDropdown';
 import NogaHubLogo from './components/shared/NogaHubLogo';
@@ -165,8 +166,8 @@ This quotation is valid for 30 days from the date of issue`
   // Function to save current project
   const saveCurrentProject = async () => {
     if (project.projectName.trim() && project.clientName.trim() && (project.equipment.length > 0 || project.customEquipment.length > 0)) {
-      const isAuth = await supabaseService.isAuthenticated();
-      if (!isAuth) {
+      const currentUser = simpleAuth.getCurrentUser();
+      if (!currentUser) {
         toast.error('Please log in to save projects.');
         return;
       }
@@ -213,8 +214,8 @@ This quotation is valid for 30 days from the date of issue`
   // Function to save noise control quotation
   const saveNoiseControlProject = async () => {
     if (noiseControlQuotation.projectName.trim() && noiseControlQuotation.clientName.trim() && noiseControlQuotation.items.length > 0) {
-      const isAuth = await supabaseService.isAuthenticated();
-      if (!isAuth) {
+      const currentUser = simpleAuth.getCurrentUser();
+      if (!currentUser) {
         toast.error('Please log in to save projects.');
         return;
       }
@@ -354,8 +355,8 @@ This quotation is valid for 30 days from the date of issue`
 
   // Function to delete saved project
   const deleteSavedProject = async (projectId) => {
-    const isAuth = await supabaseService.isAuthenticated();
-    if (!isAuth) {
+    const currentUser = simpleAuth.getCurrentUser();
+    if (!currentUser) {
       toast.error('Please log in to delete projects.');
       return;
     }
