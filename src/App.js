@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, Download, Building2, Zap, Save, FolderOpen } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-import apiService from './services/api';
+import supabaseService from './services/supabaseService';
+import { useAuth } from './hooks/useAuth';
 import logoImage from './logo-no-background.png';
 import SearchableDropdown from './components/shared/SearchableDropdown';
 import NogaHubLogo from './components/shared/NogaHubLogo';
@@ -42,9 +43,17 @@ const getCurrencyName = (currencyCode) => {
 };
 
 const NogaHubAutomation = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState(null);
-  const [loginData, setLoginData] = useState({ username: '', password: '', isSignup: false });
+  // Use the authentication hook
+  const {
+    isAuthenticated,
+    user,
+    userRole,
+    loginData,
+    setLoginData,
+    handleLogin: authHandleLogin,
+    handleLogout: authHandleLogout,
+    isLoading: authLoading
+  } = useAuth();
   const [activeTab, setActiveTab] = useState('documents');
   const [activeSection, setActiveSection] = useState('installation');
   const [isCalculated, setIsCalculated] = useState(false);
@@ -108,11 +117,14 @@ This quotation is valid for 30 days from the date of issue`
 
   // Function to load saved projects from backend
   const loadSavedProjects = async () => {
-    if (!apiService.isAuthenticated()) return;
-    
+    const isAuth = await supabaseService.isAuthenticated();
+    if (!isAuth) return;
+
     try {
-      const response = await apiService.getProjects();
-      setSavedProjects(response.projects || []);
+      const response = await supabaseService.getProjects();
+      if (response.success) {
+        setSavedProjects(response.projects || []);
+      }
     } catch (error) {
       console.error('Failed to load saved projects:', error);
       // No localStorage fallback to maintain user isolation
@@ -120,49 +132,40 @@ This quotation is valid for 30 days from the date of issue`
     }
   };
 
-  // Check authentication status and load data on component mount
+  // Load data when user authenticates
   useEffect(() => {
-    const checkAuth = async () => {
-      if (apiService.isAuthenticated()) {
-        try {
-          const profileResponse = await apiService.getProfile();
-          setIsAuthenticated(true);
-          setUserRole(profileResponse.user.role);
-          await loadEquipmentData();
-          await loadSavedProjects(); // Load projects after successful auth
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          setIsAuthenticated(false);
-          setUserRole(null);
-        }
-      }
-    };
-
-    checkAuth();
-  }, []);
+    if (isAuthenticated && !authLoading) {
+      console.log('✅ User authenticated, loading data...');
+      loadEquipmentData();
+      loadSavedProjects();
+    }
+  }, [isAuthenticated, authLoading]);
 
   // Remove localStorage sync - projects are now stored in backend
 
   // Function to load equipment data from API
   const loadEquipmentData = async () => {
-    if (!apiService.isAuthenticated()) return;
-    
+    const isAuth = await supabaseService.isAuthenticated();
+    if (!isAuth) return;
+
     try {
       setEquipmentLoading(true);
-      
+
       // Validate token first
-      const isValidToken = await apiService.validateToken();
+      const isValidToken = await supabaseService.validateToken();
       if (!isValidToken) {
         window.location.href = '/login';
         return;
       }
 
-      const response = await apiService.getEquipment({ limit: 1000 }); // Load all equipment
-      setEquipmentDatabase(response.equipment || []);
+      const response = await supabaseService.getEquipment({ limit: 1000 }); // Load all equipment
+      if (response.success) {
+        setEquipmentDatabase(response.equipment || []);
+      }
     } catch (error) {
       console.error('Failed to load equipment:', error);
-      
-      if (error.message.includes('Authentication') || error.message.includes('token')) {
+
+      if (error.message.includes('Authentication') || error.message.includes('token') || error.message.includes('Session')) {
         toast.error('Your session has expired. Please log in again.');
         window.location.href = '/login';
       } else {
@@ -176,7 +179,8 @@ This quotation is valid for 30 days from the date of issue`
   // Function to save current project
   const saveCurrentProject = async () => {
     if (project.projectName.trim() && project.clientName.trim() && (project.equipment.length > 0 || project.customEquipment.length > 0)) {
-      if (!apiService.isAuthenticated()) {
+      const isAuth = await supabaseService.isAuthenticated();
+      if (!isAuth) {
         toast.error('Please log in to save projects.');
         return;
       }
@@ -184,7 +188,7 @@ This quotation is valid for 30 days from the date of issue`
       try {
         // First create base project data
         const baseProjectData = { ...project };
-        
+
         // Then apply transformations that override the spread
         const projectData = {
           ...baseProjectData,
@@ -202,13 +206,15 @@ This quotation is valid for 30 days from the date of issue`
           projectType: 'soundDesign'
         };
 
-        const response = await apiService.saveProject(projectData);
-        
-        // Reload projects from backend to get updated list
-        await loadSavedProjects();
-        
-        setShowSaveModal(false);
-        toast.success(response.message || 'Project saved successfully!');
+        const response = await supabaseService.saveProject(projectData);
+
+        if (response.success) {
+          // Reload projects from backend to get updated list
+          await loadSavedProjects();
+
+          setShowSaveModal(false);
+          toast.success(response.message || 'Project saved successfully!');
+        }
       } catch (error) {
         console.error('Failed to save project:', error);
         toast.error('Failed to save project. Please try again.');
@@ -221,7 +227,8 @@ This quotation is valid for 30 days from the date of issue`
   // Function to save noise control quotation
   const saveNoiseControlProject = async () => {
     if (noiseControlQuotation.projectName.trim() && noiseControlQuotation.clientName.trim() && noiseControlQuotation.items.length > 0) {
-      if (!apiService.isAuthenticated()) {
+      const isAuth = await supabaseService.isAuthenticated();
+      if (!isAuth) {
         toast.error('Please log in to save projects.');
         return;
       }
@@ -260,13 +267,15 @@ This quotation is valid for 30 days from the date of issue`
           projectType: 'noiseControl'
         };
 
-        const response = await apiService.saveProject(projectData);
+        const response = await supabaseService.saveProject(projectData);
 
-        // Reload projects from backend to get updated list
-        await loadSavedProjects();
+        if (response.success) {
+          // Reload projects from backend to get updated list
+          await loadSavedProjects();
 
-        setShowNcSaveModal(false);
-        toast.success(response.message || 'Noise control project saved successfully!');
+          setShowNcSaveModal(false);
+          toast.success(response.message || 'Noise control project saved successfully!');
+        }
       } catch (error) {
         console.error('Failed to save noise control project:', error);
         toast.error('Failed to save project. Please try again.');
@@ -359,16 +368,19 @@ This quotation is valid for 30 days from the date of issue`
 
   // Function to delete saved project
   const deleteSavedProject = async (projectId) => {
-    if (!apiService.isAuthenticated()) {
+    const isAuth = await supabaseService.isAuthenticated();
+    if (!isAuth) {
       toast.error('Please log in to delete projects.');
       return;
     }
 
     try {
-      await apiService.deleteProject(projectId);
-      // Reload projects from backend to get updated list
-      await loadSavedProjects();
-      toast.success('Project deleted successfully!');
+      const response = await supabaseService.deleteProject(projectId);
+      if (response.success) {
+        // Reload projects from backend to get updated list
+        await loadSavedProjects();
+        toast.success('Project deleted successfully!');
+      }
     } catch (error) {
       console.error('Failed to delete project:', error);
       toast.error('Failed to delete project. Please try again.');
@@ -406,36 +418,18 @@ This quotation is valid for 30 days from the date of issue`
     }
   };
 
-  // Authentication functions
+  // Authentication functions (using the auth hook)
   const handleLogin = async () => {
-    try {
-      const response = await apiService.login({
-        email: loginData.username, // Using username field as email for now
-        password: loginData.password
-      });
-      
-      setIsAuthenticated(true);
-      setUserRole(response.user.role);
-      await loadEquipmentData();
-      await loadSavedProjects(); // Load projects after successful login
-      
-    } catch (error) {
-      console.error('Login failed:', error);
-      toast.error('Login failed: ' + error.message);
-    }
+    console.log('🔐 Login button clicked (using useAuth hook)');
+    const success = await authHandleLogin();
+    // Data loading is handled by the useEffect above when isAuthenticated changes
   };
 
   const handleLogout = async () => {
-    try {
-      await apiService.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      setIsAuthenticated(false);
-      setUserRole(null);
-      setLoginData({ username: '', password: '', isSignup: false });
-      setEquipmentDatabase([]);
-    }
+    await authHandleLogout();
+    // Clear app state
+    setEquipmentDatabase([]);
+    setSavedProjects([]);
   };
 
   // Constants from centralized config
@@ -2589,15 +2583,22 @@ This quotation is valid for 30 days from the date of issue"
                             )}
                           </div>
                           <p className="text-gray-600 font-medium mb-1">{savedProject.clientName}</p>
-                          {userRole === 'admin' && savedProject.User && (
-                            <p className="text-blue-600 text-sm mb-1">Created by: {savedProject.User.username} ({savedProject.User.email})</p>
+                          {userRole === 'admin' && savedProject.users && (
+                            <p className="text-blue-600 text-sm mb-1">Created by: {savedProject.users.username} ({savedProject.users.email})</p>
                           )}
                           <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
                             <span>{(savedProject.equipment?.length || 0) + (savedProject.customEquipment?.length || 0)} items</span>
                             <span>•</span>
                             <span>{(parseFloat(savedProject.total) || 0).toFixed(2)} JOD total</span>
                             <span>•</span>
-                            <span>Saved {savedProject.createdAt || new Date(savedProject.createdAt).toLocaleDateString()}</span>
+                            <span>Saved {savedProject.createdAt ? new Date(savedProject.createdAt).toLocaleString('en-US', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false
+                            }).replace(',', '') : 'Unknown date'}</span>
                           </div>
                           
                           {/* Show selected equipment preview */}
