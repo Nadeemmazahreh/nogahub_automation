@@ -440,15 +440,7 @@ class SupabaseService {
     try {
       let query = supabase
         .from(Tables.PROJECTS)
-        .select(`
-          *,
-          users:user_id (
-            id,
-            username,
-            email,
-            role
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       // RLS will automatically filter projects based on user role
@@ -478,15 +470,7 @@ class SupabaseService {
     try {
       const { data, error } = await supabase
         .from(Tables.PROJECTS)
-        .select(`
-          *,
-          users:user_id (
-            id,
-            username,
-            email,
-            role
-          )
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
