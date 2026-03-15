@@ -116,9 +116,6 @@ This quotation is valid for 30 days from the date of issue`
 
   // Function to load saved projects from backend
   const loadSavedProjects = async () => {
-    const isAuth = await supabaseService.isAuthenticated();
-    if (!isAuth) return;
-
     try {
       const response = await supabaseService.getProjects();
       if (response.success) {
@@ -144,18 +141,8 @@ This quotation is valid for 30 days from the date of issue`
 
   // Function to load equipment data from API
   const loadEquipmentData = async () => {
-    const isAuth = await supabaseService.isAuthenticated();
-    if (!isAuth) return;
-
     try {
       setEquipmentLoading(true);
-
-      // Validate token first
-      const isValidToken = await supabaseService.validateToken();
-      if (!isValidToken) {
-        window.location.href = '/login';
-        return;
-      }
 
       const response = await supabaseService.getEquipment({ limit: 1000 }); // Load all equipment
       if (response.success) {
