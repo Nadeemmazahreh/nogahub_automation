@@ -1287,8 +1287,8 @@ This quotation is valid for 30 days from the date of issue`
     let totalRevenueBeforeDiscount = 0;
 
     noiseControlQuotation.items.forEach(item => {
-      const itemCost = (item.cost || 0) * (item.quantity || 0);
-      const itemRevenue = (item.clientPrice || 0) * (item.quantity || 0);
+      const itemCost = (Number(item.cost) || 0) * (Number(item.quantity) || 0);
+      const itemRevenue = (Number(item.clientPrice) || 0) * (Number(item.quantity) || 0);
       totalCost += itemCost;
       totalRevenueBeforeDiscount += itemRevenue;
     });
@@ -1380,8 +1380,8 @@ This quotation is valid for 30 days from the date of issue`
                 <tr>
                   <td>${item.name || 'Unnamed Item'}</td>
                   <td>${item.quantity || 0}</td>
-                  <td>${Math.round(item.clientPrice || 0)}</td>
-                  <td>${Math.round((item.clientPrice || 0) * (item.quantity || 0))}</td>
+                  <td>${Math.round(Number(item.clientPrice) || 0)}</td>
+                  <td>${Math.round((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0))}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -2486,8 +2486,8 @@ This quotation is valid for 30 days from the date of issue"
                           <tr key={index} className="border-b border-gray-200">
                             <td className="p-3">{item.name || 'Unnamed Item'}</td>
                             <td className="text-center p-3">{item.quantity}</td>
-                            <td className="text-right p-3">{(item.clientPrice || 0).toFixed(2)} {noiseControlQuotation.currency}</td>
-                            <td className="text-right p-3">{((item.clientPrice || 0) * (item.quantity || 0)).toFixed(2)} {noiseControlQuotation.currency}</td>
+                            <td className="text-right p-3">{(Number(item.clientPrice) || 0).toFixed(2)} {noiseControlQuotation.currency}</td>
+                            <td className="text-right p-3">{((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)} {noiseControlQuotation.currency}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -3602,7 +3602,7 @@ This quotation is valid for 30 days from the date of issue"
                           {ncResults.items.map((item, index) => (
                             <div key={index} className="flex justify-between text-xs">
                               <span>{item.name} x{item.quantity}</span>
-                              <span>{Math.round((item.clientPrice || 0) * (item.quantity || 0))} JOD</span>
+                              <span>{Math.round((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0))} JOD</span>
                             </div>
                           ))}
 
