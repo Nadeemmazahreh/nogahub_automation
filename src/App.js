@@ -226,8 +226,8 @@ This quotation is valid for 30 days from the date of issue`
           projectName: noiseControlQuotation.projectName,
           equipment: [],
           customEquipment: noiseControlQuotation.items.map(item => ({
-            name: `${item.name} (x${item.quantity})`,
-            price: item.clientPrice * item.quantity,
+            name: `${item.name} (x${Number(item.quantity) || 0})`,
+            price: (Number(item.clientPrice) || 0) * (Number(item.quantity) || 0),
             weight: 0 // Noise control items don't have weight
           })),
           globalDiscount: noiseControlQuotation.globalDiscount,
@@ -286,7 +286,7 @@ This quotation is valid for 30 days from the date of issue`
         return {
           name: name,
           cost: 0, // We don't store cost separately for loaded projects
-          clientPrice: item.price / quantity, // Calculate unit price
+          clientPrice: (Number(item.price) || 0) / (quantity || 1), // Calculate unit price
           quantity: quantity
         };
       });
@@ -307,7 +307,16 @@ This quotation is valid for 30 days from the date of issue`
 
       if (savedProject.calculationResults) {
         setNcCalculated(true);
-        setNcResults(savedProject.calculationResults);
+        const loadedResults = { ...savedProject.calculationResults };
+        if (loadedResults.items) {
+          loadedResults.items = loadedResults.items.map(item => ({
+            ...item,
+            clientPrice: Number(item.clientPrice) || 0,
+            cost: Number(item.cost) || 0,
+            quantity: Number(item.quantity) || 0
+          }));
+        }
+        setNcResults(loadedResults);
       } else {
         setNcCalculated(false);
         setNcResults(null);
@@ -1301,7 +1310,12 @@ This quotation is valid for 30 days from the date of issue`
     const profitMargin = subtotal > 0 ? (profit / subtotal) * 100 : 0;
 
     const results = {
-      items: noiseControlQuotation.items,
+      items: noiseControlQuotation.items.map(item => ({
+        ...item,
+        clientPrice: Number(item.clientPrice) || 0,
+        cost: Number(item.cost) || 0,
+        quantity: Number(item.quantity) || 0
+      })),
       totalCost,
       totalRevenueBeforeDiscount,
       discountAmount,
