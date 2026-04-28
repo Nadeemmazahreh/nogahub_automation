@@ -439,7 +439,7 @@ class SupabaseService {
   async getProjects(params = {}) {
     try {
       let query = supabase
-        .from(Tables.PROJECTS)
+        .from(Tables.QUOTATIONS_LEGACY)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -469,7 +469,7 @@ class SupabaseService {
   async getProjectById(id) {
     try {
       const { data, error } = await supabase
-        .from(Tables.PROJECTS)
+        .from(Tables.QUOTATIONS_LEGACY)
         .select('*')
         .eq('id', id)
         .single();
@@ -514,7 +514,7 @@ class SupabaseService {
       }
 
       const { data, error } = await supabase
-        .from(Tables.PROJECTS)
+        .from(Tables.QUOTATIONS_LEGACY)
         .insert([{
           user_id: userId,
           created_by_username: currentUser.username,
@@ -567,7 +567,7 @@ class SupabaseService {
   async updateProject(id, projectData) {
     try {
       const { data, error } = await supabase
-        .from(Tables.PROJECTS)
+        .from(Tables.QUOTATIONS_LEGACY)
         .update({
           project_name: projectData.projectName,
           client_name: projectData.clientName,
@@ -606,7 +606,7 @@ class SupabaseService {
   async deleteProject(id) {
     try {
       const { error } = await supabase
-        .from(Tables.PROJECTS)
+        .from(Tables.QUOTATIONS_LEGACY)
         .delete()
         .eq('id', id);
 
@@ -627,7 +627,7 @@ class SupabaseService {
   async getProjectStats() {
     try {
       const { data: projects, error } = await supabase
-        .from(Tables.PROJECTS)
+        .from(Tables.QUOTATIONS_LEGACY)
         .select('total, created_at');
 
       if (error) throw error;

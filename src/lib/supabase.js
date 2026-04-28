@@ -48,7 +48,8 @@ if (process.env.NODE_ENV === 'development') {
 export const Tables = {
   USERS: 'users',
   EQUIPMENT: 'equipment',
-  PROJECTS: 'projects'
+  PROJECTS: 'projects',
+  QUOTATIONS_LEGACY: 'quotations_legacy',
 };
 
 /**

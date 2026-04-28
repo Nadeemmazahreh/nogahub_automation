@@ -61,6 +61,7 @@ const NogaHubAutomation = () => {
   const [savedProjects, setSavedProjects] = useState([]);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showNcSaveModal, setShowNcSaveModal] = useState(false);
+  const [loadedProjectId, setLoadedProjectId] = useState(null);
 
   // Equipment data will be fetched from secure backend API
   const [equipmentDatabase, setEquipmentDatabase] = useState([]);
@@ -179,6 +180,7 @@ This quotation is valid for 30 days from the date of issue`
         // Then apply transformations that override the spread
         const projectData = {
           ...baseProjectData,
+          ...(loadedProjectId ? { id: loadedProjectId } : {}),
           // Fix equipment - filter out empty codes
           equipment: baseProjectData.equipment.filter(item => item.code && item.code.trim()),
           // Fix services - convert to simple booleans (this must come after the spread)
@@ -196,11 +198,12 @@ This quotation is valid for 30 days from the date of issue`
         const response = await supabaseService.saveProject(projectData);
 
         if (response.success) {
+          setLoadedProjectId(response.project?.id ?? loadedProjectId);
           // Reload projects from backend to get updated list
           await loadSavedProjects();
 
           setShowSaveModal(false);
-          toast.success(response.message || 'Project saved successfully!');
+          toast.success(response.message || (loadedProjectId ? 'Quotation updated successfully!' : 'Project saved successfully!'));
         }
       } catch (error) {
         console.error('Failed to save project:', error);
@@ -222,6 +225,7 @@ This quotation is valid for 30 days from the date of issue`
 
       try {
         const projectData = {
+          ...(loadedProjectId ? { id: loadedProjectId } : {}),
           clientName: noiseControlQuotation.clientName,
           projectName: noiseControlQuotation.projectName,
           equipment: [],
@@ -257,11 +261,12 @@ This quotation is valid for 30 days from the date of issue`
         const response = await supabaseService.saveProject(projectData);
 
         if (response.success) {
+          setLoadedProjectId(response.project?.id ?? loadedProjectId);
           // Reload projects from backend to get updated list
           await loadSavedProjects();
 
           setShowNcSaveModal(false);
-          toast.success(response.message || 'Noise control project saved successfully!');
+          toast.success(response.message || (loadedProjectId ? 'Quotation updated successfully!' : 'Noise control project saved successfully!'));
         }
       } catch (error) {
         console.error('Failed to save noise control project:', error);
@@ -274,6 +279,7 @@ This quotation is valid for 30 days from the date of issue`
 
   // Function to load saved project
   const loadSavedProject = (savedProject) => {
+    setLoadedProjectId(savedProject.id || null);
     // Check if this is a noise control project
     if (savedProject.projectType === 'noiseControl') {
       // Load noise control project
@@ -373,6 +379,7 @@ This quotation is valid for 30 days from the date of issue`
     try {
       const response = await supabaseService.deleteProject(projectId);
       if (response.success) {
+        if (projectId === loadedProjectId) setLoadedProjectId(null);
         // Reload projects from backend to get updated list
         await loadSavedProjects();
         toast.success('Project deleted successfully!');
@@ -381,6 +388,62 @@ This quotation is valid for 30 days from the date of issue`
       console.error('Failed to delete project:', error);
       toast.error('Failed to delete project. Please try again.');
     }
+  };
+
+  const startNewQuotation = () => {
+    setLoadedProjectId(null);
+    setProject({
+      clientName: '',
+      projectName: '',
+      equipment: [],
+      globalDiscount: 0,
+      services: {
+        commissioning: { enabled: false, customValue: 0 },
+        noiseControl: { enabled: false, customValue: 0 },
+        soundDesign: { enabled: false, customValue: 0 },
+      },
+      customServices: [],
+      customEquipment: [],
+      includeTax: true,
+      terms: `All prices are in Jordanian Dinars (JOD)
+Equipment prices include door-to-door delivery
+VAT is calculated at 16% as per Jordanian tax regulations
+Subject to ±10% change after technical study
+Payment terms: 90% down payment, 10% after project completion
+This quotation is valid for 30 days from the date of issue`,
+      roles: {
+        producer: '',
+        director: '',
+        projectManager: '',
+        juniorProjectManager: '',
+        accountant: '',
+        logisticsManager: '',
+        noiseControlEngineer: '',
+        soundSystemDesigner: ''
+      }
+    });
+    setIsCalculated(false);
+    setCalculationResults(null);
+  };
+
+  const startNewNoiseControlQuotation = () => {
+    setLoadedProjectId(null);
+    setNoiseControlQuotation({
+      clientName: '',
+      projectName: '',
+      currency: 'JOD',
+      items: [],
+      globalDiscount: 0,
+      includeTax: true,
+      terms: `All prices are in Jordanian Dinars (JOD)
+Equipment prices include door-to-door delivery
+VAT is calculated at 16% as per Jordanian tax regulations
+Subject to ±10% change after technical study
+Payment terms: 90% down payment, 10% after project completion
+This quotation is valid for 30 days from the date of issue`
+    });
+    setNcCalculated(false);
+    setNcResults(null);
   };
 
   // Business entities structure based on the report
@@ -2110,8 +2173,16 @@ This quotation is valid for 30 days from the date of issue"
                     className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     <Save size={16} />
-                    <span>Save Project</span>
+                    <span>{loadedProjectId ? 'Update Quotation' : 'Save Project'}</span>
                   </button>
+                  {loadedProjectId && (
+                    <button
+                      onClick={startNewQuotation}
+                      className="flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <span>New</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -2475,8 +2546,16 @@ This quotation is valid for 30 days from the date of issue"
                   className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   <Save size={16} />
-                  <span>Save Project</span>
+                  <span>{loadedProjectId ? 'Update Quotation' : 'Save Project'}</span>
                 </button>
+                {loadedProjectId && (
+                  <button
+                    onClick={startNewNoiseControlQuotation}
+                    className="flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <span>New Quotation</span>
+                  </button>
+                )}
               </div>
 
               {/* Results Display */}
