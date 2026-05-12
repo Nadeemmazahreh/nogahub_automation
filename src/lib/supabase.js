@@ -49,7 +49,7 @@ export const Tables = {
   USERS: 'users',
   EQUIPMENT: 'equipment',
   PROJECTS: 'projects',
-  QUOTATIONS_LEGACY: 'quotations_legacy',
+  QUOTATIONS_LEGACY: 'v1_quotations_legacy',
 };
 
 /**

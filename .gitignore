@@ -33,3 +33,4 @@ yarn-error.log*
 
 # backend dependencies
 backend/node_modules
+.mcp.json
