@@ -104,6 +104,7 @@ This quotation is valid for 30 days from the date of issue`,
     projectName: '',
     currency: 'JOD',
     items: [],
+    services: [],
     globalDiscount: 0,
     includeTax: true,
     terms: `All prices are in Jordanian Dinars (JOD)
@@ -216,7 +217,7 @@ This quotation is valid for 30 days from the date of issue`
 
   // Function to save noise control quotation
   const saveCustomProject = async () => {
-    if (customQuotation.projectName.trim() && customQuotation.clientName.trim() && customQuotation.items.length > 0) {
+    if (customQuotation.projectName.trim() && customQuotation.clientName.trim() && (customQuotation.items.length > 0 || customQuotation.services.length > 0)) {
       const currentUser = simpleAuth.getCurrentUser();
       if (!currentUser) {
         toast.error('Please log in to save projects.');
@@ -229,10 +230,15 @@ This quotation is valid for 30 days from the date of issue`
           clientName: customQuotation.clientName,
           projectName: customQuotation.projectName,
           equipment: [],
+          currency: customQuotation.currency,
           customEquipment: customQuotation.items.map(item => ({
             name: `${item.name} (x${Number(item.quantity) || 0})`,
             price: (Number(item.clientPrice) || 0) * (Number(item.quantity) || 0),
             weight: 0 // Noise control items don't have weight
+          })),
+          customServices: customQuotation.services.map(s => ({
+            name: s.name,
+            price: Number(s.price) || 0
           })),
           globalDiscount: customQuotation.globalDiscount,
           includeTax: customQuotation.includeTax,
@@ -273,7 +279,7 @@ This quotation is valid for 30 days from the date of issue`
         toast.error('Failed to save project. Please try again.');
       }
     } else {
-      toast.error('Please ensure project has a name, client name, and at least one item before saving.');
+      toast.error('Please ensure project has a name, client name, and at least one item or service before saving.');
     }
   };
 
@@ -300,7 +306,12 @@ This quotation is valid for 30 days from the date of issue`
       setCustomQuotation({
         clientName: savedProject.clientName || '',
         projectName: savedProject.projectName || '',
+        currency: savedProject.currency || 'JOD',
         items: customItems,
+        services: (savedProject.customServices || []).map(s => ({
+          name: s.name || '',
+          price: String(s.price || '')
+        })),
         globalDiscount: savedProject.globalDiscount || 0,
         includeTax: savedProject.includeTax !== undefined ? savedProject.includeTax : true,
         terms: savedProject.terms || `All prices are in Jordanian Dinars (JOD)
@@ -433,6 +444,7 @@ This quotation is valid for 30 days from the date of issue`,
       projectName: '',
       currency: 'JOD',
       items: [],
+      services: [],
       globalDiscount: 0,
       includeTax: true,
       terms: `All prices are in Jordanian Dinars (JOD)
@@ -1349,9 +1361,17 @@ This quotation is valid for 30 days from the date of issue`
     setNcCalculated(false);
   };
 
+  const addQuotationService = () => {
+    setCustomQuotation(prev => ({
+      ...prev,
+      services: [...prev.services, { name: '', price: '' }]
+    }));
+    setNcCalculated(false);
+  };
+
   const calculateCustom = () => {
-    if (customQuotation.items.length === 0) {
-      toast.error('Please add at least one item');
+    if (customQuotation.items.length === 0 && customQuotation.services.length === 0) {
+      toast.error('Please add at least one item or service');
       return;
     }
 
@@ -1363,6 +1383,11 @@ This quotation is valid for 30 days from the date of issue`
       const itemRevenue = (Number(item.clientPrice) || 0) * (Number(item.quantity) || 0);
       totalCost += itemCost;
       totalRevenueBeforeDiscount += itemRevenue;
+    });
+
+    const validServices = customQuotation.services.filter(s => s.name.trim() || Number(s.price) > 0);
+    validServices.forEach(service => {
+      totalRevenueBeforeDiscount += Number(service.price) || 0;
     });
 
     const discountAmount = totalRevenueBeforeDiscount * (customQuotation.globalDiscount / 100);
@@ -1378,6 +1403,10 @@ This quotation is valid for 30 days from the date of issue`
         clientPrice: Number(item.clientPrice) || 0,
         cost: Number(item.cost) || 0,
         quantity: Number(item.quantity) || 0
+      })),
+      services: validServices.map(s => ({
+        name: s.name,
+        price: Number(s.price) || 0
       })),
       totalCost,
       totalRevenueBeforeDiscount,
@@ -1460,6 +1489,17 @@ This quotation is valid for 30 days from the date of issue`
                   <td>${Math.round((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0))}</td>
                 </tr>
               `).join('')}
+              ${(ncResults.services || []).length > 0 ? `
+                <tr><td colspan="4" style="background:#f9f9f9;font-weight:bold;font-size:10px;padding:4px 6px;">Services</td></tr>
+                ${ncResults.services.map(service => `
+                  <tr>
+                    <td>${service.name || 'Service'}</td>
+                    <td>1</td>
+                    <td>${Math.round(service.price)}</td>
+                    <td>${Math.round(service.price)}</td>
+                  </tr>
+                `).join('')}
+              ` : ''}
             </tbody>
           </table>
 
@@ -2318,56 +2358,38 @@ This quotation is valid for 30 days from the date of issue"
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Custom Equipment</h3>
                   <div className="flex items-center space-x-3">
-                    <select
-                      value={customQuotation.currency}
-                      onChange={(e) => {
-                        const newCurrency = e.target.value;
-                        setCustomQuotation(prev => ({
-                          ...prev,
-                          currency: newCurrency,
-                          terms: `All prices are in ${getCurrencyName(newCurrency)}
+                    <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
+                      {[
+                        { code: 'JOD', label: 'JOD' },
+                        { code: 'QAR', label: 'QAR' },
+                        { code: 'USD', label: '$' },
+                        { code: 'EUR', label: '€' },
+                      ].map(({ code, label }) => (
+                        <button
+                          key={code}
+                          onClick={() => {
+                            setCustomQuotation(prev => ({
+                              ...prev,
+                              currency: code,
+                              terms: `All prices are in ${getCurrencyName(code)}
 Equipment prices include door-to-door delivery
 VAT is calculated at 16% as per Jordanian tax regulations
 Subject to ±10% change after technical study
 Payment terms: 90% down payment, 10% after project completion
 This quotation is valid for 30 days from the date of issue`
-                        }));
-                        setNcCalculated(false);
-                      }}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm"
-                    >
-                      <optgroup label="MENA Currencies">
-                        <option value="JOD">JOD - Jordanian Dinar</option>
-                        <option value="AED">AED - UAE Dirham</option>
-                        <option value="SAR">SAR - Saudi Riyal</option>
-                        <option value="EGP">EGP - Egyptian Pound</option>
-                        <option value="KWD">KWD - Kuwaiti Dinar</option>
-                        <option value="QAR">QAR - Qatari Riyal</option>
-                        <option value="BHD">BHD - Bahraini Dinar</option>
-                        <option value="OMR">OMR - Omani Rial</option>
-                        <option value="LBP">LBP - Lebanese Pound</option>
-                        <option value="IQD">IQD - Iraqi Dinar</option>
-                        <option value="TND">TND - Tunisian Dinar</option>
-                        <option value="MAD">MAD - Moroccan Dirham</option>
-                        <option value="DZD">DZD - Algerian Dinar</option>
-                        <option value="LYD">LYD - Libyan Dinar</option>
-                        <option value="SYP">SYP - Syrian Pound</option>
-                        <option value="YER">YER - Yemeni Rial</option>
-                        <option value="SDG">SDG - Sudanese Pound</option>
-                      </optgroup>
-                      <optgroup label="Global Currencies">
-                        <option value="USD">USD - US Dollar</option>
-                        <option value="EUR">EUR - Euro</option>
-                        <option value="GBP">GBP - British Pound</option>
-                        <option value="JPY">JPY - Japanese Yen</option>
-                        <option value="CNY">CNY - Chinese Yuan</option>
-                        <option value="CHF">CHF - Swiss Franc</option>
-                        <option value="CAD">CAD - Canadian Dollar</option>
-                        <option value="AUD">AUD - Australian Dollar</option>
-                        <option value="INR">INR - Indian Rupee</option>
-                        <option value="SGD">SGD - Singapore Dollar</option>
-                      </optgroup>
-                    </select>
+                            }));
+                            setNcCalculated(false);
+                          }}
+                          className={`px-3 py-2 font-medium transition-colors ${
+                            customQuotation.currency === code
+                              ? 'bg-black text-white'
+                              : 'bg-white text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                     <button
                       onClick={addCustomItem}
                       className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -2465,6 +2487,74 @@ This quotation is valid for 30 days from the date of issue`
                   </div>
                 )}
 
+                {/* Services Section */}
+                <div className="mt-6 border-t border-gray-200 pt-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-base font-semibold text-gray-900">Services</h4>
+                    <button
+                      onClick={addQuotationService}
+                      className="flex items-center space-x-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                    >
+                      <Plus size={14} />
+                      <span>Add Service</span>
+                    </button>
+                  </div>
+                  {customQuotation.services.length === 0 ? (
+                    <p className="text-sm text-gray-400 italic">No services added. Click "Add Service" to include services like installation, commissioning, design, etc.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {customQuotation.services.map((service, index) => (
+                        <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center p-3 bg-gray-50 rounded-lg">
+                          <input
+                            type="text"
+                            placeholder="Service name (e.g. Installation)"
+                            value={service.name}
+                            onChange={(e) => {
+                              setCustomQuotation(prev => ({
+                                ...prev,
+                                services: prev.services.map((s, i) =>
+                                  i === index ? { ...s, name: e.target.value } : s
+                                )
+                              }));
+                              setNcCalculated(false);
+                            }}
+                            className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm"
+                          />
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="number"
+                              placeholder="Price"
+                              value={service.price}
+                              onChange={(e) => {
+                                setCustomQuotation(prev => ({
+                                  ...prev,
+                                  services: prev.services.map((s, i) =>
+                                    i === index ? { ...s, price: e.target.value } : s
+                                  )
+                                }));
+                                setNcCalculated(false);
+                              }}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm"
+                            />
+                            <button
+                              onClick={() => {
+                                setCustomQuotation(prev => ({
+                                  ...prev,
+                                  services: prev.services.filter((_, i) => i !== index)
+                                }));
+                                setNcCalculated(false);
+                              }}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Global Discount */}
                 <div className="mt-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Global Discount (%)</label>
@@ -2541,7 +2631,7 @@ This quotation is valid for 30 days from the date of issue"
                 </button>
                 <button
                   onClick={() => setShowNcSaveModal(true)}
-                  disabled={customQuotation.items.length === 0}
+                  disabled={customQuotation.items.length === 0 && customQuotation.services.length === 0}
                   className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   <Save size={16} />
@@ -2582,6 +2672,21 @@ This quotation is valid for 30 days from the date of issue"
                             <td className="text-right p-3">{((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)} {customQuotation.currency}</td>
                           </tr>
                         ))}
+                        {(ncResults.services || []).length > 0 && (
+                          <>
+                            <tr className="bg-gray-100">
+                              <td colSpan="4" className="p-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">Services</td>
+                            </tr>
+                            {ncResults.services.map((service, index) => (
+                              <tr key={`svc-${index}`} className="border-b border-gray-200">
+                                <td className="p-3">{service.name || 'Service'}</td>
+                                <td className="text-center p-3">1</td>
+                                <td className="text-right p-3">{(Number(service.price) || 0).toFixed(2)} {customQuotation.currency}</td>
+                                <td className="text-right p-3">{(Number(service.price) || 0).toFixed(2)} {customQuotation.currency}</td>
+                              </tr>
+                            ))}
+                          </>
+                        )}
                       </tbody>
                     </table>
                   </div>
