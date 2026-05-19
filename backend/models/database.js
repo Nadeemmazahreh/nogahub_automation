@@ -200,7 +200,7 @@ const Project = sequelize.define('Project', {
   projectType: {
     type: DataTypes.STRING,
     allowNull: true,
-    comment: 'Type of project: soundDesign, noiseControl, or null for legacy projects'
+    comment: 'Type of project: soundDesign, custom, or null for legacy projects'
   }
 });
 

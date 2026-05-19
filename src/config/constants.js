@@ -80,8 +80,8 @@ export const INITIAL_PROJECT_STATE = {
   globalDiscount: 0,
 };
 
-// Initial Noise Control Quotation State
-export const INITIAL_NOISE_CONTROL_STATE = {
+// Initial Custom Quotation State
+export const INITIAL_CUSTOM_STATE = {
   projectName: '',
   clientName: '',
   items: [],
@@ -97,7 +97,7 @@ export const INITIAL_NOISE_CONTROL_STATE = {
 // Tab IDs
 export const TAB_IDS = {
   QUOTATION: 'quotation',
-  NOISE_CONTROL: 'noise-control',
+  CUSTOM: 'custom',
   DOCUMENTS: 'documents',
   SAVED_PROJECTS: 'saved-projects',
   RESULTS: 'results',

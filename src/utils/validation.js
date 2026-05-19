@@ -52,21 +52,21 @@ export const projectSchema = z.object({
 });
 
 /**
- * Noise Control Item Schema
+ * Custom Item Schema
  */
-export const noiseControlItemSchema = z.object({
+export const customItemSchema = z.object({
   name: z.string().min(1, 'Item name is required'),
   quantity: z.number().positive('Quantity must be positive').int('Quantity must be an integer'),
   unitPrice: z.number().nonnegative('Unit price cannot be negative'),
 });
 
 /**
- * Noise Control Project Schema
+ * Custom Project Schema
  */
-export const noiseControlProjectSchema = z.object({
+export const customProjectSchema = z.object({
   projectName: z.string().min(1, 'Project name is required').max(200, 'Project name is too long'),
   clientName: z.string().min(1, 'Client name is required').max(200, 'Client name is too long'),
-  items: z.array(noiseControlItemSchema),
+  items: z.array(customItemSchema),
   services: z.object({
     noiseControl: z.object({
       enabled: z.boolean(),

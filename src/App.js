@@ -99,7 +99,7 @@ This quotation is valid for 30 days from the date of issue`,
   });
 
   // Noise Control Quotation State
-  const [noiseControlQuotation, setNoiseControlQuotation] = useState({
+  const [customQuotation, setCustomQuotation] = useState({
     clientName: '',
     projectName: '',
     currency: 'JOD',
@@ -215,8 +215,8 @@ This quotation is valid for 30 days from the date of issue`
   };
 
   // Function to save noise control quotation
-  const saveNoiseControlProject = async () => {
-    if (noiseControlQuotation.projectName.trim() && noiseControlQuotation.clientName.trim() && noiseControlQuotation.items.length > 0) {
+  const saveCustomProject = async () => {
+    if (customQuotation.projectName.trim() && customQuotation.clientName.trim() && customQuotation.items.length > 0) {
       const currentUser = simpleAuth.getCurrentUser();
       if (!currentUser) {
         toast.error('Please log in to save projects.');
@@ -226,17 +226,17 @@ This quotation is valid for 30 days from the date of issue`
       try {
         const projectData = {
           ...(loadedProjectId ? { id: loadedProjectId } : {}),
-          clientName: noiseControlQuotation.clientName,
-          projectName: noiseControlQuotation.projectName,
+          clientName: customQuotation.clientName,
+          projectName: customQuotation.projectName,
           equipment: [],
-          customEquipment: noiseControlQuotation.items.map(item => ({
+          customEquipment: customQuotation.items.map(item => ({
             name: `${item.name} (x${Number(item.quantity) || 0})`,
             price: (Number(item.clientPrice) || 0) * (Number(item.quantity) || 0),
             weight: 0 // Noise control items don't have weight
           })),
-          globalDiscount: noiseControlQuotation.globalDiscount,
-          includeTax: noiseControlQuotation.includeTax,
-          terms: noiseControlQuotation.terms,
+          globalDiscount: customQuotation.globalDiscount,
+          includeTax: customQuotation.includeTax,
+          terms: customQuotation.terms,
           services: {
             commissioning: false,
             noiseControl: false,
@@ -255,7 +255,7 @@ This quotation is valid for 30 days from the date of issue`
           total: ncResults ? ncResults.total : 0,
           isCalculated: ncCalculated,
           calculationResults: ncResults,
-          projectType: 'noiseControl'
+          projectType: 'custom'
         };
 
         const response = await supabaseService.saveProject(projectData);
@@ -266,10 +266,10 @@ This quotation is valid for 30 days from the date of issue`
           await loadSavedProjects();
 
           setShowNcSaveModal(false);
-          toast.success(response.message || (loadedProjectId ? 'Quotation updated successfully!' : 'Noise control project saved successfully!'));
+          toast.success(response.message || (loadedProjectId ? 'Quotation updated successfully!' : 'Custom project saved successfully!'));
         }
       } catch (error) {
-        console.error('Failed to save noise control project:', error);
+        console.error('Failed to save custom project:', error);
         toast.error('Failed to save project. Please try again.');
       }
     } else {
@@ -281,9 +281,9 @@ This quotation is valid for 30 days from the date of issue`
   const loadSavedProject = (savedProject) => {
     setLoadedProjectId(savedProject.id || null);
     // Check if this is a noise control project
-    if (savedProject.projectType === 'noiseControl') {
+    if (savedProject.projectType === 'custom') {
       // Load noise control project
-      const noiseControlItems = (savedProject.customEquipment || []).map(item => {
+      const customItems = (savedProject.customEquipment || []).map(item => {
         // Extract quantity from name if it was saved with quantity in parentheses
         const quantityMatch = item.name.match(/\(x(\d+)\)$/);
         const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
@@ -297,10 +297,10 @@ This quotation is valid for 30 days from the date of issue`
         };
       });
 
-      setNoiseControlQuotation({
+      setCustomQuotation({
         clientName: savedProject.clientName || '',
         projectName: savedProject.projectName || '',
-        items: noiseControlItems,
+        items: customItems,
         globalDiscount: savedProject.globalDiscount || 0,
         includeTax: savedProject.includeTax !== undefined ? savedProject.includeTax : true,
         terms: savedProject.terms || `All prices are in Jordanian Dinars (JOD)
@@ -328,8 +328,8 @@ This quotation is valid for 30 days from the date of issue`
         setNcResults(null);
       }
 
-      setActiveTab('noise-control');
-      toast.success('Noise control project loaded successfully!');
+      setActiveTab('custom');
+      toast.success('Custom project loaded successfully!');
     } else {
       // Load sound design project (default behavior)
       setProject({
@@ -426,9 +426,9 @@ This quotation is valid for 30 days from the date of issue`,
     setCalculationResults(null);
   };
 
-  const startNewNoiseControlQuotation = () => {
+  const startNewCustomQuotation = () => {
     setLoadedProjectId(null);
-    setNoiseControlQuotation({
+    setCustomQuotation({
       clientName: '',
       projectName: '',
       currency: 'JOD',
@@ -1341,16 +1341,16 @@ This quotation is valid for 30 days from the date of issue`
   };
 
   // Noise Control Quotation Functions
-  const addNoiseControlItem = () => {
-    setNoiseControlQuotation(prev => ({
+  const addCustomItem = () => {
+    setCustomQuotation(prev => ({
       ...prev,
       items: [...prev.items, { name: '', cost: '', clientPrice: '', quantity: '' }]
     }));
     setNcCalculated(false);
   };
 
-  const calculateNoiseControl = () => {
-    if (noiseControlQuotation.items.length === 0) {
+  const calculateCustom = () => {
+    if (customQuotation.items.length === 0) {
       toast.error('Please add at least one item');
       return;
     }
@@ -1358,22 +1358,22 @@ This quotation is valid for 30 days from the date of issue`
     let totalCost = 0;
     let totalRevenueBeforeDiscount = 0;
 
-    noiseControlQuotation.items.forEach(item => {
+    customQuotation.items.forEach(item => {
       const itemCost = (Number(item.cost) || 0) * (Number(item.quantity) || 0);
       const itemRevenue = (Number(item.clientPrice) || 0) * (Number(item.quantity) || 0);
       totalCost += itemCost;
       totalRevenueBeforeDiscount += itemRevenue;
     });
 
-    const discountAmount = totalRevenueBeforeDiscount * (noiseControlQuotation.globalDiscount / 100);
+    const discountAmount = totalRevenueBeforeDiscount * (customQuotation.globalDiscount / 100);
     const subtotal = totalRevenueBeforeDiscount - discountAmount;
-    const tax = noiseControlQuotation.includeTax ? subtotal * 0.16 : 0;
+    const tax = customQuotation.includeTax ? subtotal * 0.16 : 0;
     const total = subtotal + tax;
     const profit = subtotal - totalCost;
     const profitMargin = subtotal > 0 ? (profit / subtotal) * 100 : 0;
 
     const results = {
-      items: noiseControlQuotation.items.map(item => ({
+      items: customQuotation.items.map(item => ({
         ...item,
         clientPrice: Number(item.clientPrice) || 0,
         cost: Number(item.cost) || 0,
@@ -1391,10 +1391,10 @@ This quotation is valid for 30 days from the date of issue`
 
     setNcResults(results);
     setNcCalculated(true);
-    toast.success('Noise control quotation calculated successfully');
+    toast.success('Custom quotation calculated successfully');
   };
 
-  const downloadNoiseControlPDF = () => {
+  const downloadCustomPDF = () => {
     if (!ncCalculated || !ncResults) {
       toast.error('Please calculate the quotation first');
       return;
@@ -1403,7 +1403,7 @@ This quotation is valid for 30 days from the date of issue`
     const printContent = `
       <html>
         <head>
-          <title>Quotation - ${noiseControlQuotation.projectName || 'Project'}</title>
+          <title>Quotation - ${customQuotation.projectName || 'Project'}</title>
           <style>
             @media print {
               @page { margin: 0.5in; }
@@ -1437,19 +1437,18 @@ This quotation is valid for 30 days from the date of issue`
           </div>
 
           <div class="project-info">
-            <strong>Client:</strong> ${noiseControlQuotation.clientName || 'Client Name'}<br/>
-            <strong>Project:</strong> ${noiseControlQuotation.projectName || 'Project Name'}<br/>
+            <strong>Client:</strong> ${customQuotation.clientName || 'Client Name'}<br/>
+            <strong>Project:</strong> ${customQuotation.projectName || 'Project Name'}<br/>
             <strong>Date:</strong> ${new Date().toLocaleDateString()}<br/>
           </div>
 
-          <h3>Noise Control Items</h3>
           <table class="equipment-table">
             <thead>
               <tr>
                 <th>Description</th>
                 <th>Quantity</th>
-                <th>Unit Price (${noiseControlQuotation.currency})</th>
-                <th>Total (${noiseControlQuotation.currency})</th>
+                <th>Unit Price (${customQuotation.currency})</th>
+                <th>Total (${customQuotation.currency})</th>
               </tr>
             </thead>
             <tbody>
@@ -1465,40 +1464,40 @@ This quotation is valid for 30 days from the date of issue`
           </table>
 
           <div class="totals">
-            ${noiseControlQuotation.globalDiscount > 0 ? `
+            ${customQuotation.globalDiscount > 0 ? `
               <div class="totals-row">
                 <span>Subtotal (before discount):</span>
-                <span>${Math.round(ncResults.totalRevenueBeforeDiscount || 0)} ${noiseControlQuotation.currency}</span>
+                <span>${Math.round(ncResults.totalRevenueBeforeDiscount || 0)} ${customQuotation.currency}</span>
               </div>
               <div class="totals-row discount">
-                <span>Discount (${(parseFloat(noiseControlQuotation.globalDiscount) || 0).toFixed(2)}%):</span>
-                <span>-${Math.round(ncResults.discountAmount || 0)} ${noiseControlQuotation.currency}</span>
+                <span>Discount (${(parseFloat(customQuotation.globalDiscount) || 0).toFixed(2)}%):</span>
+                <span>-${Math.round(ncResults.discountAmount || 0)} ${customQuotation.currency}</span>
               </div>
               <div class="totals-row">
                 <span>Subtotal (after discount):</span>
-                <span>${Math.round(ncResults.subtotal || 0)} ${noiseControlQuotation.currency}</span>
+                <span>${Math.round(ncResults.subtotal || 0)} ${customQuotation.currency}</span>
               </div>
             ` : `
               <div class="totals-row">
                 <span>Subtotal:</span>
-                <span>${Math.round(ncResults.subtotal || 0)} ${noiseControlQuotation.currency}</span>
+                <span>${Math.round(ncResults.subtotal || 0)} ${customQuotation.currency}</span>
               </div>
             `}
-            ${noiseControlQuotation.includeTax ? `
+            ${customQuotation.includeTax ? `
             <div class="totals-row">
               <span>VAT (16%):</span>
-              <span>${Math.round(ncResults.tax || 0)} ${noiseControlQuotation.currency}</span>
+              <span>${Math.round(ncResults.tax || 0)} ${customQuotation.currency}</span>
             </div>
             ` : ''}
             <div class="totals-row total-final">
               <span>TOTAL:</span>
-              <span>${Math.round(ncResults.total || 0)} ${noiseControlQuotation.currency}</span>
+              <span>${Math.round(ncResults.total || 0)} ${customQuotation.currency}</span>
             </div>
           </div>
 
           <div style="margin-top: 25px; font-size: 10px; color: #666;">
             <p><strong>Terms & Conditions:</strong></p>
-            <p style="white-space: pre-line;">${noiseControlQuotation.terms || ''}</p>
+            <p style="white-space: pre-line;">${customQuotation.terms || ''}</p>
           </div>
         </body>
       </html>
@@ -1656,7 +1655,7 @@ This quotation is valid for 30 days from the date of issue`
               {[
                 { id: 'documents', label: 'Documentation', icon: FileText, roles: ['admin', 'user'] },
                 { id: 'quotation', label: 'Sound Design Quote', icon: Calculator, roles: ['admin', 'user'] },
-                { id: 'noise-control', label: 'Noise Control Quote', icon: Zap, roles: ['admin', 'user'] },
+                { id: 'custom', label: 'Custom Quote', icon: Zap, roles: ['admin', 'user'] },
                 { id: 'saved-projects', label: 'Saved Projects', icon: FolderOpen, roles: ['admin', 'user'] },
                 { id: 'results', label: 'Financial Analysis', icon: TrendingUp, roles: ['admin'] },
                 { id: 'entities', label: 'Business Entities', icon: Building2, roles: ['admin'] }
@@ -2287,8 +2286,8 @@ This quotation is valid for 30 days from the date of issue"
             </div>
           )}
 
-          {/* Noise Control Quotation Tab */}
-          {activeTab === 'noise-control' && (
+          {/* Custom Quotation Tab */}
+          {activeTab === 'custom' && (
             <div className="space-y-6">
               {/* Project Info */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2297,8 +2296,8 @@ This quotation is valid for 30 days from the date of issue"
                   <input
                     type="text"
                     placeholder="Enter client name"
-                    value={noiseControlQuotation.clientName}
-                    onChange={(e) => setNoiseControlQuotation(prev => ({ ...prev, clientName: e.target.value }))}
+                    value={customQuotation.clientName}
+                    onChange={(e) => setCustomQuotation(prev => ({ ...prev, clientName: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                   />
                 </div>
@@ -2307,8 +2306,8 @@ This quotation is valid for 30 days from the date of issue"
                   <input
                     type="text"
                     placeholder="Enter project name"
-                    value={noiseControlQuotation.projectName}
-                    onChange={(e) => setNoiseControlQuotation(prev => ({ ...prev, projectName: e.target.value }))}
+                    value={customQuotation.projectName}
+                    onChange={(e) => setCustomQuotation(prev => ({ ...prev, projectName: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                   />
                 </div>
@@ -2317,13 +2316,13 @@ This quotation is valid for 30 days from the date of issue"
               {/* Items Section */}
               <div className="bg-white border border-gray-200 rounded-xl p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Noise Control Equipment</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Custom Equipment</h3>
                   <div className="flex items-center space-x-3">
                     <select
-                      value={noiseControlQuotation.currency}
+                      value={customQuotation.currency}
                       onChange={(e) => {
                         const newCurrency = e.target.value;
-                        setNoiseControlQuotation(prev => ({
+                        setCustomQuotation(prev => ({
                           ...prev,
                           currency: newCurrency,
                           terms: `All prices are in ${getCurrencyName(newCurrency)}
@@ -2370,7 +2369,7 @@ This quotation is valid for 30 days from the date of issue`
                       </optgroup>
                     </select>
                     <button
-                      onClick={addNoiseControlItem}
+                      onClick={addCustomItem}
                       className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                     >
                       <Plus size={16} />
@@ -2379,20 +2378,20 @@ This quotation is valid for 30 days from the date of issue`
                   </div>
                 </div>
 
-                {noiseControlQuotation.items.length === 0 ? (
+                {customQuotation.items.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <p>No items added yet. Click "Add Item" to get started.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {noiseControlQuotation.items.map((item, index) => (
+                    {customQuotation.items.map((item, index) => (
                       <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-3 items-center p-4 bg-gray-50 rounded-lg">
                         <input
                           type="text"
                           placeholder="Item name/description"
                           value={item.name}
                           onChange={(e) => {
-                            setNoiseControlQuotation(prev => ({
+                            setCustomQuotation(prev => ({
                               ...prev,
                               items: prev.items.map((itm, i) =>
                                 i === index ? { ...itm, name: e.target.value } : itm
@@ -2407,7 +2406,7 @@ This quotation is valid for 30 days from the date of issue`
                           placeholder="Cost price"
                           value={item.cost}
                           onChange={(e) => {
-                            setNoiseControlQuotation(prev => ({
+                            setCustomQuotation(prev => ({
                               ...prev,
                               items: prev.items.map((itm, i) =>
                                 i === index ? { ...itm, cost: e.target.value } : itm
@@ -2422,7 +2421,7 @@ This quotation is valid for 30 days from the date of issue`
                           placeholder="Selling price"
                           value={item.clientPrice}
                           onChange={(e) => {
-                            setNoiseControlQuotation(prev => ({
+                            setCustomQuotation(prev => ({
                               ...prev,
                               items: prev.items.map((itm, i) =>
                                 i === index ? { ...itm, clientPrice: e.target.value } : itm
@@ -2438,7 +2437,7 @@ This quotation is valid for 30 days from the date of issue`
                             placeholder="Qty"
                             value={item.quantity}
                             onChange={(e) => {
-                              setNoiseControlQuotation(prev => ({
+                              setCustomQuotation(prev => ({
                                 ...prev,
                                 items: prev.items.map((itm, i) =>
                                   i === index ? { ...itm, quantity: e.target.value } : itm
@@ -2450,7 +2449,7 @@ This quotation is valid for 30 days from the date of issue`
                           />
                           <button
                             onClick={() => {
-                              setNoiseControlQuotation(prev => ({
+                              setCustomQuotation(prev => ({
                                 ...prev,
                                 items: prev.items.filter((_, i) => i !== index)
                               }));
@@ -2474,10 +2473,10 @@ This quotation is valid for 30 days from the date of issue`
                     min="0"
                     max="100"
                     placeholder="0-100%"
-                    value={noiseControlQuotation.globalDiscount}
+                    value={customQuotation.globalDiscount}
                     onChange={(e) => {
                       const value = Math.min(100, Math.max(0, parseFloat(e.target.value) || 0));
-                      setNoiseControlQuotation(prev => ({
+                      setCustomQuotation(prev => ({
                         ...prev,
                         globalDiscount: value
                       }));
@@ -2492,9 +2491,9 @@ This quotation is valid for 30 days from the date of issue`
                   <label className="flex items-center space-x-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={noiseControlQuotation.includeTax}
+                      checked={customQuotation.includeTax}
                       onChange={(e) => {
-                        setNoiseControlQuotation(prev => ({
+                        setCustomQuotation(prev => ({
                           ...prev,
                           includeTax: e.target.checked
                         }));
@@ -2512,9 +2511,9 @@ This quotation is valid for 30 days from the date of issue`
                     <span className="font-medium text-gray-700">Terms & Conditions</span>
                   </label>
                   <textarea
-                    value={noiseControlQuotation.terms}
+                    value={customQuotation.terms}
                     onChange={(e) => {
-                      setNoiseControlQuotation(prev => ({
+                      setCustomQuotation(prev => ({
                         ...prev,
                         terms: e.target.value
                       }));
@@ -2534,7 +2533,7 @@ This quotation is valid for 30 days from the date of issue"
               {/* Action Buttons */}
               <div className="flex justify-end space-x-4">
                 <button
-                  onClick={calculateNoiseControl}
+                  onClick={calculateCustom}
                   className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                 >
                   <Calculator size={16} />
@@ -2542,7 +2541,7 @@ This quotation is valid for 30 days from the date of issue"
                 </button>
                 <button
                   onClick={() => setShowNcSaveModal(true)}
-                  disabled={noiseControlQuotation.items.length === 0}
+                  disabled={customQuotation.items.length === 0}
                   className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   <Save size={16} />
@@ -2550,7 +2549,7 @@ This quotation is valid for 30 days from the date of issue"
                 </button>
                 {loadedProjectId && (
                   <button
-                    onClick={startNewNoiseControlQuotation}
+                    onClick={startNewCustomQuotation}
                     className="flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <span>New Quotation</span>
@@ -2579,8 +2578,8 @@ This quotation is valid for 30 days from the date of issue"
                           <tr key={index} className="border-b border-gray-200">
                             <td className="p-3">{item.name || 'Unnamed Item'}</td>
                             <td className="text-center p-3">{item.quantity}</td>
-                            <td className="text-right p-3">{(Number(item.clientPrice) || 0).toFixed(2)} {noiseControlQuotation.currency}</td>
-                            <td className="text-right p-3">{((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)} {noiseControlQuotation.currency}</td>
+                            <td className="text-right p-3">{(Number(item.clientPrice) || 0).toFixed(2)} {customQuotation.currency}</td>
+                            <td className="text-right p-3">{((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)} {customQuotation.currency}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -2589,31 +2588,31 @@ This quotation is valid for 30 days from the date of issue"
 
                   {/* Totals */}
                   <div className="border-t border-gray-300 pt-4">
-                    {noiseControlQuotation.globalDiscount > 0 && (
+                    {customQuotation.globalDiscount > 0 && (
                       <>
                         <div className="flex justify-between mb-2">
                           <span className="font-medium">Subtotal (before discount):</span>
-                          <span>{ncResults.totalRevenueBeforeDiscount.toFixed(2)} {noiseControlQuotation.currency}</span>
+                          <span>{ncResults.totalRevenueBeforeDiscount.toFixed(2)} {customQuotation.currency}</span>
                         </div>
                         <div className="flex justify-between mb-2 text-red-600">
-                          <span className="font-medium">Discount ({noiseControlQuotation.globalDiscount}%):</span>
-                          <span>-{ncResults.discountAmount.toFixed(2)} {noiseControlQuotation.currency}</span>
+                          <span className="font-medium">Discount ({customQuotation.globalDiscount}%):</span>
+                          <span>-{ncResults.discountAmount.toFixed(2)} {customQuotation.currency}</span>
                         </div>
                       </>
                     )}
                     <div className="flex justify-between mb-2">
-                      <span className="font-medium">Subtotal{noiseControlQuotation.globalDiscount > 0 ? ' (after discount)' : ''}:</span>
-                      <span>{ncResults.subtotal.toFixed(2)} {noiseControlQuotation.currency}</span>
+                      <span className="font-medium">Subtotal{customQuotation.globalDiscount > 0 ? ' (after discount)' : ''}:</span>
+                      <span>{ncResults.subtotal.toFixed(2)} {customQuotation.currency}</span>
                     </div>
-                    {noiseControlQuotation.includeTax && (
+                    {customQuotation.includeTax && (
                       <div className="flex justify-between mb-2">
                         <span className="font-medium">VAT (16%):</span>
-                        <span>{ncResults.tax.toFixed(2)} {noiseControlQuotation.currency}</span>
+                        <span>{ncResults.tax.toFixed(2)} {customQuotation.currency}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2 mt-2">
                       <span>Total:</span>
-                      <span className="text-green-600">{ncResults.total.toFixed(2)} {noiseControlQuotation.currency}</span>
+                      <span className="text-green-600">{ncResults.total.toFixed(2)} {customQuotation.currency}</span>
                     </div>
                   </div>
                 </div>
@@ -2651,9 +2650,9 @@ This quotation is valid for 30 days from the date of issue"
                                 Sound Design
                               </span>
                             )}
-                            {savedProject.projectType === 'noiseControl' && (
+                            {savedProject.projectType === 'custom' && (
                               <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">
-                                Noise Control
+                                Custom
                               </span>
                             )}
                             {savedProject.hasCalculation && (
@@ -3672,10 +3671,10 @@ This quotation is valid for 30 days from the date of issue"
                   </div>
                 )}
 
-                {/* Noise Control Quotation */}
+                {/* Custom Quotation */}
                 {ncCalculated && ncResults && (
                     <div className="border border-gray-200 rounded-xl p-4">
-                      <h4 className="font-semibold text-gray-900 mb-3">Noise Control Quotation</h4>
+                      <h4 className="font-semibold text-gray-900 mb-3">Custom Quotation</h4>
                       <div className="bg-white border rounded-lg p-4 text-sm space-y-2">
                         <div className="border-b pb-2 mb-3">
                           <h5 className="font-bold">Deep Sound For Technical Consultations</h5>
@@ -3685,13 +3684,13 @@ This quotation is valid for 30 days from the date of issue"
                         </div>
 
                         <div className="flex justify-between text-xs">
-                          <span>Client: {noiseControlQuotation.clientName || 'Client Name'}</span>
+                          <span>Client: {customQuotation.clientName || 'Client Name'}</span>
                           <span>Date: {new Date().toLocaleDateString()}</span>
                         </div>
-                        <div className="text-xs">Project: {noiseControlQuotation.projectName || 'Project Name'}</div>
+                        <div className="text-xs">Project: {customQuotation.projectName || 'Project Name'}</div>
 
                         <div className="mt-4">
-                          <h6 className="font-semibold mb-2">Noise Control Equipment:</h6>
+                          <h6 className="font-semibold mb-2">Custom Equipment:</h6>
                           {ncResults.items.map((item, index) => (
                             <div key={index} className="flex justify-between text-xs">
                               <span>{item.name} x{item.quantity}</span>
@@ -3700,23 +3699,23 @@ This quotation is valid for 30 days from the date of issue"
                           ))}
 
                           <div className="border-t mt-3 pt-2">
-                            {noiseControlQuotation.globalDiscount > 0 && (
+                            {customQuotation.globalDiscount > 0 && (
                               <>
                                 <div className="flex justify-between text-xs">
                                   <span>Subtotal (before discount):</span>
                                   <span>{Math.round(ncResults.totalRevenueBeforeDiscount || 0)} JOD</span>
                                 </div>
                                 <div className="flex justify-between text-xs text-red-600">
-                                  <span>Discount ({noiseControlQuotation.globalDiscount}%):</span>
+                                  <span>Discount ({customQuotation.globalDiscount}%):</span>
                                   <span>-{Math.round(ncResults.discountAmount || 0)} JOD</span>
                                 </div>
                               </>
                             )}
                             <div className="flex justify-between text-xs">
-                              <span>Subtotal{noiseControlQuotation.globalDiscount > 0 ? ' (after discount)' : ''}:</span>
+                              <span>Subtotal{customQuotation.globalDiscount > 0 ? ' (after discount)' : ''}:</span>
                               <span>{Math.round(ncResults.subtotal || 0)} JOD</span>
                             </div>
-                            {noiseControlQuotation.includeTax && (
+                            {customQuotation.includeTax && (
                               <div className="flex justify-between text-xs">
                                 <span>VAT (16%):</span>
                                 <span>{Math.round(ncResults.tax || 0)} JOD</span>
@@ -3731,11 +3730,11 @@ This quotation is valid for 30 days from the date of issue"
                       </div>
 
                       <button
-                        onClick={downloadNoiseControlPDF}
+                        onClick={downloadCustomPDF}
                         className="mt-3 w-full flex items-center justify-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                       >
                         <Download size={16} />
-                        <span>Download Noise Control Quotation PDF</span>
+                        <span>Download Custom Quotation PDF</span>
                       </button>
                     </div>
                   )}
@@ -4053,18 +4052,18 @@ This quotation is valid for 30 days from the date of issue"
         </div>
       )}
 
-      {/* Save Noise Control Project Modal */}
+      {/* Save Custom Project Modal */}
       {showNcSaveModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Save Noise Control Project</h3>
+            <h3 className="text-lg font-semibold mb-4">Save Custom Project</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
                 <input
                   type="text"
-                  value={noiseControlQuotation.projectName}
-                  onChange={(e) => setNoiseControlQuotation(prev => ({ ...prev, projectName: e.target.value }))}
+                  value={customQuotation.projectName}
+                  onChange={(e) => setCustomQuotation(prev => ({ ...prev, projectName: e.target.value }))}
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter project name"
                 />
@@ -4073,8 +4072,8 @@ This quotation is valid for 30 days from the date of issue"
                 <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
                 <input
                   type="text"
-                  value={noiseControlQuotation.clientName}
-                  onChange={(e) => setNoiseControlQuotation(prev => ({ ...prev, clientName: e.target.value }))}
+                  value={customQuotation.clientName}
+                  onChange={(e) => setCustomQuotation(prev => ({ ...prev, clientName: e.target.value }))}
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter client name"
                 />
@@ -4087,8 +4086,8 @@ This quotation is valid for 30 days from the date of issue"
                   Cancel
                 </button>
                 <button
-                  onClick={saveNoiseControlProject}
-                  disabled={!noiseControlQuotation.projectName.trim() || !noiseControlQuotation.clientName.trim()}
+                  onClick={saveCustomProject}
+                  disabled={!customQuotation.projectName.trim() || !customQuotation.clientName.trim()}
                   className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   Save Project
