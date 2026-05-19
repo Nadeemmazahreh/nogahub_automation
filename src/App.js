@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, Download, Building2, Zap, Save, FolderOpen } from 'lucide-react';
+import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, Download, Building2, Zap, Save, FolderOpen, RefreshCw } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import supabaseService from './services/supabaseService';
 import { useAuth } from './hooks/useAuth';
@@ -1624,13 +1624,25 @@ This quotation is valid for 30 days from the date of issue`
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors text-sm sm:text-base self-end sm:self-auto"
-            >
-              <LogOut size={14} />
-              <span>Logout</span>
-            </button>
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <button
+                onClick={() => {
+                  if (activeTab === 'quotation') startNewQuotation();
+                  else if (activeTab === 'custom') startNewCustomQuotation();
+                }}
+                title="New quotation"
+                className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <RefreshCw size={16} />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors text-sm sm:text-base"
+              >
+                <LogOut size={14} />
+                <span>Logout</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2216,10 +2228,11 @@ This quotation is valid for 30 days from the date of issue"
                   </button>
                   {loadedProjectId && (
                     <button
-                      onClick={startNewQuotation}
+                      onClick={() => { setLoadedProjectId(null); setShowSaveModal(true); }}
                       className="flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
                     >
-                      <span>New</span>
+                      <Save size={16} />
+                      <span>Save Quotation</span>
                     </button>
                   )}
                 </div>
@@ -2639,10 +2652,11 @@ This quotation is valid for 30 days from the date of issue"
                 </button>
                 {loadedProjectId && (
                   <button
-                    onClick={startNewCustomQuotation}
+                    onClick={() => { setLoadedProjectId(null); setShowNcSaveModal(true); }}
                     className="flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    <span>New Quotation</span>
+                    <Save size={16} />
+                    <span>Save Quotation</span>
                   </button>
                 )}
               </div>
