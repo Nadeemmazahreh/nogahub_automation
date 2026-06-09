@@ -878,8 +878,17 @@ This quotation is valid for 30 days from the date of issue`
     }
   }, [calculateProjectCosts]);
 
+  const generateQuotationNumber = (projectName) => {
+    const prefix = (projectName || 'XX').replace(/\s+/g, '').toUpperCase().slice(0, 2).padEnd(2, 'X');
+    const now = new Date();
+    const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    const rand = String(Math.floor(Math.random() * 900) + 100);
+    return `${prefix}${date}${rand}`;
+  };
+
   // PDF Download function
   const downloadQuotationPDF = (calculationResults, project) => {
+    const quotationNumber = generateQuotationNumber(project.projectName);
     const printContent = `
       <html>
         <head>
@@ -917,11 +926,12 @@ This quotation is valid for 30 days from the date of issue`
           </div>
           
           <div class="project-info">
+            <strong>Quotation No.:</strong> ${quotationNumber}<br/>
             <strong>Client:</strong> ${project.clientName || 'Client Name'}<br/>
             <strong>Project:</strong> ${project.projectName || 'Project Name'}<br/>
             <strong>Date:</strong> ${new Date().toLocaleDateString()}<br/>
           </div>
-          
+
           <h3>Void Acoustics Equipment</h3>
           <table class="equipment-table">
             <thead>
@@ -1429,6 +1439,7 @@ This quotation is valid for 30 days from the date of issue`
       return;
     }
 
+    const quotationNumber = generateQuotationNumber(customQuotation.projectName);
     const printContent = `
       <html>
         <head>
@@ -1466,6 +1477,7 @@ This quotation is valid for 30 days from the date of issue`
           </div>
 
           <div class="project-info">
+            <strong>Quotation No.:</strong> ${quotationNumber}<br/>
             <strong>Client:</strong> ${customQuotation.clientName || 'Client Name'}<br/>
             <strong>Project:</strong> ${customQuotation.projectName || 'Project Name'}<br/>
             <strong>Date:</strong> ${new Date().toLocaleDateString()}<br/>
@@ -1558,6 +1570,266 @@ This quotation is valid for 30 days from the date of issue`
     } catch (error) {
       console.error('PDF generation error:', error);
       toast.error('Failed to generate PDF');
+    }
+  };
+
+  const downloadSoundDesignInvoicePDF = (calculationResults, project) => {
+    const invoiceNumber = generateQuotationNumber(project.projectName);
+    const invoiceDate = new Date().toLocaleDateString('en-GB');
+    const printContent = `
+      <html>
+        <head>
+          <title>Invoice - ${project.projectName || 'Project'}</title>
+          <style>
+            @media print {
+              @page { margin: 0.5in; }
+              body { margin: 0; }
+            }
+            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+            .header { margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .company-info { font-size: 11px; }
+            .meta-grid { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 11px; }
+            .bill-to { margin-bottom: 15px; font-size: 11px; }
+            .equipment-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px; }
+            .equipment-table th, .equipment-table td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+            .equipment-table th { background-color: #f2f2f2; }
+            .totals { margin-top: 10px; font-size: 12px; }
+            .totals-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+            .total-final { font-weight: bold; font-size: 13px; border-top: 2px solid #000; padding-top: 8px; }
+            .payment-box { margin-top: 20px; border: 1px solid #ddd; padding: 12px; font-size: 11px; background: #f9fafb; }
+            .payment-box h4 { margin: 0 0 8px 0; font-size: 12px; }
+            .payment-row { display: flex; gap: 20px; flex-wrap: wrap; }
+            .payment-item { margin-bottom: 4px; }
+            .terms { margin-top: 15px; font-size: 10px; color: #555; border-top: 1px solid #eee; padding-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                <img src="${logoImage}" alt="NogaHub Logo" style="width:70px;height:70px;object-fit:contain;display:block;margin-bottom:8px;" onerror="this.style.display='none'"/>
+                <div class="company-info">
+                  <strong>Deep Sound For Technical Consultation LLC</strong><br/>
+                  Housing Bank Complex 93 - Ground Floor 102<br/>
+                  Q. Nour St. - Welbdeh - Amman - Jordan<br/>
+                  Phone: +962 (0) 795144821<br/>
+                  Tax Reg No: 40261328
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <h1 style="margin:0 0 8px 0;font-size:2em;letter-spacing:2px;">INVOICE</h1>
+                <div style="font-size:11px;">
+                  <strong>Invoice No.:</strong> ${invoiceNumber}<br/>
+                  <strong>Date:</strong> ${invoiceDate}<br/>
+                  <strong>Due:</strong> Due on receipt
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bill-to">
+            <strong>Bill To:</strong><br/>
+            ${project.clientName || 'Client Name'}<br/>
+            ${project.projectName || 'Project Name'}
+          </div>
+
+          <table class="equipment-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price (JOD)</th>
+                <th>Total (JOD)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${calculationResults.equipmentDetails.map(item => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.quantity}</td>
+                  <td>${(item.finalTotalJOD / item.quantity).toFixed(2)}</td>
+                  <td>${(item.finalTotalJOD || 0).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+              ${(calculationResults.customEquipmentDetails || []).map(item => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.quantity}</td>
+                  <td>${(item.finalTotalJOD / item.quantity).toFixed(2)}</td>
+                  <td>${(item.finalTotalJOD || 0).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+              ${calculationResults.servicesTotal > 0 ? `
+                <tr>
+                  <td colspan="3"><em>Professional Services</em></td>
+                  <td>${Math.round(calculationResults.servicesTotal || 0).toFixed(2)}</td>
+                </tr>
+              ` : ''}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            ${project.globalDiscount > 0 ? `
+              <div class="totals-row"><span>Subtotal (before discount):</span><span>${(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(2)} JOD</span></div>
+              <div class="totals-row" style="color:red;"><span>Discount (${project.globalDiscount}%):</span><span>-${(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(2)} JOD</span></div>
+            ` : ''}
+            <div class="totals-row"><span>Subtotal:</span><span>${(calculationResults.projectSubtotalJOD || 0).toFixed(2)} JOD</span></div>
+            ${project.includeTax ? `<div class="totals-row"><span>VAT (16%):</span><span>${(calculationResults.projectTaxJOD || 0).toFixed(2)} JOD</span></div>` : ''}
+            <div class="totals-row total-final"><span>Total Due:</span><span>${Math.round(calculationResults.projectTotalJOD || 0).toFixed(2)} JOD</span></div>
+          </div>
+
+          <div class="payment-box">
+            <h4>Payment Details</h4>
+            <div class="payment-row">
+              <div class="payment-item"><strong>Bank:</strong> Etihad Bank</div>
+              <div class="payment-item"><strong>Account No.:</strong> 0310179526015101</div>
+              <div class="payment-item"><strong>IBAN:</strong> JO37UBSI1200000310179526015101</div>
+              <div class="payment-item"><strong>SWIFT:</strong> UBSIJOAXXXX</div>
+              <div class="payment-item"><strong>CliQ Alias:</strong> Deepsound</div>
+            </div>
+          </div>
+
+          <div class="terms">
+            Payment is due upon receipt of this invoice. Thank you for your business.
+          </div>
+        </body>
+      </html>
+    `;
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); }, 500);
+    }
+  };
+
+  const downloadCustomInvoicePDF = () => {
+    if (!ncCalculated || !ncResults) {
+      toast.error('Please calculate the quotation first');
+      return;
+    }
+    const invoiceNumber = generateQuotationNumber(customQuotation.projectName);
+    const invoiceDate = new Date().toLocaleDateString('en-GB');
+    const currency = customQuotation.currency || 'JOD';
+    const printContent = `
+      <html>
+        <head>
+          <title>Invoice - ${customQuotation.projectName || 'Project'}</title>
+          <style>
+            @media print {
+              @page { margin: 0.5in; }
+              body { margin: 0; }
+            }
+            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+            .header { margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .company-info { font-size: 11px; }
+            .bill-to { margin-bottom: 15px; font-size: 11px; }
+            .equipment-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px; }
+            .equipment-table th, .equipment-table td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+            .equipment-table th { background-color: #f2f2f2; }
+            .totals { margin-top: 10px; font-size: 12px; }
+            .totals-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+            .total-final { font-weight: bold; font-size: 13px; border-top: 2px solid #000; padding-top: 8px; }
+            .payment-box { margin-top: 20px; border: 1px solid #ddd; padding: 12px; font-size: 11px; background: #f9fafb; }
+            .payment-box h4 { margin: 0 0 8px 0; font-size: 12px; }
+            .payment-row { display: flex; gap: 20px; flex-wrap: wrap; }
+            .payment-item { margin-bottom: 4px; }
+            .terms { margin-top: 15px; font-size: 10px; color: #555; border-top: 1px solid #eee; padding-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                <img src="${logoImage}" alt="NogaHub Logo" style="width:70px;height:70px;object-fit:contain;display:block;margin-bottom:8px;" onerror="this.style.display='none'"/>
+                <div class="company-info">
+                  <strong>Deep Sound For Technical Consultation LLC</strong><br/>
+                  Housing Bank Complex 93 - Ground Floor 102<br/>
+                  Q. Nour St. - Welbdeh - Amman - Jordan<br/>
+                  Phone: +962 (0) 795144821<br/>
+                  Tax Reg No: 40261328
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <h1 style="margin:0 0 8px 0;font-size:2em;letter-spacing:2px;">INVOICE</h1>
+                <div style="font-size:11px;">
+                  <strong>Invoice No.:</strong> ${invoiceNumber}<br/>
+                  <strong>Date:</strong> ${invoiceDate}<br/>
+                  <strong>Due:</strong> Due on receipt
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bill-to">
+            <strong>Bill To:</strong><br/>
+            ${customQuotation.clientName || 'Client Name'}<br/>
+            ${customQuotation.projectName || 'Project Name'}
+          </div>
+
+          <table class="equipment-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price (${currency})</th>
+                <th>Total (${currency})</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${ncResults.items.map(item => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.quantity}</td>
+                  <td>${(Number(item.clientPrice) || 0).toFixed(2)}</td>
+                  <td>${((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+              ${(ncResults.services || []).filter(s => s.name && Number(s.price) > 0).map(s => `
+                <tr>
+                  <td>${s.name}</td>
+                  <td>1</td>
+                  <td>${(Number(s.price) || 0).toFixed(2)}</td>
+                  <td>${(Number(s.price) || 0).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            ${customQuotation.globalDiscount > 0 ? `
+              <div class="totals-row"><span>Subtotal (before discount):</span><span>${(ncResults.totalRevenueBeforeDiscount || 0).toFixed(2)} ${currency}</span></div>
+              <div class="totals-row" style="color:red;"><span>Discount (${customQuotation.globalDiscount}%):</span><span>-${(ncResults.discountAmount || 0).toFixed(2)} ${currency}</span></div>
+            ` : ''}
+            <div class="totals-row"><span>Subtotal:</span><span>${(ncResults.subtotal || 0).toFixed(2)} ${currency}</span></div>
+            ${customQuotation.includeTax ? `<div class="totals-row"><span>VAT (16%):</span><span>${(ncResults.tax || 0).toFixed(2)} ${currency}</span></div>` : ''}
+            <div class="totals-row total-final"><span>Total Due:</span><span>${(ncResults.total || 0).toFixed(2)} ${currency}</span></div>
+          </div>
+
+          <div class="payment-box">
+            <h4>Payment Details</h4>
+            <div class="payment-row">
+              <div class="payment-item"><strong>Bank:</strong> Etihad Bank</div>
+              <div class="payment-item"><strong>Account No.:</strong> 0310179526015101</div>
+              <div class="payment-item"><strong>IBAN:</strong> JO37UBSI1200000310179526015101</div>
+              <div class="payment-item"><strong>SWIFT:</strong> UBSIJOAXXXX</div>
+              <div class="payment-item"><strong>CliQ Alias:</strong> Deepsound</div>
+            </div>
+          </div>
+
+          <div class="terms">
+            Payment is due upon receipt of this invoice. Thank you for your business.
+          </div>
+        </body>
+      </html>
+    `;
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); }, 500);
     }
   };
 
@@ -3857,6 +4129,100 @@ This quotation is valid for 30 days from the date of issue"
                       </button>
                     </div>
                   )}
+
+                {/* Sound Design Invoice */}
+                {isCalculated && calculationResults && (
+                  <div className="border border-gray-200 rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Sound Design Invoice</h4>
+                    <div className="bg-white border rounded-lg p-4 text-sm space-y-2">
+                      <div className="border-b pb-2 mb-3">
+                        <h5 className="font-bold">Deep Sound For Technical Consultation LLC</h5>
+                        <p className="text-xs text-gray-600">Housing Bank Complex 93 - Ground Floor 102</p>
+                        <p className="text-xs text-gray-600">Q. Nour St. - Welbdeh - Amman - Jordan</p>
+                        <p className="text-xs text-gray-600">Tax Reg No: 40261328</p>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span>Bill To: {project.clientName || 'Client Name'}</span>
+                        <span>Due: on receipt</span>
+                      </div>
+                      <div className="text-xs">Project: {project.projectName || 'Project Name'}</div>
+                      <div className="border-t mt-3 pt-2">
+                        <div className="flex justify-between text-xs">
+                          <span>Subtotal:</span>
+                          <span>{(calculationResults.projectSubtotalJOD || 0).toFixed(2)} JOD</span>
+                        </div>
+                        {project.includeTax && (
+                          <div className="flex justify-between text-xs">
+                            <span>VAT (16%):</span>
+                            <span>{(calculationResults.projectTaxJOD || 0).toFixed(2)} JOD</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-semibold">
+                          <span>Total Due:</span>
+                          <span>{Math.round(calculationResults.projectTotalJOD || 0)} JOD</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-2 border-t text-xs text-gray-500">
+                        <p>Bank: Etihad Bank · CliQ: Deepsound</p>
+                        <p>IBAN: JO37UBSI1200000310179526015101</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => downloadSoundDesignInvoicePDF(calculationResults, project)}
+                      className="mt-3 w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Download size={16} />
+                      <span>Download Invoice PDF</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Custom Invoice */}
+                {ncCalculated && ncResults && (
+                  <div className="border border-gray-200 rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Custom Invoice</h4>
+                    <div className="bg-white border rounded-lg p-4 text-sm space-y-2">
+                      <div className="border-b pb-2 mb-3">
+                        <h5 className="font-bold">Deep Sound For Technical Consultation LLC</h5>
+                        <p className="text-xs text-gray-600">Housing Bank Complex 93 - Ground Floor 102</p>
+                        <p className="text-xs text-gray-600">Q. Nour St. - Welbdeh - Amman - Jordan</p>
+                        <p className="text-xs text-gray-600">Tax Reg No: 40261328</p>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span>Bill To: {customQuotation.clientName || 'Client Name'}</span>
+                        <span>Due: on receipt</span>
+                      </div>
+                      <div className="text-xs">Project: {customQuotation.projectName || 'Project Name'}</div>
+                      <div className="border-t mt-3 pt-2">
+                        <div className="flex justify-between text-xs">
+                          <span>Subtotal:</span>
+                          <span>{(ncResults.subtotal || 0).toFixed(2)} {customQuotation.currency || 'JOD'}</span>
+                        </div>
+                        {customQuotation.includeTax && (
+                          <div className="flex justify-between text-xs">
+                            <span>VAT (16%):</span>
+                            <span>{(ncResults.tax || 0).toFixed(2)} {customQuotation.currency || 'JOD'}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-semibold">
+                          <span>Total Due:</span>
+                          <span>{(ncResults.total || 0).toFixed(2)} {customQuotation.currency || 'JOD'}</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-2 border-t text-xs text-gray-500">
+                        <p>Bank: Etihad Bank · CliQ: Deepsound</p>
+                        <p>IBAN: JO37UBSI1200000310179526015101</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={downloadCustomInvoicePDF}
+                      className="mt-3 w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Download size={16} />
+                      <span>Download Invoice PDF</span>
+                    </button>
+                  </div>
+                )}
 
                   {/* Void UK Purchase Order - Admin Only */}
                   {userRole === 'admin' && isCalculated && calculationResults && (
