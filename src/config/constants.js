@@ -49,7 +49,7 @@ export const VOID_PROFIT_DISTRIBUTION = {
   RETAINED_EARNINGS: 0.05, // 5%
   SHAREHOLDER_DISTRIBUTION: 0.525, // 52.5%
   // Individual shareholders
-  NADEEM_SHARE: 0.50, // 50% of shareholder distribution
+  NADEEM_SHARE: 0.55, // 55% of shareholder distribution
   ISSA_SHARE: 0.225, // 22.5% of shareholder distribution
   BAKRI_SHARE: 0.225, // 22.5% of shareholder distribution
 };

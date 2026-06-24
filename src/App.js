@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, Download, Building2, Zap, Save, FolderOpen, RefreshCw } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
 import supabaseService from './services/supabaseService';
 import { useAuth } from './hooks/useAuth';
@@ -8,6 +9,9 @@ import logoImage from './logo-no-background.png';
 import SearchableDropdown from './components/shared/SearchableDropdown';
 import NogaHubLogo from './components/shared/NogaHubLogo';
 import { BUSINESS_CONSTANTS, SERVICE_PRICING, ROLE_FEES, SHIPPING_CUSTOMS, TAX_RATES, VOID_PROFIT_DISTRIBUTION, NOGAHUB_PROFIT_DISTRIBUTION } from './config/constants';
+
+// Board-level pie chart color palette
+const BOARD_COLORS = ['#111827', '#374151', '#6b7280', '#9ca3af', '#d1d5db', '#f3f4f6'];
 
 // Helper function to get full currency name
 const getCurrencyName = (currencyCode) => {
@@ -472,7 +476,7 @@ This quotation is valid for 30 days from the date of issue`
     voidAcoustics: {
       name: "Void Acoustics Jordan",
       ownership: {
-        nadeem: 0.50,
+        nadeem: 0.55,
         issa: 0.225,
         omar: 0.225
       },
@@ -698,111 +702,44 @@ This quotation is valid for 30 days from the date of issue`
     const projectTaxJOD = project.includeTax ? (projectSubtotalJOD * 0.16) : 0; // 16% VAT if includeTax is true
     const projectTotalJOD = projectSubtotalJOD + projectTaxJOD;
 
-    // Step 6: Void profit calculations (based on business report)
-    // Equipment revenue (client cost + shipping + customs excl tax020) minus door-to-door cost (dealer cost + shipping + customs excl tax020)
+    // Step 6: Void profit calculations
     const voidSalesProfit = equipmentTotalJOD - doorToDoorCostExclTax020JOD;
-    
-    // Step 7: Role-based fees
-    const producerFee = voidSalesProfit * roleFees.producer;
-    const nogahubFee = voidSalesProfit * roleFees.nogahubFee;
-    
-    // Service-based role fees
-    const noiseControlEngineerFee = noiseControlServiceCost * 0.40; // 40% of noise control service cost
-    const soundSystemDesignerFee = soundDesignServiceCost * 0.50; // 50% of sound design service cost
 
-    // Step 8: Void profit distribution (from centralized config)
-    const voidRetainedEarnings = voidSalesProfit * VOID_PROFIT_DISTRIBUTION.RETAINED_EARNINGS;
-    const voidShareholderDistribution = voidSalesProfit * VOID_PROFIT_DISTRIBUTION.SHAREHOLDER_DISTRIBUTION;
-    // No separate void expenses in new distribution - all allocated to specific categories
+    // Board-level margin metrics
+    // Correct denominator: discounted MSRP value (excludes logistics pass-through and VAT)
+    const equipmentMsrpValueJOD = equipmentClientTotalJOD; // MSRP total before discount
+    const discountedEquipmentValueJOD = equipmentClientTotalJOD * globalDiscountMultiplier;
+    const passThroughJOD = totalShippingCost + totalCustomsExclTax020; // billed at cost, 0 margin
+    const vatJOD = tax020; // collected and remitted to government, net 0
+    const equipmentGrossMargin = discountedEquipmentValueJOD > 0 ? voidSalesProfit / discountedEquipmentValueJOD : 0;
+    const effectiveDiscountPct = project.globalDiscount || 0;
 
-    // Void shareholder distribution
-    const nadeemVoidShare = voidShareholderDistribution * VOID_PROFIT_DISTRIBUTION.NADEEM_SHARE;
-    const issaVoidShare = voidShareholderDistribution * VOID_PROFIT_DISTRIBUTION.ISSA_SHARE;
-    const bakriVoidShare = voidShareholderDistribution * VOID_PROFIT_DISTRIBUTION.BAKRI_SHARE;
+    // Step 7: Profit pool allocations
+    const producerFee = voidSalesProfit * roleFees.producer; // 5% producer pool
+    const nogahubFee = voidSalesProfit * roleFees.nogahubFee; // 37.5% management fee
 
-    // Step 9: Nogahub profit distribution (from Excel distribution)
-    const nogahubProjectDirector = nogahubFee * 0.20; // 20% Project Director
-    const nogahubProjectManager = nogahubFee * 0.15; // 15% Project Manager
-    const nogahubJuniorPM = nogahubFee * 0.08; // 8% Junior Project Manager
-    const nogahubLogistics = nogahubFee * 0.03; // 3% Logistics Manager
-    const nogahubAccounting = nogahubFee * 0.02; // 2% Accounting & Finance
-    const nogahubLegal = nogahubFee * 0.03; // 3% Legal
-    const nogahubAdmin = nogahubFee * 0.02; // 2% Admin Fees
-    const nogahubRetainedEarnings = nogahubFee * NOGAHUB_PROFIT_DISTRIBUTION.RETAINED_EARNINGS;
-    const nogahubShareholderDistribution = nogahubFee * NOGAHUB_PROFIT_DISTRIBUTION.SHAREHOLDER_DISTRIBUTION;
+    // Service provider pools
+    const noiseControlEngineerFee = noiseControlServiceCost * 0.40; // 40% provider pool
+    const soundSystemDesignerFee = soundDesignServiceCost * 0.50; // 50% provider pool
+    const serviceProviderPayout = noiseControlEngineerFee + soundSystemDesignerFee;
+    const nogahubServiceProfit = servicesTotal - serviceProviderPayout;
+    const nogahubRevenue = servicesTotal + nogahubFee;
 
-    // Nogahub shareholder distribution (from centralized config)
-    const nadeemNogahubShare = nogahubShareholderDistribution * NOGAHUB_PROFIT_DISTRIBUTION.NADEEM_SHARE;
-    const issaNogahubShare = nogahubShareholderDistribution * NOGAHUB_PROFIT_DISTRIBUTION.ISSA_SHARE;
-    const wewealthNogahubShare = nogahubShareholderDistribution * NOGAHUB_PROFIT_DISTRIBUTION.WEWEALTH_SHARE;
+    // Step 8: Void profit distribution pools
+    const voidRetainedEarnings = voidSalesProfit * VOID_PROFIT_DISTRIBUTION.RETAINED_EARNINGS; // 5%
+    const voidShareholderDistribution = voidSalesProfit * VOID_PROFIT_DISTRIBUTION.SHAREHOLDER_DISTRIBUTION; // 52.5%
 
-    // Step 10: Calculate final individual totals
-    const distribution = {
-      nadeem: 
-        // Fixed shareholder distributions
-        nadeemVoidShare + nadeemNogahubShare + 
-        // Role-based fees
-        (project.roles.producer === 'Nadeem' ? producerFee : 0) +
-        (project.roles.director === 'Nadeem' ? nogahubProjectDirector : 0) +
-        (project.roles.projectManager === 'Nadeem' ? nogahubProjectManager : 0) +
-        (project.roles.juniorProjectManager === 'Nadeem' ? nogahubJuniorPM : 0) +
-        (project.roles.accountant === 'Nadeem' ? nogahubAccounting : 0) +
-        (project.roles.logisticsManager === 'Nadeem' ? nogahubLogistics : 0) +
-        (project.roles.noiseControlEngineer === 'Nadeem' ? noiseControlEngineerFee : 0) +
-        (project.roles.soundSystemDesigner === 'Nadeem' ? soundSystemDesignerFee : 0),
-      
-      issa: 
-        // Fixed shareholder distributions
-        issaVoidShare + issaNogahubShare + 
-        // Role-based fees
-        (project.roles.producer === 'Issa' ? producerFee : 0) +
-        (project.roles.director === 'Issa' ? nogahubProjectDirector : 0) +
-        (project.roles.projectManager === 'Issa' ? nogahubProjectManager : 0) +
-        (project.roles.juniorProjectManager === 'Issa' ? nogahubJuniorPM : 0) +
-        (project.roles.accountant === 'Issa' ? nogahubAccounting : 0) +
-        (project.roles.logisticsManager === 'Issa' ? nogahubLogistics : 0) +
-        (project.roles.noiseControlEngineer === 'Issa' ? noiseControlEngineerFee : 0) +
-        (project.roles.soundSystemDesigner === 'Issa' ? soundSystemDesignerFee : 0),
-      
-      'omar bakri': 
-        // Fixed shareholder distributions
-        bakriVoidShare + 
-        // Role-based fees
-        (project.roles.producer === 'Omar' ? producerFee : 0) +
-        (project.roles.director === 'Omar' ? nogahubProjectDirector : 0) +
-        (project.roles.projectManager === 'Omar' ? nogahubProjectManager : 0) +
-        (project.roles.juniorProjectManager === 'Omar' ? nogahubJuniorPM : 0) +
-        (project.roles.accountant === 'Omar' ? nogahubAccounting : 0) +
-        (project.roles.logisticsManager === 'Omar' ? nogahubLogistics : 0) +
-        (project.roles.noiseControlEngineer === 'Omar' ? noiseControlEngineerFee : 0) +
-        (project.roles.soundSystemDesigner === 'Omar' ? soundSystemDesignerFee : 0),
-      
-      kareem: 
-        // No fixed shareholder distributions
-        // Role-based fees only
-        (project.roles.producer === 'Kareem' ? producerFee : 0) +
-        (project.roles.director === 'Kareem' ? nogahubProjectDirector : 0) +
-        (project.roles.projectManager === 'Kareem' ? nogahubProjectManager : 0) +
-        (project.roles.juniorProjectManager === 'Kareem' ? nogahubJuniorPM : 0) +
-        (project.roles.accountant === 'Kareem' ? nogahubAccounting : 0) +
-        (project.roles.logisticsManager === 'Kareem' ? nogahubLogistics : 0) +
-        (project.roles.noiseControlEngineer === 'Kareem' ? noiseControlEngineerFee : 0) +
-        (project.roles.soundSystemDesigner === 'Kareem' ? soundSystemDesignerFee : 0),
-      
-      ammar: 
-        // No fixed shareholder distributions
-        // Role-based fees only
-        (project.roles.producer === 'Ammar' ? producerFee : 0) +
-        (project.roles.director === 'Ammar' ? nogahubProjectDirector : 0) +
-        (project.roles.projectManager === 'Ammar' ? nogahubProjectManager : 0) +
-        (project.roles.juniorProjectManager === 'Ammar' ? nogahubJuniorPM : 0) +
-        (project.roles.accountant === 'Ammar' ? nogahubAccounting : 0) +
-        (project.roles.logisticsManager === 'Ammar' ? nogahubLogistics : 0) +
-        (project.roles.noiseControlEngineer === 'Ammar' ? noiseControlEngineerFee : 0) +
-        (project.roles.soundSystemDesigner === 'Ammar' ? soundSystemDesignerFee : 0),
-      
-      wewealth: wewealthNogahubShare
-    };
+    // Step 9: Nogahub fee allocation pools
+    const nogahubProjectDirector = nogahubFee * 0.20;
+    const nogahubProjectManager = nogahubFee * 0.15;
+    const nogahubJuniorPM = nogahubFee * 0.08;
+    const nogahubLogistics = nogahubFee * 0.03;
+    const nogahubAccounting = nogahubFee * 0.02;
+    const nogahubLegal = nogahubFee * 0.03;
+    const nogahubAdmin = nogahubFee * 0.02;
+    const nogahubRetainedEarnings = nogahubFee * NOGAHUB_PROFIT_DISTRIBUTION.RETAINED_EARNINGS; // 27%
+    const nogahubShareholderDistribution = nogahubFee * NOGAHUB_PROFIT_DISTRIBUTION.SHAREHOLDER_DISTRIBUTION; // 20%
+    const nogahubOperatingAllocation = nogahubProjectDirector + nogahubProjectManager + nogahubJuniorPM + nogahubLogistics + nogahubAccounting + nogahubLegal + nogahubAdmin; // 53%
 
     // Calculate equipment dealer total in USD for PO
     const equipmentDealerTotalUSD = project.equipment.reduce((sum, item) => {
@@ -844,25 +781,22 @@ This quotation is valid for 30 days from the date of issue`
       tax: tax020,
       internalDoorToDoorPrice: doorToDoorCostJOD,
       clientDoorToDoorCost: doorToDoorCostExclTax020JOD,
-      distribution,
+      // Board-level metrics
+      equipmentMsrpValueJOD,
+      discountedEquipmentValueJOD,
+      passThroughJOD,
+      vatJOD,
+      equipmentGrossMargin,
+      effectiveDiscountPct,
+      nogahubRevenue,
+      serviceProviderPayout,
+      nogahubServiceProfit,
       breakdown: {
         voidRetainedEarnings,
         voidShareholderDistribution,
-        nogahubProjectDirector,
-        nogahubProjectManager,
-        nogahubJuniorPM,
-        nogahubLogistics,
-        nogahubAccounting,
-        nogahubLegal,
-        nogahubAdmin,
+        nogahubOperatingAllocation,
         nogahubRetainedEarnings,
         nogahubShareholderDistribution,
-        nadeemVoidShare,
-        issaVoidShare,
-        bakriVoidShare,
-        nadeemNogahubShare,
-        issaNogahubShare,
-        wewealthNogahubShare
       }
     };
   }, [project, equipmentDatabase, exchangeRate, shippingRatePerKg, servicePricing, roleFees]);
@@ -3119,10 +3053,10 @@ This quotation is valid for 30 days from the date of issue"
           )}
 
           {/* Role Assignment Tab */}
-          {activeTab === 'roles' && (
+          {activeTab === 'roles_REMOVED' && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Project Role Assignment</h3>
-              
+
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Producer</label>
@@ -3394,440 +3328,315 @@ This quotation is valid for 30 days from the date of issue"
 
           {/* Financial Analysis Tab - Admin Only */}
           {activeTab === 'results' && userRole === 'admin' && (
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900">Financial Analysis & Profit Distribution</h3>
-              
+            <div className="space-y-8">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Financial Analysis</h3>
+                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">Board Summary — Admin Only</span>
+              </div>
+
               {!isCalculated && (
                 <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
                   <p className="text-orange-800">Please calculate the project first to see financial analysis.</p>
                 </div>
               )}
 
-              {isCalculated && calculationResults && (
-                <>
-                  {/* Entity Performance Overview */}
-                  <div className="grid grid-cols-3 gap-6">
-                    <div className="border border-gray-200 rounded-lg p-6 bg-white">
-                      <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-                        <Building2 size={20} className="mr-2" />
-                        Void Acoustics Jordan
-                      </h4>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Equipment Revenue:</span>
-                          <span className="font-medium">{calculationResults.equipmentTotalJOD.toFixed(2)} JOD</span>
+              {isCalculated && calculationResults && (() => {
+                const r = calculationResults;
+                const totalDistributableProfit = r.breakdown.voidShareholderDistribution + r.breakdown.nogahubShareholderDistribution;
+                const totalRetained = r.breakdown.voidRetainedEarnings + r.breakdown.nogahubRetainedEarnings;
+                const blendedNetMargin = r.projectSubtotalJOD > 0
+                  ? ((r.voidSalesProfit + r.nogahubServiceProfit) / r.projectSubtotalJOD) * 100
+                  : 0;
+
+                return (
+                  <>
+                    {/* ── EXECUTIVE SUMMARY BAND ── */}
+                    <div className="bg-gray-900 text-white rounded-xl p-6">
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-5">Executive Summary</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-6">
+                        <div>
+                          <p className="text-xs text-gray-400">Total Project Value</p>
+                          <p className="text-xl font-bold mt-1">{r.projectTotalJOD.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">JOD (incl. VAT)</p>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Door-to-Door Cost (excl. Tax):</span>
-                          <span className="font-medium">{calculationResults.doorToDoorCostExclTax020JOD.toFixed(2)} JOD</span>
+                        <div>
+                          <p className="text-xs text-gray-400">Landed Cost</p>
+                          <p className="text-xl font-bold mt-1">{r.doorToDoorCostExclTax020JOD.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">JOD dealer + logistics</p>
                         </div>
-                        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                          <span className="font-semibold text-gray-900">Sales Profit:</span>
-                          <span className="font-bold text-green-600">{calculationResults.voidSalesProfit.toFixed(2)} JOD</span>
+                        <div>
+                          <p className="text-xs text-gray-400">Equipment Sales Profit</p>
+                          <p className="text-xl font-bold mt-1 text-green-400">{r.voidSalesProfit.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">JOD</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Equip. Gross Margin</p>
+                          <p className="text-xl font-bold mt-1 text-green-400">{(r.equipmentGrossMargin * 100).toFixed(1)}%</p>
+                          <p className="text-xs text-gray-500 mt-0.5">profit ÷ MSRP value</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Effective Discount</p>
+                          <p className="text-xl font-bold mt-1 text-yellow-400">{r.effectiveDiscountPct.toFixed(1)}%</p>
+                          <p className="text-xs text-gray-500 mt-0.5">vs list pricing</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="border border-gray-200 rounded-lg p-6 bg-white">
-                      <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-                        <Zap size={20} className="mr-2" />
-                        Nogahub
-                      </h4>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Services Revenue:</span>
-                          <span className="font-medium">{calculationResults.servicesTotal.toFixed(2)} JOD</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Management Fee:</span>
-                          <span className="font-medium">{calculationResults.nogahubFee.toFixed(2)} JOD</span>
-                        </div>
-                        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                          <span className="font-semibold text-gray-900">Total Revenue:</span>
-                          <span className="font-bold text-green-600">{(calculationResults.servicesTotal + calculationResults.nogahubFee).toFixed(2)} JOD</span>
-                        </div>
+                    {/* ── SECTION A: PROJECT CONSOLIDATED ── */}
+                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                      <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                        <h4 className="font-semibold text-gray-900">A — Project (Consolidated)</h4>
                       </div>
-                    </div>
-
-                    <div className="border border-gray-200 rounded-lg p-6 bg-white">
-                      <h4 className="font-semibold text-gray-900 mb-4">Project Totals</h4>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Subtotal:</span>
-                          <span className="font-medium">{calculationResults.projectSubtotalJOD.toFixed(2)} JOD</span>
-                        </div>
-                        {project.includeTax && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600">VAT (16%):</span>
-                            <span className="font-medium">{calculationResults.projectTaxJOD.toFixed(2)} JOD</span>
+                      <div className="p-6 space-y-6">
+                        {/* Revenue breakdown cards */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">Equipment Revenue (MSRP)</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.discountedEquipmentValueJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD after discount</p>
                           </div>
-                        )}
-                        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                          <span className="font-semibold text-gray-900">Final Total:</span>
-                          <span className="font-bold text-green-600">{calculationResults.projectTotalJOD.toFixed(2)} JOD</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Role-Based Assignments */}
-                  <div className="border border-gray-200 rounded-lg p-6 bg-white">
-                    <h4 className="font-semibold text-gray-900 mb-4">Current Role Assignments</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">Producer:</span>
-                          <span className="text-sm text-gray-900">{project.roles.producer || 'Not assigned'}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">Director:</span>
-                          <span className="text-sm text-gray-900">{project.roles.director || 'Not assigned'}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">Project Manager:</span>
-                          <span className="text-sm text-gray-900">{project.roles.projectManager || 'Not assigned'}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">Junior Project Manager:</span>
-                          <span className="text-sm text-gray-900">{project.roles.juniorProjectManager || 'Not assigned'}</span>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">Accountant:</span>
-                          <span className="text-sm text-gray-900">{project.roles.accountant || 'Not assigned'}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">Logistics Manager:</span>
-                          <span className="text-sm text-gray-900">{project.roles.logisticsManager || 'Not assigned'}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">Noise Control Engineer:</span>
-                          <span className="text-sm text-gray-900">{project.roles.noiseControlEngineer || 'Not assigned'}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">Sound System Designer:</span>
-                          <span className="text-sm text-gray-900">{project.roles.soundSystemDesigner || 'Not assigned'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Void Analysis */}
-                  <div className="border border-gray-200 rounded-lg p-6 bg-white">
-                    <h4 className="font-semibold text-gray-900 mb-6">Void Analysis</h4>
-                    
-                    {/* Order Analysis */}
-                    <div className="mb-6">
-                      <h6 className="font-medium text-gray-800 mb-4">Order Breakdown</h6>
-                      
-                      {/* Total Door-to-door (Internal) - Above */}
-                      <div className="mb-4">
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Total Door-to-door (Internal)</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.internalDoorToDoorPrice.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">100%</p>
-                        </div>
-                      </div>
-
-                      {/* Main 4 boxes */}
-                      <div className="grid grid-cols-4 gap-4 text-sm mb-4">
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Void Equipment Dealer Cost</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.equipmentDetails.filter(item => {
-                            const equipment = equipmentDatabase.find(eq => eq.name === item.name);
-                            return equipment && equipment.category === 'void';
-                          }).reduce((sum, item) => sum + item.dealerTotalJOD, 0).toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">{((calculationResults.equipmentDetails.filter(item => {
-                            const equipment = equipmentDatabase.find(eq => eq.name === item.name);
-                            return equipment && equipment.category === 'void';
-                          }).reduce((sum, item) => sum + item.dealerTotalJOD, 0) / calculationResults.internalDoorToDoorPrice) * 100).toFixed(1)}%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Shipping</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.shipping.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">{((calculationResults.shipping / calculationResults.internalDoorToDoorPrice) * 100).toFixed(1)}%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Customs</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.customs.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">{((calculationResults.customs / calculationResults.internalDoorToDoorPrice) * 100).toFixed(1)}%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Tax (VAT 16%)</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.tax.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">{((calculationResults.tax / calculationResults.internalDoorToDoorPrice) * 100).toFixed(1)}%</p>
-                        </div>
-                      </div>
-
-                      {/* Final Profit - Below */}
-                      <div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Final Profit</p>
-                          <p className="text-base text-green-600 mt-1">{calculationResults.voidSalesProfit.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">{((calculationResults.voidSalesProfit / calculationResults.internalDoorToDoorPrice) * 100).toFixed(1)}%</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Void Profit Distribution Summary */}
-                    <div className="mb-6">
-                      <h6 className="font-medium text-gray-800 mb-4">Void Profit Distribution</h6>
-                      <div className="grid grid-cols-4 gap-4 text-sm">
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Producer</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.producerFee.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">5%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Nogahub Management</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.nogahubFee.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">37.5%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Void Retained Earnings</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.voidRetainedEarnings.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">5%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Void Stakeholders</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.voidShareholderDistribution.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">52.5%</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Void Stakeholder Distribution Details */}
-                    <div>
-                      <h6 className="font-medium text-gray-800 mb-4">Void Stakeholder Distribution (52.5%)</h6>
-                      <div className="space-y-3 text-sm">
-                        <div className="ml-4 space-y-2 text-xs bg-gray-50 p-3 rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600">• Nadeem (50%):</span>
-                            <span className="font-medium">{calculationResults.breakdown.nadeemVoidShare.toFixed(2)} JOD</span>
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">Logistics Pass-through</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.passThroughJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD billed at cost, 0% margin</p>
                           </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600">• Issa (22.5%):</span>
-                            <span className="font-medium">{calculationResults.breakdown.issaVoidShare.toFixed(2)} JOD</span>
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">Services Revenue</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.servicesTotal.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD</p>
                           </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600">• Omar Bakri (22.5%):</span>
-                            <span className="font-medium">{calculationResults.breakdown.bakriVoidShare.toFixed(2)} JOD</span>
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">VAT Collected</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.vatJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD remitted to gov, net 0</p>
+                          </div>
+                        </div>
+
+                        {/* Pie charts */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <div className="border border-gray-100 rounded-lg p-4">
+                            <h5 className="font-medium text-gray-800 mb-3 text-sm">Revenue Composition</h5>
+                            <ResponsiveContainer width="100%" height={250}>
+                              <PieChart>
+                                <Pie
+                                  data={[
+                                    { name: 'Equipment (MSRP)', value: r.discountedEquipmentValueJOD },
+                                    ...(r.customEquipmentTotalJOD > 0 ? [{ name: 'Custom Items', value: r.customEquipmentTotalJOD }] : []),
+                                    ...(r.servicesTotal > 0 ? [{ name: 'Services', value: r.servicesTotal }] : []),
+                                    { name: 'Logistics (0% margin)', value: r.passThroughJOD },
+                                    ...(r.vatJOD > 0 ? [{ name: 'VAT (remitted)', value: r.vatJOD }] : []),
+                                  ].filter(d => d.value > 0)}
+                                  cx="50%" cy="50%" innerRadius={52} outerRadius={82} dataKey="value"
+                                >
+                                  {[0,1,2,3,4].map(i => <Cell key={i} fill={BOARD_COLORS[i % BOARD_COLORS.length]} />)}
+                                </Pie>
+                                <Tooltip formatter={(v) => `${Number(v).toFixed(2)} JOD`} />
+                                <Legend iconSize={10} wrapperStyle={{fontSize: '11px'}} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+
+                          <div className="border border-gray-100 rounded-lg p-4">
+                            <h5 className="font-medium text-gray-800 mb-3 text-sm">Where Client Money Goes</h5>
+                            <ResponsiveContainer width="100%" height={250}>
+                              <PieChart>
+                                <Pie
+                                  data={[
+                                    { name: 'Dealer Cost', value: r.equipmentDealerTotalJOD },
+                                    { name: 'Logistics (pass-through)', value: r.passThroughJOD },
+                                    ...(r.vatJOD > 0 ? [{ name: 'VAT (remitted)', value: r.vatJOD }] : []),
+                                    { name: 'Equipment Profit', value: r.voidSalesProfit },
+                                    ...(r.servicesTotal > 0 ? [{ name: 'Services Revenue', value: r.servicesTotal }] : []),
+                                  ].filter(d => d.value > 0)}
+                                  cx="50%" cy="50%" innerRadius={52} outerRadius={82} dataKey="value"
+                                >
+                                  {[0,1,2,3,4].map(i => <Cell key={i} fill={BOARD_COLORS[i % BOARD_COLORS.length]} />)}
+                                </Pie>
+                                <Tooltip formatter={(v) => `${Number(v).toFixed(2)} JOD`} />
+                                <Legend iconSize={10} wrapperStyle={{fontSize: '11px'}} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+
+                        {/* Project totals row */}
+                        <div className="grid grid-cols-3 gap-4 text-sm border-t border-gray-100 pt-4">
+                          <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                            <span className="text-gray-600">Subtotal (ex-VAT):</span>
+                            <span className="font-semibold">{r.projectSubtotalJOD.toFixed(2)} JOD</span>
+                          </div>
+                          {project.includeTax && (
+                            <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                              <span className="text-gray-600">VAT (16%):</span>
+                              <span className="font-semibold">{r.projectTaxJOD.toFixed(2)} JOD</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between p-3 bg-gray-900 text-white rounded-lg">
+                            <span className="text-gray-300">Final Total:</span>
+                            <span className="font-bold">{r.projectTotalJOD.toFixed(2)} JOD</span>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Nogahub Analysis */}
-                  <div className="border border-gray-200 rounded-lg p-6 bg-white">
-                    <h4 className="font-semibold text-gray-900 mb-6">Nogahub Analysis</h4>
-                    
-                    {/* Nogahub Distribution Details */}
-                    <div className="mb-6">
-                      <h6 className="font-medium text-gray-800 mb-4">Nogahub Distribution (37.5%)</h6>
-                      <div className="grid grid-cols-4 gap-4 text-sm mb-4">
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Project Director</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubProjectDirector.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">20%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Project Manager</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubProjectManager.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">15%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Junior PM</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubJuniorPM.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">8%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Logistics</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubLogistics.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">3%</p>
-                        </div>
+                    {/* ── SECTION B: VOID ACOUSTICS ── */}
+                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                      <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                        <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                          <Building2 size={16} />
+                          B — Void Acoustics Jordan
+                        </h4>
                       </div>
-                      <div className="grid grid-cols-4 gap-4 text-sm">
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Accounting</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubAccounting.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">2%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Admin & Legal</p>
-                          <p className="text-base text-gray-900 mt-1">{(calculationResults.breakdown.nogahubLegal + calculationResults.breakdown.nogahubAdmin).toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">5%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Retained Earnings</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubRetainedEarnings.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">27%</p>
-                        </div>
-                        <div className="text-center p-4 bg-gray-50 rounded-lg">
-                          <p className="text-gray-600 font-medium">Nogahub Stakeholders</p>
-                          <p className="text-base text-gray-900 mt-1">{calculationResults.breakdown.nogahubShareholderDistribution.toFixed(2)} JOD</p>
-                          <p className="text-xs text-red-600">20%</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Nogahub Shareholder Distribution */}
-                    <div>
-                      <h5 className="font-semibold text-gray-900 mb-4">Nogahub Shareholder Distribution</h5>
-                      <div className="space-y-3 text-sm">
-                        <div className="ml-4 space-y-2 text-xs bg-gray-50 p-3 rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600">• Nadeem (40%):</span>
-                            <span className="font-medium">{calculationResults.breakdown.nadeemNogahubShare.toFixed(2)} JOD</span>
+                      <div className="p-6 space-y-6">
+                        {/* KPI cards */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">Equipment Value (MSRP)</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.equipmentMsrpValueJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD list price</p>
                           </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600">• Issa (40%):</span>
-                            <span className="font-medium">{calculationResults.breakdown.issaNogahubShare.toFixed(2)} JOD</span>
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">Dealer Cost</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.equipmentDealerTotalJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD</p>
                           </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-600">• Wewealth (20%):</span>
-                            <span className="font-medium">{calculationResults.breakdown.wewealthNogahubShare.toFixed(2)} JOD</span>
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">Sales Profit</p>
+                            <p className="text-lg font-bold text-green-600 mt-1">{r.voidSalesProfit.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD</p>
+                          </div>
+                          <div className="p-4 bg-green-50 rounded-lg text-center border border-green-200">
+                            <p className="text-xs text-gray-600 font-medium">Equipment Gross Margin</p>
+                            <p className="text-2xl font-bold text-green-700 mt-1">{(r.equipmentGrossMargin * 100).toFixed(1)}%</p>
+                            <p className="text-xs text-gray-400 mt-0.5">profit ÷ MSRP value</p>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="space-y-6">
+                        {/* Logistics pass-through callout */}
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm">
+                          <p className="font-medium text-blue-900 mb-2">Logistics — Pass-through (billed at cost, 0% margin)</p>
+                          <div className="grid grid-cols-3 gap-4 text-xs text-blue-700">
+                            <div><span className="font-medium">Shipping:</span> {r.shipping.toFixed(2)} JOD</div>
+                            <div><span className="font-medium">Customs:</span> {r.customs.toFixed(2)} JOD</div>
+                            <div><span className="font-medium">Total pass-through:</span> {r.passThroughJOD.toFixed(2)} JOD</div>
+                          </div>
+                        </div>
 
-                    <div className="border border-gray-200 rounded-lg p-6 bg-white">
-                      <h4 className="font-semibold text-gray-900 mb-4">Service Distribution</h4>
-                      <div className="space-y-4 text-sm">
-                        
-                        {/* Noise Control Service */}
-                        {calculationResults.noiseControlServiceCost > 0 && (
-                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                            <h5 className="font-semibold text-gray-900 mb-3">Noise Control Service</h5>
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Total Service Revenue:</span>
-                                <span className="font-medium text-gray-800">{calculationResults.noiseControlServiceCost.toFixed(2)} JOD</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Noise Control Engineer (40%):</span>
-                                <span className="font-medium">{(calculationResults.noiseControlServiceCost * 0.4).toFixed(2)} JOD</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Advisory (30%):</span>
-                                <span className="font-medium">{(calculationResults.noiseControlServiceCost * 0.3).toFixed(2)} JOD</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Nogahub Profit (30%):</span>
-                                <span className="font-medium">{(calculationResults.noiseControlServiceCost * 0.3).toFixed(2)} JOD</span>
-                              </div>
+                        {/* Order cost breakdown */}
+                        <div>
+                          <h6 className="font-medium text-gray-800 mb-3 text-sm">Order Cost Breakdown</h6>
+                          <div className="grid grid-cols-4 gap-4 text-sm">
+                            <div className="text-center p-4 bg-gray-50 rounded-lg">
+                              <p className="text-gray-600 font-medium text-xs">Dealer Equipment</p>
+                              <p className="text-base text-gray-900 mt-1">{r.equipmentDealerTotalJOD.toFixed(2)} JOD</p>
+                              <p className="text-xs text-gray-400">{r.doorToDoorCostExclTax020JOD > 0 ? ((r.equipmentDealerTotalJOD / r.doorToDoorCostExclTax020JOD) * 100).toFixed(1) : '0'}% of cost</p>
+                            </div>
+                            <div className="text-center p-4 bg-gray-50 rounded-lg">
+                              <p className="text-gray-600 font-medium text-xs">Shipping</p>
+                              <p className="text-base text-gray-900 mt-1">{r.shipping.toFixed(2)} JOD</p>
+                              <p className="text-xs text-gray-400">pass-through</p>
+                            </div>
+                            <div className="text-center p-4 bg-gray-50 rounded-lg">
+                              <p className="text-gray-600 font-medium text-xs">Customs</p>
+                              <p className="text-base text-gray-900 mt-1">{r.customs.toFixed(2)} JOD</p>
+                              <p className="text-xs text-gray-400">pass-through</p>
+                            </div>
+                            <div className="text-center p-4 bg-gray-50 rounded-lg">
+                              <p className="text-gray-600 font-medium text-xs">Tax (VAT 16%)</p>
+                              <p className="text-base text-gray-900 mt-1">{r.vatJOD.toFixed(2)} JOD</p>
+                              <p className="text-xs text-gray-400">collected/remitted</p>
                             </div>
                           </div>
-                        )}
-
-                        {/* Sound Design Service */}
-                        {calculationResults.soundDesignServiceCost > 0 && (
-                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                            <h5 className="font-semibold text-gray-900 mb-3">Sound Design Service</h5>
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Total Service Revenue:</span>
-                                <span className="font-medium text-gray-800">{calculationResults.soundDesignServiceCost.toFixed(2)} JOD</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Sound System Designer (70%):</span>
-                                <span className="font-medium">{(calculationResults.soundDesignServiceCost * 0.7).toFixed(2)} JOD</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Nogahub Profit (30%):</span>
-                                <span className="font-medium">{(calculationResults.soundDesignServiceCost * 0.3).toFixed(2)} JOD</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Total Services Summary */}
-                        {(calculationResults.noiseControlServiceCost > 0 || calculationResults.soundDesignServiceCost > 0) && (
-                          <div className="bg-gray-100 p-4 rounded-lg border border-gray-300">
-                            <h5 className="font-semibold text-gray-900 mb-3">Total Services Summary</h5>
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Total Services Revenue:</span>
-                                <span className="font-bold text-gray-900">{calculationResults.servicesTotal.toFixed(2)} JOD</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Total to Service Providers:</span>
-                                <span className="font-medium">{((calculationResults.noiseControlServiceCost * 0.4) + (calculationResults.soundDesignServiceCost * 0.7)).toFixed(2)} JOD</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Total Advisory:</span>
-                                <span className="font-medium">{(calculationResults.noiseControlServiceCost * 0.3).toFixed(2)} JOD</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Total to Nogahub:</span>
-                                <span className="font-medium">{((calculationResults.noiseControlServiceCost * 0.3) + (calculationResults.soundDesignServiceCost * 0.3)).toFixed(2)} JOD</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* No Services Message */}
-                        {calculationResults.servicesTotal === 0 && (
-                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
-                            <p className="text-gray-600">No services included in this project</p>
-                          </div>
-                        )}
-                        
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Final Individual Distribution */}
-                  <div className="border border-gray-200 rounded-lg p-6 bg-white">
-                    <h4 className="font-semibold text-gray-900 mb-4">Final Individual Distribution</h4>
-                    <div className="grid grid-cols-3 gap-4">
-                      {Object.entries(calculationResults.distribution).map(([person, amount]) => (
-                        <div key={person} className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="text-sm font-medium text-gray-700 capitalize">{person}</p>
-                          <p className="text-lg font-bold text-green-600 mt-1">{amount.toFixed(2)} JOD</p>
-                          <p className="text-xs text-gray-500 mt-1">{((amount / calculationResults.projectSubtotalJOD) * 100).toFixed(1)}% of project</p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* Business Insights */}
-                  <div className="border border-gray-200 rounded-lg p-6 bg-white">
-                    <h4 className="font-semibold text-gray-900 mb-4">Business Performance Metrics</h4>
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <p className="text-sm font-medium text-gray-700">Gross Margin</p>
-                        <p className="text-lg font-bold text-red-600 mt-1">
-                          {((calculationResults.voidSalesProfit / calculationResults.equipmentTotalJOD) * 100).toFixed(1)}%
-                        </p>
-                      </div>
-                      <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <p className="text-sm font-medium text-gray-700">Service Revenue %</p>
-                        <p className="text-lg font-bold text-red-600 mt-1">
-                          {((calculationResults.servicesTotal / calculationResults.projectSubtotalJOD) * 100).toFixed(1)}%
-                        </p>
-                      </div>
-                      <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <p className="text-sm font-medium text-gray-700">Equipment Markup</p>
-                        <p className="text-lg font-bold text-red-600 mt-1">
-                          {(((calculationResults.equipmentClientTotalJOD - calculationResults.equipmentDealerTotalJOD) / calculationResults.equipmentDealerTotalJOD) * 100).toFixed(1)}%
-                        </p>
-                      </div>
-                      <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <p className="text-sm font-medium text-gray-700">Total Profit Margin</p>
-                        <p className="text-lg font-bold text-red-600 mt-1">
-                          {(((calculationResults.projectSubtotalJOD - calculationResults.doorToDoorCostJOD) / calculationResults.projectSubtotalJOD) * 100).toFixed(1)}%
-                        </p>
+                        {/* Quotation cost distribution chart */}
+                        <div className="border border-gray-100 rounded-lg p-4">
+                          <h6 className="font-medium text-gray-800 mb-2 text-sm">Quotation Cost Distribution</h6>
+                          <ResponsiveContainer width="100%" height={260}>
+                            <PieChart>
+                              <Pie
+                                data={[
+                                  { name: 'Dealer Cost', value: r.equipmentDealerTotalJOD },
+                                  { name: 'Shipping', value: r.shipping },
+                                  { name: 'Customs', value: r.customs },
+                                  ...(r.vatJOD > 0 ? [{ name: 'VAT (16%)', value: r.vatJOD }] : []),
+                                  { name: 'Profit', value: r.voidSalesProfit },
+                                ].filter(d => d.value > 0)}
+                                cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="value"
+                                label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
+                                labelLine={false}
+                              >
+                                {[0,1,2,3,4].map(i => <Cell key={i} fill={BOARD_COLORS[i % BOARD_COLORS.length]} />)}
+                              </Pie>
+                              <Tooltip formatter={(v) => `${Number(v).toFixed(2)} JOD`} />
+                              <Legend iconSize={10} wrapperStyle={{fontSize: '11px'}} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </>
-              )}
+
+                    {/* ── KEY PERFORMANCE METRICS ── */}
+                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                      <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                        <h4 className="font-semibold text-gray-900">Key Performance Metrics</h4>
+                      </div>
+                      <div className="p-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div className="text-center p-4 bg-green-50 border border-green-100 rounded-lg">
+                            <p className="text-xs text-gray-600 font-medium">Equipment Gross Margin</p>
+                            <p className="text-2xl font-bold text-green-700 mt-1">{(r.equipmentGrossMargin * 100).toFixed(1)}%</p>
+                            <p className="text-xs text-gray-400 mt-0.5">profit ÷ MSRP value</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-600 font-medium">Blended Net Margin</p>
+                            <p className="text-2xl font-bold text-gray-800 mt-1">{blendedNetMargin.toFixed(1)}%</p>
+                            <p className="text-xs text-gray-400 mt-0.5">excl. VAT &amp; pass-through</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-600 font-medium">Equipment Markup</p>
+                            <p className="text-2xl font-bold text-gray-800 mt-1">
+                              {r.equipmentDealerTotalJOD > 0
+                                ? (((r.equipmentMsrpValueJOD - r.equipmentDealerTotalJOD) / r.equipmentDealerTotalJOD) * 100).toFixed(1)
+                                : '0.0'}%
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">MSRP over dealer cost</p>
+                          </div>
+                          <div className="text-center p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
+                            <p className="text-xs text-gray-600 font-medium">Effective Discount</p>
+                            <p className="text-2xl font-bold text-yellow-700 mt-1">{r.effectiveDiscountPct.toFixed(1)}%</p>
+                            <p className="text-xs text-gray-400 mt-0.5">vs list pricing</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-600 font-medium">Service Revenue %</p>
+                            <p className="text-2xl font-bold text-gray-800 mt-1">
+                              {r.projectSubtotalJOD > 0
+                                ? ((r.servicesTotal / r.projectSubtotalJOD) * 100).toFixed(1)
+                                : '0.0'}%
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">of subtotal</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-600 font-medium">Cost-to-Revenue</p>
+                            <p className="text-2xl font-bold text-gray-800 mt-1">
+                              {r.projectSubtotalJOD > 0
+                                ? ((r.doorToDoorCostExclTax020JOD / r.projectSubtotalJOD) * 100).toFixed(1)
+                                : '0.0'}%
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">landed cost ÷ subtotal</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-600 font-medium">Distributable Profit</p>
+                            <p className="text-2xl font-bold text-green-600 mt-1">{r.voidSalesProfit.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD total sales profit</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 
