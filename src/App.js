@@ -3343,8 +3343,6 @@ This quotation is valid for 30 days from the date of issue"
 
               {isCalculated && calculationResults && (() => {
                 const r = calculationResults;
-                const totalDistributableProfit = r.breakdown.voidShareholderDistribution + r.breakdown.nogahubShareholderDistribution;
-                const totalRetained = r.breakdown.voidRetainedEarnings + r.breakdown.nogahubRetainedEarnings;
                 const blendedNetMargin = r.projectSubtotalJOD > 0
                   ? ((r.voidSalesProfit + r.nogahubServiceProfit) / r.projectSubtotalJOD) * 100
                   : 0;
