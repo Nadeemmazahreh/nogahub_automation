@@ -829,8 +829,8 @@ This quotation is valid for 30 days from the date of issue`
           <title>Quotation - ${project.projectName || 'Project'}</title>
           <style>
             @media print {
-              @page { margin: 0.5in; }
-              body { margin: 0; }
+              @page { size: auto; margin: 0mm; }
+              body { margin: 0; padding: 0.5in; }
             }
             body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
             .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
@@ -854,11 +854,12 @@ This quotation is valid for 30 days from the date of issue`
                 <strong>Deep Sound For Technical Consultations</strong><br/>
                 Housing Bank Complex 93 - Ground Floor 102<br/>
                 Q. Nour St. - Welbdeh - Amman - Jordan<br/>
-                Phone: +962 (0) 795144821
+                Phone: +962 (0) 795144821<br/>
+                Website: www.nogahub.com
               </div>
             </div>
           </div>
-          
+
           <div class="project-info">
             <strong>Quotation No.:</strong> ${quotationNumber}<br/>
             <strong>Client:</strong> ${project.clientName || 'Client Name'}<br/>
@@ -1072,8 +1073,8 @@ This quotation is valid for 30 days from the date of issue`
           <title>Purchase Order - ${poNumber}</title>
           <style>
             @media print {
-              @page { margin: 0.5in; }
-              body { margin: 0; }
+              @page { size: auto; margin: 0mm; }
+              body { margin: 0; padding: 0.5in; }
             }
             body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
             .header { display: flex; justify-content: space-between}
@@ -1380,8 +1381,8 @@ This quotation is valid for 30 days from the date of issue`
           <title>Quotation - ${customQuotation.projectName || 'Project'}</title>
           <style>
             @media print {
-              @page { margin: 0.5in; }
-              body { margin: 0; }
+              @page { size: auto; margin: 0mm; }
+              body { margin: 0; padding: 0.5in; }
             }
             body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
             .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
@@ -1516,8 +1517,8 @@ This quotation is valid for 30 days from the date of issue`
           <title>Invoice - ${project.projectName || 'Project'}</title>
           <style>
             @media print {
-              @page { margin: 0.5in; }
-              body { margin: 0; }
+              @page { size: auto; margin: 0mm; }
+              body { margin: 0; padding: 0.5in; }
             }
             body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
             .header { margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
@@ -1652,8 +1653,8 @@ This quotation is valid for 30 days from the date of issue`
           <title>Invoice - ${customQuotation.projectName || 'Project'}</title>
           <style>
             @media print {
-              @page { margin: 0.5in; }
-              body { margin: 0; }
+              @page { size: auto; margin: 0mm; }
+              body { margin: 0; padding: 0.5in; }
             }
             body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
             .header { margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
