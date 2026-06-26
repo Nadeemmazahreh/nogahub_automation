@@ -830,9 +830,9 @@ This quotation is valid for 30 days from the date of issue`
           <style>
             @media print {
               @page { size: auto; margin: 0mm; }
-              body { margin: 0; padding: 0.5in; }
+              body { margin: 0; padding: 0.5in 0.5in 60px 0.5in; }
             }
-            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; padding-bottom: 40px; }
+            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; padding-bottom: 50px; }
             .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
             .company-info { margin-bottom: 15px; font-size: 11px; }
             .project-info { margin-bottom: 15px; font-size: 11px; }
@@ -843,8 +843,7 @@ This quotation is valid for 30 days from the date of issue`
             .totals-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
             .total-final { font-weight: bold; font-size: 13px; border-top: 2px solid #000; padding-top: 8px; }
             .discount { color: red; }
-            .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; border-top: 1px solid #ccc; padding: 6px 20px; font-size: 11px; color: #6b7280; background: white; }
-            .footer::after { content: "Page " counter(page) " of " counter(pages); }
+            .footer { position: fixed; bottom: 10px; left: 0; right: 0; text-align: center; border-top: 1px solid #ccc; padding: 6px 20px; font-size: 11px; color: #6b7280; background: white; }
           </style>
         </head>
         <body>
@@ -1225,7 +1224,17 @@ This quotation is valid for 30 days from the date of issue`
             </div>
           </div>
 
-          <div class="footer"></div>
+          <div class="footer" id="docFooter">Page 1</div>
+          <script>
+            window.addEventListener('load', function() {
+              setTimeout(function() {
+                var pageH = 1056;
+                var total = Math.ceil(document.body.scrollHeight / pageH) || 1;
+                var el = document.getElementById('docFooter');
+                if (el) el.textContent = 'Page 1 of ' + total;
+              }, 50);
+            });
+          </script>
         </body>
       </html>
     `;
@@ -1380,9 +1389,9 @@ This quotation is valid for 30 days from the date of issue`
           <style>
             @media print {
               @page { size: auto; margin: 0mm; }
-              body { margin: 0; padding: 0.5in; }
+              body { margin: 0; padding: 0.5in 0.5in 60px 0.5in; }
             }
-            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; padding-bottom: 50px; }
             .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
             .company-info { margin-bottom: 15px; font-size: 11px; }
             .project-info { margin-bottom: 15px; font-size: 11px; }
@@ -1393,6 +1402,7 @@ This quotation is valid for 30 days from the date of issue`
             .totals-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
             .total-final { font-weight: bold; font-size: 13px; border-top: 2px solid #000; padding-top: 8px; }
             .discount { color: red; }
+            .footer { position: fixed; bottom: 10px; left: 0; right: 0; text-align: center; border-top: 1px solid #ccc; padding: 6px 20px; font-size: 11px; color: #6b7280; background: white; }
           </style>
         </head>
         <body>
@@ -1484,6 +1494,17 @@ This quotation is valid for 30 days from the date of issue`
             <p><strong>Terms & Conditions:</strong></p>
             <p style="white-space: pre-line;">${customQuotation.terms || ''}</p>
           </div>
+          <div class="footer" id="docFooter">Page 1</div>
+          <script>
+            window.addEventListener('load', function() {
+              setTimeout(function() {
+                var pageH = 1056;
+                var total = Math.ceil(document.body.scrollHeight / pageH) || 1;
+                var el = document.getElementById('docFooter');
+                if (el) el.textContent = 'Page 1 of ' + total;
+              }, 50);
+            });
+          </script>
         </body>
       </html>
     `;
@@ -1516,9 +1537,9 @@ This quotation is valid for 30 days from the date of issue`
           <style>
             @media print {
               @page { size: auto; margin: 0mm; }
-              body { margin: 0; padding: 0.5in; }
+              body { margin: 0; padding: 0.5in 0.5in 60px 0.5in; }
             }
-            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; padding-bottom: 50px; }
             .header { margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
             .company-info { font-size: 11px; }
             .meta-grid { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 11px; }
@@ -1534,6 +1555,7 @@ This quotation is valid for 30 days from the date of issue`
             .payment-row { display: flex; gap: 20px; flex-wrap: wrap; }
             .payment-item { margin-bottom: 4px; }
             .terms { margin-top: 15px; font-size: 10px; color: #555; border-top: 1px solid #eee; padding-top: 10px; }
+            .footer { position: fixed; bottom: 10px; left: 0; right: 0; text-align: center; border-top: 1px solid #ccc; padding: 6px 20px; font-size: 11px; color: #6b7280; background: white; }
           </style>
         </head>
         <body>
@@ -1625,6 +1647,17 @@ This quotation is valid for 30 days from the date of issue`
           <div class="terms">
             Payment is due upon receipt of this invoice. Thank you for your business.
           </div>
+          <div class="footer" id="docFooter">Page 1</div>
+          <script>
+            window.addEventListener('load', function() {
+              setTimeout(function() {
+                var pageH = 1056;
+                var total = Math.ceil(document.body.scrollHeight / pageH) || 1;
+                var el = document.getElementById('docFooter');
+                if (el) el.textContent = 'Page 1 of ' + total;
+              }, 50);
+            });
+          </script>
         </body>
       </html>
     `;
@@ -1652,9 +1685,9 @@ This quotation is valid for 30 days from the date of issue`
           <style>
             @media print {
               @page { size: auto; margin: 0mm; }
-              body { margin: 0; padding: 0.5in; }
+              body { margin: 0; padding: 0.5in 0.5in 60px 0.5in; }
             }
-            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; padding-bottom: 50px; }
             .header { margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
             .company-info { font-size: 11px; }
             .bill-to { margin-bottom: 15px; font-size: 11px; }
@@ -1669,6 +1702,7 @@ This quotation is valid for 30 days from the date of issue`
             .payment-row { display: flex; gap: 20px; flex-wrap: wrap; }
             .payment-item { margin-bottom: 4px; }
             .terms { margin-top: 15px; font-size: 10px; color: #555; border-top: 1px solid #eee; padding-top: 10px; }
+            .footer { position: fixed; bottom: 10px; left: 0; right: 0; text-align: center; border-top: 1px solid #ccc; padding: 6px 20px; font-size: 11px; color: #6b7280; background: white; }
           </style>
         </head>
         <body>
@@ -1754,6 +1788,17 @@ This quotation is valid for 30 days from the date of issue`
           <div class="terms">
             Payment is due upon receipt of this invoice. Thank you for your business.
           </div>
+          <div class="footer" id="docFooter">Page 1</div>
+          <script>
+            window.addEventListener('load', function() {
+              setTimeout(function() {
+                var pageH = 1056;
+                var total = Math.ceil(document.body.scrollHeight / pageH) || 1;
+                var el = document.getElementById('docFooter');
+                if (el) el.textContent = 'Page 1 of ' + total;
+              }, 50);
+            });
+          </script>
         </body>
       </html>
     `;
