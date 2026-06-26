@@ -832,7 +832,7 @@ This quotation is valid for 30 days from the date of issue`
               @page { size: auto; margin: 0mm; }
               body { margin: 0; padding: 0.5in; }
             }
-            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; padding-bottom: 40px; }
             .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
             .company-info { margin-bottom: 15px; font-size: 11px; }
             .project-info { margin-bottom: 15px; font-size: 11px; }
@@ -843,6 +843,8 @@ This quotation is valid for 30 days from the date of issue`
             .totals-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
             .total-final { font-weight: bold; font-size: 13px; border-top: 2px solid #000; padding-top: 8px; }
             .discount { color: red; }
+            .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; border-top: 1px solid #ccc; padding: 6px 20px; font-size: 11px; color: #6b7280; background: white; }
+            .footer::after { content: "Page " counter(page) " of " counter(pages); }
           </style>
         </head>
         <body>
@@ -1223,11 +1225,7 @@ This quotation is valid for 30 days from the date of issue`
             </div>
           </div>
 
-          <div class="footer">
-            <strong>Deep Sound For Technical Consultation LLC</strong><br/>
-            Phone: +962 (0) 795 4468 | Email: purchasing@nogahub.jo<br/>
-            Website: www.nogahub.com
-          </div>
+          <div class="footer"></div>
         </body>
       </html>
     `;
