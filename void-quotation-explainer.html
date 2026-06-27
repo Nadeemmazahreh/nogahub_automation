@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Void Acoustics — Final Quotation Calculation Guide</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:    #0d0d0d;
+      --dark:     #1a1a2e;
+      --accent:   #e94560;
+      --accent2:  #0f3460;
+      --mid:      #4a4a6a;
+      --light:    #f4f4f8;
+      --white:    #ffffff;
+      --border:   #dde0eb;
+      --mono:     'Courier New', Courier, monospace;
+      --sans:     'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    html { font-size: 11pt; }
+    body {
+      font-family: var(--sans);
+      color: var(--black);
+      background: var(--white);
+      line-height: 1.6;
+    }
+
+    /* ── Page Layout ── */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 18mm 20mm 18mm 20mm;
+    }
+
+    /* ── Cover Page ── */
+    .cover {
+      min-height: 297mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: var(--dark);
+      color: var(--white);
+      padding: 24mm 20mm 18mm 20mm;
+      page-break-after: always;
+    }
+
+    .cover-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cover-logo-mark {
+      width: 44px;
+      height: 44px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--white);
+      letter-spacing: -1px;
+    }
+
+    .cover-logo-name {
+      font-size: 18pt;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--white);
+    }
+
+    .cover-logo-sub {
+      font-size: 8pt;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .cover-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 16mm 0;
+    }
+
+    .cover-eyebrow {
+      font-size: 8pt;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+
+    .cover-title {
+      font-size: 32pt;
+      font-weight: 900;
+      line-height: 1.15;
+      color: var(--white);
+      margin-bottom: 18px;
+    }
+
+    .cover-title span {
+      color: var(--accent);
+    }
+
+    .cover-subtitle {
+      font-size: 12pt;
+      color: rgba(255,255,255,0.65);
+      max-width: 120mm;
+      line-height: 1.7;
+    }
+
+    .cover-divider {
+      width: 60px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 2px;
+      margin: 20px 0;
+    }
+
+    .cover-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      padding-top: 12px;
+    }
+
+    .cover-footer-left {
+      font-size: 8pt;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .cover-footer-right {
+      font-size: 8pt;
+      color: rgba(255,255,255,0.4);
+      text-align: right;
+    }
+
+    /* ── Page Header / Footer ── */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 8px;
+      margin-bottom: 22px;
+    }
+
+    .page-header-brand {
+      font-size: 9pt;
+      font-weight: 700;
+      color: var(--accent2);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .page-header-title {
+      font-size: 8pt;
+      color: var(--mid);
+    }
+
+    .page-footer {
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+      margin-top: 28px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 7.5pt;
+      color: #aaa;
+    }
+
+    /* ── Section Headings ── */
+    .section-label {
+      font-size: 7pt;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    h1 { font-size: 20pt; font-weight: 900; color: var(--dark); margin-bottom: 8px; }
+    h2 { font-size: 14pt; font-weight: 800; color: var(--dark); margin-bottom: 6px; margin-top: 22px; }
+    h3 { font-size: 11pt; font-weight: 700; color: var(--accent2); margin-bottom: 4px; margin-top: 14px; }
+
+    p { margin-bottom: 9px; font-size: 10pt; color: #333; }
+
+    /* ── Overview Grid ── */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .overview-card {
+      background: var(--light);
+      border-radius: 8px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--accent2);
+    }
+
+    .overview-card.red { border-left-color: var(--accent); }
+    .overview-card.green { border-left-color: #27ae60; }
+
+    .overview-card-label {
+      font-size: 7pt;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--mid);
+      margin-bottom: 4px;
+    }
+
+    .overview-card-value {
+      font-size: 14pt;
+      font-weight: 900;
+      color: var(--dark);
+    }
+
+    .overview-card-desc {
+      font-size: 8pt;
+      color: var(--mid);
+      margin-top: 2px;
+    }
+
+    /* ── Formula Box ── */
+    .formula-box {
+      background: var(--dark);
+      color: var(--white);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 14px 0;
+      font-family: var(--mono);
+      font-size: 9pt;
+      line-height: 1.8;
+    }
+
+    .formula-box .comment {
+      color: rgba(255,255,255,0.4);
+      font-style: italic;
+    }
+
+    .formula-box .key {
+      color: #f9ca24;
+    }
+
+    .formula-box .val {
+      color: #6bcb77;
+    }
+
+    .formula-box .result {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ── Step List ── */
+    .steps {
+      counter-reset: step-counter;
+      list-style: none;
+      margin: 14px 0;
+    }
+
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+
+    .steps li::before {
+      content: counter(step-counter);
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      background: var(--accent2);
+      color: var(--white);
+      border-radius: 50%;
+      font-size: 9pt;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    .steps li .step-content { flex: 1; }
+    .steps li .step-title { font-weight: 700; font-size: 10pt; color: var(--dark); margin-bottom: 3px; }
+    .steps li .step-body { font-size: 9pt; color: #555; line-height: 1.55; }
+
+    /* ── Two-Column Layout ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 14px 0;
+    }
+
+    .two-col-wide {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 16px;
+      margin: 14px 0;
+    }
+
+    /* ── Info Panel ── */
+    .info-panel {
+      background: var(--light);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .info-panel h3 { margin-top: 0; }
+
+    /* ── Data Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 9pt;
+    }
+
+    thead tr {
+      background: var(--accent2);
+      color: var(--white);
+    }
+
+    thead th {
+      padding: 8px 10px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 8pt;
+      letter-spacing: 0.05em;
+    }
+
+    tbody tr:nth-child(even) { background: var(--light); }
+    tbody tr:nth-child(odd)  { background: var(--white); }
+
+    tbody td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+      color: #333;
+    }
+
+    tbody td.num { text-align: right; font-family: var(--mono); font-size: 8.5pt; }
+    tbody td.highlight { font-weight: 700; color: var(--accent); }
+
+    /* ── Tag / Pill ── */
+    .tag {
+      display: inline-block;
+      background: var(--accent2);
+      color: var(--white);
+      font-size: 7pt;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 2px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+    .tag.red { background: var(--accent); }
+    .tag.green { background: #27ae60; }
+
+    /* ── Callout / Note ── */
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: #fff5f6;
+      border-radius: 0 6px 6px 0;
+      padding: 10px 14px;
+      margin: 12px 0;
+      font-size: 9pt;
+      color: #444;
+    }
+
+    .callout.blue {
+      border-left-color: var(--accent2);
+      background: #f0f4ff;
+    }
+
+    .callout.green {
+      border-left-color: #27ae60;
+      background: #f0fff5;
+    }
+
+    .callout strong { color: var(--dark); }
+
+    /* ── Profit Flow Diagram ── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 12px 0;
+    }
+
+    .flow-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .flow-box {
+      flex: 1;
+      background: var(--light);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 8.5pt;
+      font-weight: 600;
+      color: var(--dark);
+      text-align: center;
+    }
+
+    .flow-box.dark {
+      background: var(--accent2);
+      color: var(--white);
+      border-color: var(--accent2);
+    }
+
+    .flow-box.red {
+      background: var(--accent);
+      color: var(--white);
+      border-color: var(--accent);
+    }
+
+    .flow-box.green {
+      background: #27ae60;
+      color: var(--white);
+      border-color: #27ae60;
+    }
+
+    .flow-arrow {
+      font-size: 14pt;
+      color: var(--mid);
+      flex-shrink: 0;
+    }
+
+    .flow-pct {
+      font-size: 7.5pt;
+      color: var(--mid);
+      text-align: center;
+      margin-top: 2px;
+      font-weight: 400;
+    }
+
+    /* ── Summary Total Banner ── */
+    .total-banner {
+      background: linear-gradient(135deg, var(--dark) 0%, var(--accent2) 100%);
+      color: var(--white);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 18px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .total-banner-label {
+      font-size: 10pt;
+      color: rgba(255,255,255,0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+
+    .total-banner-formula {
+      font-size: 11pt;
+      font-family: var(--mono);
+      color: rgba(255,255,255,0.9);
+    }
+
+    .total-banner-value {
+      font-size: 26pt;
+      font-weight: 900;
+      color: var(--white);
+    }
+
+    .total-banner-currency {
+      font-size: 12pt;
+      color: rgba(255,255,255,0.6);
+      margin-right: 4px;
+    }
+
+    /* ── Page Break ── */
+    .page-break { page-break-after: always; }
+
+    /* ── Print Overrides ── */
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page { padding: 14mm 18mm; }
+      .cover { padding: 20mm 18mm 16mm 18mm; }
+      .page-break { page-break-after: always; }
+      .no-break { page-break-inside: avoid; }
+    }
+
+    /* ── Inline code ── */
+    code {
+      font-family: var(--mono);
+      background: #eef0f6;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 8.5pt;
+      color: var(--accent2);
+    }
+
+    ul.bullet { list-style: disc; padding-left: 18px; margin: 8px 0; }
+    ul.bullet li { font-size: 9pt; color: #444; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     COVER PAGE
+     ══════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">
+    <div class="cover-logo-mark">N</div>
+    <div>
+      <div class="cover-logo-name">NogaHub</div>
+      <div class="cover-logo-sub">Automation Platform</div>
+    </div>
+  </div>
+
+  <div class="cover-body">
+    <div class="cover-eyebrow">Internal Reference Document</div>
+    <h1 class="cover-title">
+      How the <span>Void Acoustics</span><br/>
+      Final Quotation<br/>
+      is Calculated
+    </h1>
+    <div class="cover-divider"></div>
+    <p class="cover-subtitle">
+      A step-by-step breakdown of the pricing formula — from dealer cost and
+      exchange rates through shipping, customs duties, services, discount,
+      and final VAT — as implemented in the NogaHub automation system.
+    </p>
+  </div>
+
+  <div class="cover-footer">
+    <div class="cover-footer-left">
+      CONFIDENTIAL — Internal Use Only<br/>
+      NogaHub Automation v2
+    </div>
+    <div class="cover-footer-right">
+      Version 1.0<br/>
+      March 2026
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     PAGE 2 — OVERVIEW
+     ══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-header-brand">NogaHub · Void Quotation Guide</span>
+    <span class="page-header-title">Overview</span>
+  </div>
+
+  <div class="section-label">What is Void?</div>
+  <h1>Overview</h1>
+
+  <p>
+    <strong>Void Acoustics Research Ltd.</strong> is a UK-based professional audio equipment
+    manufacturer. In the NogaHub system, Void is a dedicated equipment category
+    (<code>category: "void"</code>) whose items are sourced in USD, imported into Jordan,
+    and re-sold to clients in JOD through a project-based quoting workflow.
+  </p>
+
+  <p>
+    Each piece of Void equipment carries two USD prices in the database:
+  </p>
+
+  <div class="overview-grid no-break">
+    <div class="overview-card">
+      <div class="overview-card-label">Dealer Price (dealerUSD)</div>
+      <div class="overview-card-value">Wholesale</div>
+      <div class="overview-card-desc">What NogaHub pays Void. Used for cost, profit, and shipping/customs allocation.</div>
+    </div>
+    <div class="overview-card red">
+      <div class="overview-card-label">MSRP (msrpUSD)</div>
+      <div class="overview-card-value">List Price</div>
+      <div class="overview-card-desc">Manufacturer suggested retail price. Used as the base for the client-facing BOQ price.</div>
+    </div>
+    <div class="overview-card green">
+      <div class="overview-card-label">Weight (kg)</div>
+      <div class="overview-card-value">Per Unit</div>
+      <div class="overview-card-desc">Physical weight used to calculate proportional shipping costs per item.</div>
+    </div>
+  </div>
+
+  <div class="callout blue">
+    <strong>Key principle:</strong> The client never sees dealer cost. The BOQ (Bill of Quantities)
+    is always built on MSRP, with shipping and customs costs distributed on top.
+  </div>
+
+  <div class="section-label" style="margin-top:22px;">The Full Pipeline at a Glance</div>
+  <h2>Calculation Pipeline — 7 Stages</h2>
+
+  <ol class="steps">
+    <li>
+      <div class="step-content">
+        <div class="step-title">Currency Conversion</div>
+        <div class="step-body">All USD prices are converted to JOD using a fixed exchange rate of <strong>0.71 JOD / 1 USD</strong>.</div>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <div class="step-title">Shipping Cost Calculation</div>
+        <div class="step-body">Total weight of all items drives a per-kg shipping cost, plus fixed logistics fees (clearance, transport, delivery order).</div>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <div class="step-title">Jordanian Customs &amp; Taxes</div>
+        <div class="step-body">Eight separate customs taxes (001, 020, 215, 301, 111, 016, 019, 070) are applied to the shipment value. Two cost variants are computed — one including tax 020, one excluding it — to avoid double-counting in the BOQ.</div>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <div class="step-title">Per-Unit BOQ Pricing</div>
+        <div class="step-body">Shipping and customs costs (excluding tax 020) are distributed proportionally across each item based on its share of the total dealer cost. The client unit price = MSRP (JOD) + allocated shipping + allocated customs.</div>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <div class="step-title">Services</div>
+        <div class="step-body">Four standard services — Commissioning, Noise Control, Sound Design, and Project Management — are added. Each has a default formula or can be overridden with a custom value.</div>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <div class="step-title">Discount</div>
+        <div class="step-body">A global discount percentage (if set on the project) is applied to the combined equipment + services subtotal.</div>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <div class="step-title">VAT (16%)</div>
+        <div class="step-body">If <code>includeTax</code> is enabled on the project, 16% Jordanian VAT is applied to the discounted subtotal to produce the <strong>Final Quotation Total</strong>.</div>
+      </div>
+    </li>
+  </ol>
+
+  <div class="page-footer">
+    <span>NogaHub Automation — CONFIDENTIAL</span>
+    <span>Page 2</span>
+  </div>
+</div>
+<div class="page-break"></div>
+
+
+<!-- ══════════════════════════════════════════════
+     PAGE 3 — STAGES 1–3: CURRENCY, SHIPPING, CUSTOMS
+     ══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-header-brand">NogaHub · Void Quotation Guide</span>
+    <span class="page-header-title">Stages 1–3: Currency · Shipping · Customs</span>
+  </div>
+
+  <div class="section-label">Stage 1</div>
+  <h2>Currency Conversion (USD → JOD)</h2>
+
+  <p>
+    All Void equipment prices stored in the database are in USD.
+    Before any calculation the system converts them to JOD using a fixed exchange rate:
+  </p>
+
+  <div class="formula-box no-break">
+    <span class="comment">// Stage 1 — Currency conversion (src/config/constants.js)</span><br/>
+    <span class="key">EXCHANGE_RATE</span> = <span class="val">0.71</span>  <span class="comment">// JOD per USD</span><br/><br/>
+    dealerJOD  = dealerUSD  × <span class="val">0.71</span><br/>
+    msrpJOD    = msrpUSD    × <span class="val">0.71</span><br/><br/>
+    <span class="comment">// Then summed across all items in the project:</span><br/>
+    equipmentDealerTotalJOD = Σ( dealerJOD × qty )<br/>
+    equipmentClientTotalJOD = Σ( msrpJOD  × qty )<br/>
+    totalWeight             = Σ( weight   × qty )  <span class="comment">// kg</span>
+  </div>
+
+  <!-- ─────────────────────────────────────── -->
+  <div class="section-label" style="margin-top:20px;">Stage 2</div>
+  <h2>Shipping Cost Calculation</h2>
+
+  <div class="two-col no-break">
+    <div>
+      <p>The shipping cost has two components: a <strong>weight-based freight charge</strong> and three <strong>fixed logistics fees</strong>.</p>
+      <div class="formula-box" style="font-size:8.5pt;">
+        <span class="key">RATE_PER_KG</span>  = <span class="val">4.50 JOD</span><br/>
+        <span class="key">CLEARANCE</span>    = <span class="val">35 JOD</span><br/>
+        <span class="key">TRANSPORT</span>    = <span class="val">70 JOD</span><br/>
+        <span class="key">DELIVERY_ORDER</span> = <span class="val">45 JOD</span><br/><br/>
+        freightCost = totalWeight × <span class="val">4.50</span><br/>
+        <span class="result">totalShippingCost</span> = freightCost + 35 + 70 + 45
+      </div>
+    </div>
+    <div class="info-panel">
+      <h3>Example</h3>
+      <p style="font-size:9pt;">Project with <strong>120 kg</strong> total weight:</p>
+      <table>
+        <tbody>
+          <tr><td>Freight (120 kg × 4.50)</td><td class="num">540.00 JOD</td></tr>
+          <tr><td>Clearance</td><td class="num">35.00 JOD</td></tr>
+          <tr><td>Transport</td><td class="num">70.00 JOD</td></tr>
+          <tr><td>Delivery Order</td><td class="num">45.00 JOD</td></tr>
+          <tr><td><strong>Total Shipping</strong></td><td class="num highlight">690.00 JOD</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────── -->
+  <div class="section-label" style="margin-top:20px;">Stage 3</div>
+  <h2>Jordanian Customs &amp; Taxes</h2>
+
+  <p>
+    The system applies eight Jordanian customs tax components to the import.
+    The variable <code>taxableAmount</code> is the equipment dealer total in JOD
+    (<code>equipmentDealerTotalJOD</code>).
+  </p>
+
+  <table class="no-break">
+    <thead>
+      <tr>
+        <th>Tax Code</th>
+        <th>Description</th>
+        <th>Formula</th>
+        <th>Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>tax001</code></td>
+        <td>Import Duty</td>
+        <td>taxableAmount × 5%</td>
+        <td>% of value</td>
+      </tr>
+      <tr>
+        <td><code>tax020</code></td>
+        <td>VAT on Import</td>
+        <td>(taxableAmount + tax001) × 16%</td>
+        <td>% of value + duty</td>
+      </tr>
+      <tr>
+        <td><code>tax215</code></td>
+        <td>Services Tax</td>
+        <td>taxableAmount × 1%</td>
+        <td>% of value</td>
+      </tr>
+      <tr>
+        <td><code>tax301</code></td>
+        <td>Clearance Fee</td>
+        <td>50 JOD (fixed)</td>
+        <td>Fixed</td>
+      </tr>
+      <tr>
+        <td><code>tax111</code></td>
+        <td>Shipping Insurance</td>
+        <td>freightCost × 0.3%</td>
+        <td>% of freight</td>
+      </tr>
+      <tr>
+        <td><code>tax016</code></td>
+        <td>Administrative Fee</td>
+        <td>23.20 JOD (fixed)</td>
+        <td>Fixed</td>
+      </tr>
+      <tr>
+        <td><code>tax019</code></td>
+        <td>Processing Fee</td>
+        <td>25 JOD (fixed)</td>
+        <td>Fixed</td>
+      </tr>
+      <tr>
+        <td><code>tax070</code></td>
+        <td>Municipality Tax</td>
+        <td>taxableAmount × 5%</td>
+        <td>% of value</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="two-col no-break">
+    <div class="callout">
+      <strong>Door-to-Door (Full):</strong><br/>
+      <code>doorToDoorCostJOD</code> = totalShippingCost + all taxes including tax020<br/>
+      <em>Used for profit reporting only.</em>
+    </div>
+    <div class="callout blue">
+      <strong>Door-to-Door (excl. tax020):</strong><br/>
+      <code>doorToDoorCostExclTax020JOD</code> = all taxes except tax020<br/>
+      <em>Used in BOQ to prevent double-counting — tax020 is reflected via the client VAT at the end.</em>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>NogaHub Automation — CONFIDENTIAL</span>
+    <span>Page 3</span>
+  </div>
+</div>
+<div class="page-break"></div>
+
+
+<!-- ══════════════════════════════════════════════
+     PAGE 4 — STAGES 4–5: PER-UNIT PRICING & SERVICES
+     ══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-header-brand">NogaHub · Void Quotation Guide</span>
+    <span class="page-header-title">Stages 4–5: Unit Pricing &amp; Services</span>
+  </div>
+
+  <div class="section-label">Stage 4 — The Core Pricing Formula</div>
+  <h2>Per-Unit BOQ Price</h2>
+
+  <p>
+    Shipping and customs costs are not shown as a lump sum in the BOQ.
+    Instead, they are <strong>distributed proportionally</strong> across every item based on
+    that item's share of the total dealer cost. This produces a clean,
+    per-unit "landed" price for the client.
+  </p>
+
+  <div class="formula-box no-break">
+    <span class="comment">// Step 1 — Compute cost-sharing ratios (once for the entire project)</span><br/>
+    shippingShare = totalShippingCost / equipmentDealerTotalJOD<br/>
+    customsShare  = totalCustomsExclTax020 / equipmentDealerTotalJOD<br/><br/>
+    <span class="comment">// Step 2 — Per item allocation</span><br/>
+    shippingPerUnit = dealerJOD[item] × shippingShare<br/>
+    customsPerUnit  = dealerJOD[item] × customsShare<br/><br/>
+    <span class="comment">// Step 3 — Final BOQ unit price (MSRP-based)</span><br/>
+    <span class="result">finalUnitPriceJOD</span> = msrpJOD[item] + shippingPerUnit + customsPerUnit<br/><br/>
+    <span class="comment">// Step 4 — Line total</span><br/>
+    <span class="result">finalTotalJOD</span> = finalUnitPriceJOD × quantity
+  </div>
+
+  <div class="callout green no-break">
+    <strong>Why MSRP, not dealer price?</strong> The client quotation is based on MSRP (the
+    manufacturer's suggested retail price), not the wholesale dealer cost. This builds in
+    equipment margin for NogaHub. Dealer cost is used only for internal profit calculations.
+  </div>
+
+  <div class="info-panel no-break" style="margin-top:14px;">
+    <h3>Worked Example — Single Item</h3>
+    <p style="font-size:9pt; margin-bottom:8px;">
+      <strong>Item:</strong> Void Cyclone 4 (IT1000) · Qty: 2
+      &nbsp;|&nbsp; dealerUSD: $181.91 · msrpUSD: $330.75 · Weight: 1.3 kg each<br/>
+      <strong>Project totals (assumed):</strong> equipmentDealerTotal = 5,000 JOD ·
+      totalShipping = 690 JOD · totalCustoms (excl. 020) = 280 JOD
+    </p>
+    <table>
+      <tbody>
+        <tr><td>dealerJOD per unit</td><td class="num">181.91 × 0.71 = 129.16 JOD</td></tr>
+        <tr><td>msrpJOD per unit</td><td class="num">330.75 × 0.71 = 234.83 JOD</td></tr>
+        <tr><td>shippingShare</td><td class="num">690 / 5,000 = 0.1380</td></tr>
+        <tr><td>customsShare</td><td class="num">280 / 5,000 = 0.0560</td></tr>
+        <tr><td>shippingPerUnit</td><td class="num">129.16 × 0.1380 = 17.82 JOD</td></tr>
+        <tr><td>customsPerUnit</td><td class="num">129.16 × 0.0560 = 7.23 JOD</td></tr>
+        <tr><td><strong>finalUnitPrice</strong></td><td class="num highlight">234.83 + 17.82 + 7.23 = 259.88 JOD</td></tr>
+        <tr><td><strong>Line Total (×2)</strong></td><td class="num highlight">519.76 JOD</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ─────────────────────────────────────── -->
+  <div class="section-label" style="margin-top:20px;">Stage 5</div>
+  <h2>Services</h2>
+
+  <p>
+    Four professional services are automatically priced and added to the BOQ.
+    Each has a <strong>default formula</strong> but can be overridden with a custom value per project.
+  </p>
+
+  <table class="no-break">
+    <thead>
+      <tr>
+        <th>Service</th>
+        <th>Default Formula</th>
+        <th>Base</th>
+        <th>Override?</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Commissioning</strong></td>
+        <td>6% of Equipment Dealer Total</td>
+        <td>equipmentDealerTotalJOD</td>
+        <td><span class="tag green">Yes</span></td>
+      </tr>
+      <tr>
+        <td><strong>Noise Control</strong></td>
+        <td>Fixed 5,000 JOD</td>
+        <td>Fixed</td>
+        <td><span class="tag green">Yes</span></td>
+      </tr>
+      <tr>
+        <td><strong>Sound Design</strong></td>
+        <td>3% of Equipment Dealer Total</td>
+        <td>equipmentDealerTotalJOD</td>
+        <td><span class="tag green">Yes</span></td>
+      </tr>
+      <tr>
+        <td><strong>Project Management</strong></td>
+        <td>10% of Equipment MSRP Total</td>
+        <td>equipmentClientTotalJOD</td>
+        <td><span class="tag green">Yes</span></td>
+      </tr>
+      <tr>
+        <td><strong>Custom Services</strong></td>
+        <td>Sum of individual prices</td>
+        <td>Per item</td>
+        <td><span class="tag green">Yes</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="formula-box" style="margin-top:12px; font-size:8.5pt;">
+    servicesTotal = commissioning + noiseControl + soundDesign + projectMgmt + customServices
+  </div>
+
+  <div class="page-footer">
+    <span>NogaHub Automation — CONFIDENTIAL</span>
+    <span>Page 4</span>
+  </div>
+</div>
+<div class="page-break"></div>
+
+
+<!-- ══════════════════════════════════════════════
+     PAGE 5 — STAGES 6–7 + FINAL TOTAL
+     ══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-header-brand">NogaHub · Void Quotation Guide</span>
+    <span class="page-header-title">Stages 6–7: Discount, VAT &amp; Final Total</span>
+  </div>
+
+  <div class="section-label">Stage 6</div>
+  <h2>Global Discount</h2>
+
+  <p>
+    A single discount percentage set on the project is applied to the combined
+    equipment + services subtotal <em>after</em> all per-unit prices are finalized.
+  </p>
+
+  <div class="formula-box no-break">
+    <span class="comment">// Stage 6 — Discount (App.js ~line 617)</span><br/>
+    subtotalBeforeDiscount = equipmentTotalJODBeforeDiscount<br/>
+                           + customEquipmentTotalJOD<br/>
+                           + servicesTotal<br/><br/>
+    discountAmount  = subtotalBeforeDiscount × (globalDiscount / 100)<br/>
+    <span class="result">projectSubtotalJOD</span> = subtotalBeforeDiscount − discountAmount
+  </div>
+
+  <div class="callout no-break">
+    <strong>Discount timing matters:</strong> The discount is applied to the <em>combined</em>
+    subtotal (equipment + services). It is not applied line-by-line. Individual item prices
+    shown in the BOQ already include their allocated shipping/customs, but the discount
+    reduces the grand total proportionally.
+  </div>
+
+  <!-- ─────────────────────────────────────── -->
+  <div class="section-label" style="margin-top:20px;">Stage 7</div>
+  <h2>VAT (16%) — Optional</h2>
+
+  <p>
+    Jordanian Value Added Tax (16%) is applied only when the project has
+    <code>includeTax = true</code>. The tax is calculated on the discounted subtotal.
+  </p>
+
+  <div class="formula-box no-break">
+    <span class="comment">// Stage 7 — VAT (App.js ~line 623)</span><br/>
+    projectTaxJOD  = includeTax ? projectSubtotalJOD × <span class="val">0.16</span> : <span class="val">0</span><br/><br/>
+    <span class="result">projectTotalJOD</span> = projectSubtotalJOD + projectTaxJOD
+  </div>
+
+  <!-- ─────────────────────────────────────── -->
+  <div class="section-label" style="margin-top:24px;">The Complete Formula</div>
+  <h2>Final Quotation Total</h2>
+
+  <div class="total-banner no-break">
+    <div>
+      <div class="total-banner-label">Final Quotation Total</div>
+      <div class="total-banner-formula">
+        projectTotalJOD =<br/>
+        &nbsp;&nbsp;( Σ finalUnitPriceJOD × qty<br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;+ customEquipment<br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;+ services )<br/>
+        &nbsp;&nbsp;× (1 − discount%)<br/>
+        &nbsp;&nbsp;× (1 + 0.16 if VAT)
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div class="total-banner-currency">JOD</div>
+      <div class="total-banner-value">projectTotal</div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:20px;">Complete Subtotal Build-Up</h3>
+  <table class="no-break">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Component</th>
+        <th>How Calculated</th>
+        <th>Included in Client Quote?</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>Equipment MSRP (JOD)</td>
+        <td>msrpUSD × 0.71 × qty</td>
+        <td><span class="tag green">Yes</span></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Shipping Allocation</td>
+        <td>dealerJOD × shippingShare</td>
+        <td><span class="tag green">Yes (in unit price)</span></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Customs Allocation (excl. tax020)</td>
+        <td>dealerJOD × customsShare</td>
+        <td><span class="tag green">Yes (in unit price)</span></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Custom Equipment Items</td>
+        <td>price × quantity (no shipping/customs)</td>
+        <td><span class="tag green">Yes</span></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Services (4 types)</td>
+        <td>Formulas or custom values</td>
+        <td><span class="tag green">Yes</span></td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Global Discount</td>
+        <td>− subtotal × discount%</td>
+        <td><span class="tag red">Reduces total</span></td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>VAT (16%)</td>
+        <td>subtotal × 0.16 (if enabled)</td>
+        <td><span class="tag green">If includeTax = true</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-footer">
+    <span>NogaHub Automation — CONFIDENTIAL</span>
+    <span>Page 5</span>
+  </div>
+</div>
+<div class="page-break"></div>
+
+
+<!-- ══════════════════════════════════════════════
+     PAGE 6 — PROFIT DISTRIBUTION
+     ══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-header-brand">NogaHub · Void Quotation Guide</span>
+    <span class="page-header-title">Profit Distribution</span>
+  </div>
+
+  <div class="section-label">After the Quotation is Accepted</div>
+  <h1>Profit Distribution</h1>
+
+  <p>
+    Once a project is won, the system calculates <strong>two separate profit pools</strong>:
+    one for <em>Void Sales Profit</em> (equipment margin) and one for
+    <em>NogaHub Fee</em> (service/management revenue).
+  </p>
+
+  <div class="two-col no-break">
+    <div class="info-panel">
+      <h3>Void Sales Profit</h3>
+      <div class="formula-box" style="font-size:8pt; padding:10px 12px;">
+        voidSalesProfit =<br/>
+        &nbsp;equipmentTotalJOD (after discount)<br/>
+        &nbsp;− doorToDoorCostExclTax020JOD
+      </div>
+      <p style="font-size:9pt; margin-top:8px;">Distributed as:</p>
+      <table>
+        <tbody>
+          <tr><td>Retained Earnings</td><td class="num">5%</td></tr>
+          <tr><td>Shareholder Distribution</td><td class="num">52.5%</td></tr>
+          <tr><td style="padding-left:20px;">→ Nadeem</td><td class="num">50% of dist.</td></tr>
+          <tr><td style="padding-left:20px;">→ Issa</td><td class="num">22.5% of dist.</td></tr>
+          <tr><td style="padding-left:20px;">→ Bakri</td><td class="num">22.5% of dist.</td></tr>
+          <tr><td>Producer Fee</td><td class="num">5%</td></tr>
+          <tr><td>NogaHub Fee</td><td class="num highlight">37.5%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-panel">
+      <h3>NogaHub Fee (37.5% of Void profit)</h3>
+      <p style="font-size:9pt; margin-bottom:6px;">Distributed internally as:</p>
+      <table>
+        <tbody>
+          <tr><td>Project Director</td><td class="num">20%</td></tr>
+          <tr><td>Project Manager</td><td class="num">15%</td></tr>
+          <tr><td>Junior PM</td><td class="num">8%</td></tr>
+          <tr><td>Logistics Manager</td><td class="num">3%</td></tr>
+          <tr><td>Accounting &amp; Finance</td><td class="num">2%</td></tr>
+          <tr><td>Legal</td><td class="num">3%</td></tr>
+          <tr><td>Admin Fees</td><td class="num">2%</td></tr>
+          <tr><td>Retained Earnings</td><td class="num">27%</td></tr>
+          <tr><td>Shareholder Dist.</td><td class="num">20%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="info-panel no-break" style="margin-top:14px;">
+    <h3>Service-Based Distributions</h3>
+    <p style="font-size:9pt;">Two services have direct profit allocations to specific roles:</p>
+    <table>
+      <thead><tr><th>Service</th><th>Role</th><th>Share</th></tr></thead>
+      <tbody>
+        <tr><td>Noise Control</td><td>Noise Control Engineer</td><td class="num">40% of noise control service revenue</td></tr>
+        <tr><td>Sound Design</td><td>Sound System Designer</td><td class="num">50% of sound design service revenue</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ─────────────────────────────────────── -->
+  <div class="section-label" style="margin-top:22px;">Quick Reference</div>
+  <h2>All Constants at a Glance</h2>
+
+  <div class="two-col no-break">
+    <table>
+      <thead><tr><th>Constant</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Exchange Rate (USD→JOD)</td><td class="num">0.71</td></tr>
+        <tr><td>Shipping Rate per kg</td><td class="num">4.50 JOD</td></tr>
+        <tr><td>Clearance Cost</td><td class="num">35 JOD</td></tr>
+        <tr><td>Transport Cost</td><td class="num">70 JOD</td></tr>
+        <tr><td>Delivery Order</td><td class="num">45 JOD</td></tr>
+        <tr><td>VAT Rate</td><td class="num">16%</td></tr>
+        <tr><td>Tax 001 (Import Duty)</td><td class="num">5%</td></tr>
+        <tr><td>Tax 020 (VAT on Import)</td><td class="num">16%</td></tr>
+        <tr><td>Tax 215 (Services)</td><td class="num">1%</td></tr>
+        <tr><td>Tax 301 (Clearance)</td><td class="num">50 JOD</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Constant</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Tax 111 (Insurance)</td><td class="num">0.3% of freight</td></tr>
+        <tr><td>Tax 016 (Admin)</td><td class="num">23.20 JOD</td></tr>
+        <tr><td>Tax 019 (Processing)</td><td class="num">25 JOD</td></tr>
+        <tr><td>Tax 070 (Municipality)</td><td class="num">5%</td></tr>
+        <tr><td>Commissioning Service</td><td class="num">6% of dealer total</td></tr>
+        <tr><td>Noise Control Service</td><td class="num">5,000 JOD (fixed)</td></tr>
+        <tr><td>Sound Design Service</td><td class="num">3% of dealer total</td></tr>
+        <tr><td>Project Mgmt Service</td><td class="num">10% of MSRP total</td></tr>
+        <tr><td>Void Profit → NogaHub Fee</td><td class="num">37.5%</td></tr>
+        <tr><td>Void Profit → Producer Fee</td><td class="num">5%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="page-footer">
+    <span>NogaHub Automation — CONFIDENTIAL</span>
+    <span>Page 6</span>
+  </div>
+</div>
+
+</body>
+</html>
