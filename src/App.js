@@ -3435,6 +3435,8 @@ This quotation is valid for 30 days from the date of issue"
                                     ...(r.vatJOD > 0 ? [{ name: 'Import Tax', value: r.vatJOD }] : []),
                                   ].filter(d => d.value > 0)}
                                   cx="50%" cy="50%" innerRadius={52} outerRadius={82} dataKey="value"
+                                  label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
+                                  labelLine={false}
                                 >
                                   {[0,1,2,3,4].map(i => <Cell key={i} fill={BOARD_COLORS[i % BOARD_COLORS.length]} />)}
                                 </Pie>
@@ -3457,6 +3459,8 @@ This quotation is valid for 30 days from the date of issue"
                                     ...(r.servicesTotal > 0 ? [{ name: 'Services Revenue', value: r.servicesTotal }] : []),
                                   ].filter(d => d.value > 0)}
                                   cx="50%" cy="50%" innerRadius={52} outerRadius={82} dataKey="value"
+                                  label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
+                                  labelLine={false}
                                 >
                                   {[0,1,2,3,4].map(i => <Cell key={i} fill={BOARD_COLORS[i % BOARD_COLORS.length]} />)}
                                 </Pie>
@@ -3504,9 +3508,9 @@ This quotation is valid for 30 days from the date of issue"
                             <p className="text-xs text-gray-400 mt-0.5">JOD list price</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">Dealer Cost</p>
-                            <p className="text-lg font-bold text-gray-900 mt-1">{r.equipmentDealerTotalJOD.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">JOD</p>
+                            <p className="text-xs text-gray-500 font-medium">Internal Landed Cost</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.doorToDoorCostJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">incl. customs, shipping &amp; import tax</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
                             <p className="text-xs text-gray-500 font-medium">Sales Profit</p>
