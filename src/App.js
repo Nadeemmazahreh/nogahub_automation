@@ -369,7 +369,9 @@ This quotation is valid for 30 days from the date of issue`
         },
         customServices: savedProject.customServices || [],
         customEquipment: savedProject.customEquipment || [],
-        roles: savedProject.roles || { producer: '', projectManager: '' }
+        roles: savedProject.roles || { producer: '', projectManager: '' },
+        includeTax: savedProject.includeTax !== undefined ? savedProject.includeTax : true,
+        terms: savedProject.terms || project.terms
       });
       if (savedProject.hasCalculation) {
         setIsCalculated(true);
@@ -710,7 +712,8 @@ This quotation is valid for 30 days from the date of issue`
     const equipmentMsrpValueJOD = equipmentClientTotalJOD; // MSRP total before discount
     const discountedEquipmentValueJOD = equipmentClientTotalJOD * globalDiscountMultiplier;
     const passThroughJOD = totalShippingCost + totalCustomsExclTax020; // billed at cost, 0 margin
-    const vatJOD = tax020; // collected and remitted to government, net 0
+    const vatJOD = tax020; // import VAT (input tax) paid at customs
+    const vatToRemitJOD = project.includeTax ? Math.max(0, projectTaxJOD - vatJOD) : 0; // ponytail: floor at 0 — output<input is possible on heavy discount; remit 0 not negative
     const equipmentGrossMargin = discountedEquipmentValueJOD > 0 ? voidSalesProfit / discountedEquipmentValueJOD : 0;
     const effectiveDiscountPct = project.globalDiscount || 0;
 
@@ -786,6 +789,7 @@ This quotation is valid for 30 days from the date of issue`
       discountedEquipmentValueJOD,
       passThroughJOD,
       vatJOD,
+      vatToRemitJOD,
       equipmentGrossMargin,
       effectiveDiscountPct,
       nogahubRevenue,
@@ -3388,7 +3392,7 @@ This quotation is valid for 30 days from the date of issue"
                       </div>
                       <div className="p-6 space-y-6">
                         {/* Revenue breakdown cards */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
                             <p className="text-xs text-gray-500 font-medium">Equipment Revenue (MSRP)</p>
                             <p className="text-lg font-bold text-gray-900 mt-1">{r.discountedEquipmentValueJOD.toFixed(2)}</p>
@@ -3405,9 +3409,14 @@ This quotation is valid for 30 days from the date of issue"
                             <p className="text-xs text-gray-400 mt-0.5">JOD</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">VAT Collected</p>
+                            <p className="text-xs text-gray-500 font-medium">Import Tax</p>
                             <p className="text-lg font-bold text-gray-900 mt-1">{r.vatJOD.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">JOD remitted to gov, net 0</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD paid at customs</p>
+                          </div>
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">VAT to Remit</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.vatToRemitJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">output VAT − import</p>
                           </div>
                         </div>
 
@@ -3423,7 +3432,7 @@ This quotation is valid for 30 days from the date of issue"
                                     ...(r.customEquipmentTotalJOD > 0 ? [{ name: 'Custom Items', value: r.customEquipmentTotalJOD }] : []),
                                     ...(r.servicesTotal > 0 ? [{ name: 'Services', value: r.servicesTotal }] : []),
                                     { name: 'Logistics (0% margin)', value: r.passThroughJOD },
-                                    ...(r.vatJOD > 0 ? [{ name: 'VAT (remitted)', value: r.vatJOD }] : []),
+                                    ...(r.vatJOD > 0 ? [{ name: 'Import Tax', value: r.vatJOD }] : []),
                                   ].filter(d => d.value > 0)}
                                   cx="50%" cy="50%" innerRadius={52} outerRadius={82} dataKey="value"
                                 >
@@ -3443,7 +3452,7 @@ This quotation is valid for 30 days from the date of issue"
                                   data={[
                                     { name: 'Dealer Cost', value: r.equipmentDealerTotalJOD },
                                     { name: 'Logistics (pass-through)', value: r.passThroughJOD },
-                                    ...(r.vatJOD > 0 ? [{ name: 'VAT (remitted)', value: r.vatJOD }] : []),
+                                    ...(r.vatJOD > 0 ? [{ name: 'Import Tax', value: r.vatJOD }] : []),
                                     { name: 'Equipment Profit', value: r.voidSalesProfit },
                                     ...(r.servicesTotal > 0 ? [{ name: 'Services Revenue', value: r.servicesTotal }] : []),
                                   ].filter(d => d.value > 0)}
@@ -3541,9 +3550,9 @@ This quotation is valid for 30 days from the date of issue"
                               <p className="text-xs text-gray-400">pass-through</p>
                             </div>
                             <div className="text-center p-4 bg-gray-50 rounded-lg">
-                              <p className="text-gray-600 font-medium text-xs">Tax (VAT 16%)</p>
+                              <p className="text-gray-600 font-medium text-xs">Import Tax</p>
                               <p className="text-base text-gray-900 mt-1">{r.vatJOD.toFixed(2)} JOD</p>
-                              <p className="text-xs text-gray-400">collected/remitted</p>
+                              <p className="text-xs text-gray-400">paid at customs</p>
                             </div>
                           </div>
                         </div>
@@ -3558,7 +3567,7 @@ This quotation is valid for 30 days from the date of issue"
                                   { name: 'Dealer Cost', value: r.equipmentDealerTotalJOD },
                                   { name: 'Shipping', value: r.shipping },
                                   { name: 'Customs', value: r.customs },
-                                  ...(r.vatJOD > 0 ? [{ name: 'VAT (16%)', value: r.vatJOD }] : []),
+                                  ...(r.vatJOD > 0 ? [{ name: 'Import Tax', value: r.vatJOD }] : []),
                                   { name: 'Profit', value: r.voidSalesProfit },
                                 ].filter(d => d.value > 0)}
                                 cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="value"
