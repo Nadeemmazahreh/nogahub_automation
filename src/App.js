@@ -190,9 +190,9 @@ This quotation is valid for 30 days from the date of issue`
           equipment: baseProjectData.equipment.filter(item => item.code && item.code.trim()),
           // Fix services - convert to simple booleans (this must come after the spread)
           services: {
-            commissioning: baseProjectData.services.commissioning?.enabled || false,
-            noiseControl: baseProjectData.services.noiseControl?.enabled || false,
-            soundDesign: baseProjectData.services.soundDesign?.enabled || false
+            commissioning: { enabled: baseProjectData.services.commissioning?.enabled || false, customValue: baseProjectData.services.commissioning?.customValue || 0 },
+            noiseControl: { enabled: baseProjectData.services.noiseControl?.enabled || false, customValue: baseProjectData.services.noiseControl?.customValue || 0 },
+            soundDesign: { enabled: baseProjectData.services.soundDesign?.enabled || false, customValue: baseProjectData.services.soundDesign?.customValue || 0 },
           },
           total: calculationResults ? (calculationResults.projectTotalJOD || calculationResults.totalCostUSD || 0) : 0,
           isCalculated: isCalculated,
@@ -3363,9 +3363,9 @@ This quotation is valid for 30 days from the date of issue"
                           <p className="text-xs text-gray-500 mt-0.5">JOD (incl. VAT)</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-400">Landed Cost</p>
-                          <p className="text-xl font-bold mt-1">{r.doorToDoorCostExclTax020JOD.toFixed(2)}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">JOD dealer + logistics</p>
+                          <p className="text-xs text-gray-400">Internal Landed Cost</p>
+                          <p className="text-xl font-bold mt-1">{r.doorToDoorCostJOD.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">JOD incl. customs, shipping &amp; import tax</p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-400">Equipment Sales Profit</p>
