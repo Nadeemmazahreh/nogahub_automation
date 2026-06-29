@@ -833,7 +833,17 @@ This quotation is valid for 30 days from the date of issue`
           <title>Quotation - ${project.projectName || 'Project'}</title>
           <style>
             @media print {
-              @page { margin: 0.5in; }
+              @page {
+                margin: 0.5in 0.5in 0.75in 0.5in;
+                @bottom-left {
+                  content: "Page " counter(page) " of " counter(pages);
+                  font-size: 9pt;
+                  font-family: Arial, sans-serif;
+                  color: #555;
+                }
+                @bottom-center { content: ""; }
+                @bottom-right { content: ""; }
+              }
               body { margin: 0; }
             }
             body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
@@ -858,7 +868,8 @@ This quotation is valid for 30 days from the date of issue`
                 <strong>Deep Sound For Technical Consultations</strong><br/>
                 Housing Bank Complex 93 - Ground Floor 102<br/>
                 Q. Nour St. - Welbdeh - Amman - Jordan<br/>
-                Phone: +962 (0) 795144821
+                Phone: +962 (0) 795144821<br/>
+                Website: www.nogahub.com
               </div>
             </div>
           </div>
@@ -1076,7 +1087,17 @@ This quotation is valid for 30 days from the date of issue`
           <title>Purchase Order - ${poNumber}</title>
           <style>
             @media print {
-              @page { margin: 0.5in; }
+              @page {
+                margin: 0.5in 0.5in 0.75in 0.5in;
+                @bottom-left {
+                  content: "Page " counter(page) " of " counter(pages);
+                  font-size: 9pt;
+                  font-family: Arial, sans-serif;
+                  color: #555;
+                }
+                @bottom-center { content: ""; }
+                @bottom-right { content: ""; }
+              }
               body { margin: 0; }
             }
             body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
@@ -1384,7 +1405,17 @@ This quotation is valid for 30 days from the date of issue`
           <title>Quotation - ${customQuotation.projectName || 'Project'}</title>
           <style>
             @media print {
-              @page { margin: 0.5in; }
+              @page {
+                margin: 0.5in 0.5in 0.75in 0.5in;
+                @bottom-left {
+                  content: "Page " counter(page) " of " counter(pages);
+                  font-size: 9pt;
+                  font-family: Arial, sans-serif;
+                  color: #555;
+                }
+                @bottom-center { content: ""; }
+                @bottom-right { content: ""; }
+              }
               body { margin: 0; }
             }
             body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
@@ -1409,7 +1440,8 @@ This quotation is valid for 30 days from the date of issue`
                 <strong>Deep Sound For Technical Consultations</strong><br/>
                 Housing Bank Complex 93 - Ground Floor 102<br/>
                 Q. Nour St. - Welbdeh - Amman - Jordan<br/>
-                Phone: +962 (0) 795144821
+                Phone: +962 (0) 795144821<br/>
+                Website: www.nogahub.com
               </div>
             </div>
           </div>
@@ -1520,7 +1552,17 @@ This quotation is valid for 30 days from the date of issue`
           <title>Invoice - ${project.projectName || 'Project'}</title>
           <style>
             @media print {
-              @page { margin: 0.5in; }
+              @page {
+                margin: 0.5in 0.5in 0.75in 0.5in;
+                @bottom-left {
+                  content: "Page " counter(page) " of " counter(pages);
+                  font-size: 9pt;
+                  font-family: Arial, sans-serif;
+                  color: #555;
+                }
+                @bottom-center { content: ""; }
+                @bottom-right { content: ""; }
+              }
               body { margin: 0; }
             }
             body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
@@ -1551,6 +1593,7 @@ This quotation is valid for 30 days from the date of issue`
                   Housing Bank Complex 93 - Ground Floor 102<br/>
                   Q. Nour St. - Welbdeh - Amman - Jordan<br/>
                   Phone: +962 (0) 795144821<br/>
+                  Website: www.nogahub.com<br/>
                   Tax Reg No: 40261328
                 </div>
               </div>
@@ -1656,7 +1699,17 @@ This quotation is valid for 30 days from the date of issue`
           <title>Invoice - ${customQuotation.projectName || 'Project'}</title>
           <style>
             @media print {
-              @page { margin: 0.5in; }
+              @page {
+                margin: 0.5in 0.5in 0.75in 0.5in;
+                @bottom-left {
+                  content: "Page " counter(page) " of " counter(pages);
+                  font-size: 9pt;
+                  font-family: Arial, sans-serif;
+                  color: #555;
+                }
+                @bottom-center { content: ""; }
+                @bottom-right { content: ""; }
+              }
               body { margin: 0; }
             }
             body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
@@ -1686,6 +1739,7 @@ This quotation is valid for 30 days from the date of issue`
                   Housing Bank Complex 93 - Ground Floor 102<br/>
                   Q. Nour St. - Welbdeh - Amman - Jordan<br/>
                   Phone: +962 (0) 795144821<br/>
+                  Website: www.nogahub.com<br/>
                   Tax Reg No: 40261328
                 </div>
               </div>
