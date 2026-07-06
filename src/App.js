@@ -9,6 +9,9 @@ import logoImage from './logo-no-background.png';
 import SearchableDropdown from './components/shared/SearchableDropdown';
 import NogaHubLogo from './components/shared/NogaHubLogo';
 import { BUSINESS_CONSTANTS, SERVICE_PRICING, ROLE_FEES, SHIPPING_CUSTOMS, TAX_RATES, VOID_PROFIT_DISTRIBUTION, NOGAHUB_PROFIT_DISTRIBUTION } from './config/constants';
+import RentalCalendar from './components/rentals/RentalCalendar';
+import RentalsFinancials from './components/rentals/RentalsFinancials';
+import rentalQuotationsService from './services/rentalQuotationsService';
 
 // Board-level pie chart color palette
 const BOARD_COLORS = ['#111827', '#374151', '#6b7280', '#9ca3af', '#d1d5db', '#f3f4f6'];
@@ -60,6 +63,7 @@ const NogaHubAutomation = () => {
   } = useAuth();
   const [activeTab, setActiveTab] = useState('documents');
   const [activeSection, setActiveSection] = useState('installation');
+  const [rentalTab, setRentalTab] = useState('calendar'); // 'calendar' | 'financials' | 'documents' | 'quotation'
   const [isCalculated, setIsCalculated] = useState(false);
   const [calculationResults, setCalculationResults] = useState(null);
   const [savedProjects, setSavedProjects] = useState([]);
@@ -121,6 +125,29 @@ This quotation is valid for 30 days from the date of issue`
   const [ncCalculated, setNcCalculated] = useState(false);
   const [ncResults, setNcResults] = useState(null);
 
+  // Rental Quotation State (standalone calculator, separate from Installation)
+  const RENTAL_DEFAULT_TERMS = `All prices are in Jordanian Dinars (JOD)
+Equipment rental includes delivery, setup, and collection
+VAT is calculated at 16% as per Jordanian tax regulations
+Payment terms: 50% deposit, 50% on day of event
+This quotation is valid for 14 days from the date of issue`;
+
+  const [rentalQuotation, setRentalQuotation] = useState({
+    clientName: '',
+    projectName: '',
+    currency: 'JOD',
+    items: [],
+    services: [],
+    globalDiscount: 0,
+    includeTax: true,
+    terms: RENTAL_DEFAULT_TERMS,
+  });
+  const [rentalCalculated, setRentalCalculated] = useState(false);
+  const [rentalResults, setRentalResults] = useState(null);
+  const [savedRentalProjects, setSavedRentalProjects] = useState([]);
+  const [loadedRentalProjectId, setLoadedRentalProjectId] = useState(null);
+  const [showRentalSaveModal, setShowRentalSaveModal] = useState(false);
+
   // Function to load saved projects from backend
   const loadSavedProjects = async () => {
     try {
@@ -135,14 +162,25 @@ This quotation is valid for 30 days from the date of issue`
     }
   };
 
+  const loadSavedRentalProjects = async () => {
+    try {
+      const projects = await rentalQuotationsService.listRentalQuotations();
+      setSavedRentalProjects(projects || []);
+    } catch (error) {
+      console.error('Failed to load rental projects:', error);
+      setSavedRentalProjects([]);
+    }
+  };
+
   // Load data when user authenticates
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       console.log('✅ User authenticated, loading data...');
       loadEquipmentData();
       loadSavedProjects();
+      loadSavedRentalProjects();
     }
-  }, [isAuthenticated, authLoading]);
+  }, [isAuthenticated, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Remove localStorage sync - projects are now stored in backend
 
@@ -464,6 +502,224 @@ This quotation is valid for 30 days from the date of issue`
     setNcResults(null);
   };
 
+  // ── Rental Quotation Calculator ────────────────────────────────────────────
+
+  const calculateRental = () => {
+    if (rentalQuotation.items.length === 0 && rentalQuotation.services.length === 0) {
+      toast.error('Please add at least one item or service');
+      return;
+    }
+    let totalCost = 0;
+    let totalRevenueBeforeDiscount = 0;
+    rentalQuotation.items.forEach(item => {
+      totalCost += (Number(item.cost) || 0) * (Number(item.quantity) || 0);
+      totalRevenueBeforeDiscount += (Number(item.clientPrice) || 0) * (Number(item.quantity) || 0);
+    });
+    const validServices = rentalQuotation.services.filter(s => s.name.trim() || Number(s.price) > 0);
+    validServices.forEach(s => { totalRevenueBeforeDiscount += Number(s.price) || 0; });
+    const discountAmount = totalRevenueBeforeDiscount * (rentalQuotation.globalDiscount / 100);
+    const subtotal = totalRevenueBeforeDiscount - discountAmount;
+    const tax = rentalQuotation.includeTax ? subtotal * 0.16 : 0;
+    const total = subtotal + tax;
+    const profit = subtotal - totalCost;
+    const profitMargin = subtotal > 0 ? (profit / subtotal) * 100 : 0;
+    setRentalResults({
+      items: rentalQuotation.items.map(item => ({
+        ...item,
+        clientPrice: Number(item.clientPrice) || 0,
+        cost: Number(item.cost) || 0,
+        quantity: Number(item.quantity) || 0,
+      })),
+      services: validServices.map(s => ({ name: s.name, price: Number(s.price) || 0 })),
+      totalCost, totalRevenueBeforeDiscount, discountAmount, subtotal, tax, total, profit, profitMargin,
+    });
+    setRentalCalculated(true);
+    toast.success('Rental quotation calculated');
+  };
+
+  const saveRentalProject = async () => {
+    if (!rentalQuotation.projectName.trim() || !rentalQuotation.clientName.trim()) {
+      toast.error('Please enter a project name and client name before saving.');
+      return;
+    }
+    if (rentalQuotation.items.length === 0 && rentalQuotation.services.length === 0) {
+      toast.error('Please add at least one item or service before saving.');
+      return;
+    }
+    try {
+      const result = await rentalQuotationsService.saveRentalQuotation({
+        ...(loadedRentalProjectId ? { id: loadedRentalProjectId } : {}),
+        clientName: rentalQuotation.clientName,
+        projectName: rentalQuotation.projectName,
+        currency: rentalQuotation.currency,
+        customEquipment: rentalQuotation.items.map(item => ({
+          name: `${item.name} (x${Number(item.quantity) || 0})`,
+          price: (Number(item.clientPrice) || 0) * (Number(item.quantity) || 0),
+          weight: 0,
+        })),
+        customServices: rentalQuotation.services.map(s => ({ name: s.name, price: Number(s.price) || 0 })),
+        globalDiscount: rentalQuotation.globalDiscount,
+        includeTax: rentalQuotation.includeTax,
+        terms: rentalQuotation.terms,
+        total: rentalResults ? rentalResults.total : 0,
+        isCalculated: rentalCalculated,
+        calculationResults: rentalResults,
+      });
+      setLoadedRentalProjectId(result.id || loadedRentalProjectId);
+      await loadSavedRentalProjects();
+      setShowRentalSaveModal(false);
+      toast.success(result.message || 'Rental quotation saved!');
+    } catch (err) {
+      console.error('Failed to save rental project:', err);
+      toast.error('Failed to save rental quotation. Please try again.');
+    }
+  };
+
+  const loadRentalProject = (saved) => {
+    setLoadedRentalProjectId(saved.id || null);
+    const customItems = (saved.customEquipment || []).map(item => {
+      const match = item.name.match(/\(x(\d+)\)$/);
+      const qty = match ? parseInt(match[1]) : 1;
+      const name = match ? item.name.replace(/\s*\(x\d+\)$/, '') : item.name;
+      return { name, cost: 0, clientPrice: (Number(item.price) || 0) / (qty || 1), quantity: qty };
+    });
+    setRentalQuotation({
+      clientName: saved.clientName || '',
+      projectName: saved.projectName || '',
+      currency: saved.currency || 'JOD',
+      items: customItems,
+      services: (saved.customServices || []).map(s => ({ name: s.name || '', price: String(s.price || '') })),
+      globalDiscount: saved.globalDiscount || 0,
+      includeTax: saved.includeTax !== undefined ? saved.includeTax : true,
+      terms: saved.terms || RENTAL_DEFAULT_TERMS,
+    });
+    if (saved.calculationResults) {
+      setRentalCalculated(true);
+      setRentalResults(saved.calculationResults);
+    } else {
+      setRentalCalculated(false);
+      setRentalResults(null);
+    }
+    setRentalTab('quotation');
+    toast.success('Rental quotation loaded!');
+  };
+
+  const deleteRentalProject = async (id) => {
+    if (!window.confirm('Delete this rental quotation?')) return;
+    try {
+      await rentalQuotationsService.deleteRentalQuotation(id);
+      if (id === loadedRentalProjectId) setLoadedRentalProjectId(null);
+      await loadSavedRentalProjects();
+      toast.success('Rental quotation deleted.');
+    } catch (err) {
+      toast.error('Failed to delete rental quotation.');
+    }
+  };
+
+  const startNewRentalQuotation = () => {
+    setLoadedRentalProjectId(null);
+    setRentalQuotation({ clientName: '', projectName: '', currency: 'JOD', items: [], services: [], globalDiscount: 0, includeTax: true, terms: RENTAL_DEFAULT_TERMS });
+    setRentalCalculated(false);
+    setRentalResults(null);
+  };
+
+  const addRentalItem = () => {
+    setRentalQuotation(prev => ({ ...prev, items: [...prev.items, { name: '', cost: '', clientPrice: '', quantity: 1 }] }));
+    setRentalCalculated(false);
+  };
+
+  const addRentalService = () => {
+    setRentalQuotation(prev => ({ ...prev, services: [...prev.services, { name: '', price: '' }] }));
+    setRentalCalculated(false);
+  };
+
+  const downloadRentalQuotationPDF = () => {
+    if (!rentalCalculated || !rentalResults) { toast.error('Please calculate the quotation first'); return; }
+    const quoteNum = `RNT-${Date.now().toString().slice(-6)}`;
+    const dateStr = new Date().toLocaleDateString('en-GB');
+    const currency = rentalQuotation.currency || 'JOD';
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><title>Rental Quotation - ${rentalQuotation.projectName || 'Project'}</title>
+<style>
+@media print { @page { margin:0.5in 0.5in 0.75in 0.5in; } body{margin:0;} }
+body{font-family:Arial,sans-serif;margin:20px;font-size:12px;}
+.header{border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:20px;}
+.company-info{font-size:11px;}
+table{width:100%;border-collapse:collapse;margin-bottom:15px;font-size:11px;}
+th,td{border:1px solid #ddd;padding:6px;text-align:left;}
+th{background:#f2f2f2;}
+.totals-row{display:flex;justify-content:space-between;margin-bottom:3px;}
+.total-final{font-weight:bold;font-size:13px;border-top:2px solid #000;padding-top:8px;}
+.terms{margin-top:15px;font-size:10px;color:#555;border-top:1px solid #eee;padding-top:10px;white-space:pre-line;}
+.badge{display:inline-block;background:#111827;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;margin-bottom:8px;}
+</style></head><body>
+<div class="header"><div style="display:flex;justify-content:space-between;align-items:flex-start;">
+<div><img src="${logoImage}" alt="Logo" style="width:60px;height:60px;object-fit:contain;display:block;margin-bottom:6px;" onerror="this.style.display='none'"/>
+<div class="company-info"><strong>Deep Sound For Technical Consultation LLC</strong><br/>Housing Bank Complex 93 - Ground Floor 102<br/>Q. Nour St. - Welbdeh - Amman - Jordan<br/>Phone: +962 (0) 795144821<br/>Website: www.nogahub.com</div></div>
+<div style="text-align:right;"><h1 style="margin:0 0 6px;font-size:1.8em;letter-spacing:2px;">RENTAL QUOTATION</h1>
+<div class="badge">RENTAL</div>
+<div style="font-size:11px;margin-top:4px;"><strong>Quote No.:</strong> ${quoteNum}<br/><strong>Date:</strong> ${dateStr}<br/><strong>Valid for:</strong> 14 days</div></div></div></div>
+<div style="margin-bottom:15px;font-size:11px;"><strong>Client:</strong> ${rentalQuotation.clientName || 'Client Name'}<br/><strong>Project:</strong> ${rentalQuotation.projectName || 'Project Name'}</div>
+<table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price (${currency})</th><th>Total (${currency})</th></tr></thead><tbody>
+${rentalResults.items.map(i => `<tr><td>${i.name}</td><td>${i.quantity}</td><td>${(Number(i.clientPrice)||0).toFixed(1)}</td><td>${((Number(i.clientPrice)||0)*(Number(i.quantity)||0)).toFixed(1)}</td></tr>`).join('')}
+${(rentalResults.services||[]).filter(s=>s.name&&Number(s.price)>0).map(s=>`<tr><td>${s.name}</td><td>1</td><td>${(Number(s.price)||0).toFixed(1)}</td><td>${(Number(s.price)||0).toFixed(1)}</td></tr>`).join('')}
+</tbody></table>
+<div>
+${rentalQuotation.globalDiscount>0?`<div class="totals-row"><span>Subtotal (before discount):</span><span>${(rentalResults.totalRevenueBeforeDiscount||0).toFixed(1)} ${currency}</span></div><div class="totals-row" style="color:red;"><span>Discount (${rentalQuotation.globalDiscount}%):</span><span>-${(rentalResults.discountAmount||0).toFixed(1)} ${currency}</span></div>`:''}
+<div class="totals-row"><span>Subtotal:</span><span>${(rentalResults.subtotal||0).toFixed(1)} ${currency}</span></div>
+${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><span>${(rentalResults.tax||0).toFixed(1)} ${currency}</span></div>`:''}
+<div class="totals-row total-final"><span>Total:</span><span>${(rentalResults.total||0).toFixed(1)} ${currency}</span></div>
+</div>
+${rentalQuotation.terms?`<div class="terms">${rentalQuotation.terms}</div>`:''}
+</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); win.close(); }, 300);
+  };
+
+  const downloadRentalInvoicePDF = () => {
+    if (!rentalCalculated || !rentalResults) { toast.error('Please calculate the quotation first'); return; }
+    const invoiceNum = `RINV-${Date.now().toString().slice(-6)}`;
+    const dateStr = new Date().toLocaleDateString('en-GB');
+    const currency = rentalQuotation.currency || 'JOD';
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><title>Rental Invoice - ${rentalQuotation.projectName || 'Project'}</title>
+<style>
+@media print { @page { margin:0.5in 0.5in 0.75in 0.5in; } body{margin:0;} }
+body{font-family:Arial,sans-serif;margin:20px;font-size:12px;}
+.header{border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:20px;}
+table{width:100%;border-collapse:collapse;margin-bottom:15px;font-size:11px;}
+th,td{border:1px solid #ddd;padding:6px;text-align:left;}
+th{background:#f2f2f2;}
+.totals-row{display:flex;justify-content:space-between;margin-bottom:3px;}
+.total-final{font-weight:bold;font-size:13px;border-top:2px solid #000;padding-top:8px;}
+.payment-box{margin-top:20px;border:1px solid #ddd;padding:12px;font-size:11px;background:#f9fafb;}
+</style></head><body>
+<div class="header"><div style="display:flex;justify-content:space-between;align-items:flex-start;">
+<div><img src="${logoImage}" alt="Logo" style="width:60px;height:60px;object-fit:contain;display:block;margin-bottom:6px;" onerror="this.style.display='none'"/>
+<div style="font-size:11px;"><strong>Deep Sound For Technical Consultation LLC</strong><br/>Housing Bank Complex 93 - Ground Floor 102<br/>Q. Nour St. - Welbdeh - Amman - Jordan<br/>Tax Reg No: 40261328</div></div>
+<div style="text-align:right;"><h1 style="margin:0 0 6px;font-size:1.8em;letter-spacing:2px;">INVOICE</h1>
+<div style="font-size:11px;"><strong>Invoice No.:</strong> ${invoiceNum}<br/><strong>Date:</strong> ${dateStr}<br/><strong>Due:</strong> Due on receipt</div></div></div></div>
+<div style="margin-bottom:15px;font-size:11px;"><strong>Bill To:</strong><br/>${rentalQuotation.clientName||'Client Name'}<br/>${rentalQuotation.projectName||'Project Name'}</div>
+<table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price (${currency})</th><th>Total (${currency})</th></tr></thead><tbody>
+${rentalResults.items.map(i=>`<tr><td>${i.name}</td><td>${i.quantity}</td><td>${(Number(i.clientPrice)||0).toFixed(2)}</td><td>${((Number(i.clientPrice)||0)*(Number(i.quantity)||0)).toFixed(2)}</td></tr>`).join('')}
+${(rentalResults.services||[]).filter(s=>s.name&&Number(s.price)>0).map(s=>`<tr><td>${s.name}</td><td>1</td><td>${(Number(s.price)||0).toFixed(2)}</td><td>${(Number(s.price)||0).toFixed(2)}</td></tr>`).join('')}
+</tbody></table>
+<div>
+${rentalQuotation.globalDiscount>0?`<div class="totals-row"><span>Subtotal (before discount):</span><span>${(rentalResults.totalRevenueBeforeDiscount||0).toFixed(2)} ${currency}</span></div><div class="totals-row" style="color:red;"><span>Discount (${rentalQuotation.globalDiscount}%):</span><span>-${(rentalResults.discountAmount||0).toFixed(2)} ${currency}</span></div>`:''}
+<div class="totals-row"><span>Subtotal:</span><span>${(rentalResults.subtotal||0).toFixed(2)} ${currency}</span></div>
+${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><span>${(rentalResults.tax||0).toFixed(2)} ${currency}</span></div>`:''}
+<div class="totals-row total-final"><span>Total Due:</span><span>${(rentalResults.total||0).toFixed(2)} ${currency}</span></div>
+</div>
+<div class="payment-box"><h4 style="margin:0 0 8px;">Payment Details</h4>
+<div><strong>Bank:</strong> Etihad Bank &nbsp;|&nbsp; <strong>CliQ:</strong> Deepsound</div>
+<div><strong>IBAN:</strong> JO37UBSI1200000310179526015101</div></div>
+</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); win.close(); }, 300);
+  };
+
   // Business entities structure based on the report
   const businessEntities = {
     nogahub: {
@@ -711,7 +967,7 @@ This quotation is valid for 30 days from the date of issue`
     // Correct denominator: discounted MSRP value (excludes logistics pass-through and VAT)
     const equipmentMsrpValueJOD = equipmentClientTotalJOD; // MSRP total before discount
     const discountedEquipmentValueJOD = equipmentClientTotalJOD * globalDiscountMultiplier;
-    const passThroughJOD = totalShippingCost + totalCustomsExclTax020; // billed at cost, 0 margin
+    const passThroughJOD = totalShippingCost + totalCustomsExclTax020 + tax020; // billed at cost, 0 margin (incl. import VAT)
     const vatJOD = tax020; // import VAT (input tax) paid at customs
     const vatToRemitJOD = project.includeTax ? Math.max(0, projectTaxJOD - vatJOD) : 0; // ponytail: floor at 0 — output<input is possible on heavy discount; remit 0 not negative
     const equipmentGrossMargin = discountedEquipmentValueJOD > 0 ? voidSalesProfit / discountedEquipmentValueJOD : 0;
@@ -896,8 +1152,8 @@ This quotation is valid for 30 days from the date of issue`
                 <tr>
                   <td>${item.name}</td>
                   <td>${item.quantity}</td>
-                  <td>${Math.round(item.finalUnitPriceJOD) || 'N/A'}</td>
-                  <td>${Math.round(item.finalTotalJOD) || 'N/A'}</td>
+                  <td>${(Number(item.finalUnitPriceJOD)||0).toFixed(1)}</td>
+                  <td>${(Number(item.finalTotalJOD)||0).toFixed(1)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -919,8 +1175,8 @@ This quotation is valid for 30 days from the date of issue`
                   <tr>
                     <td>${item.name}</td>
                     <td>${item.quantity}</td>
-                    <td>${Math.round(item.finalUnitPriceJOD) || 'N/A'}</td>
-                    <td>${Math.round(item.finalTotalJOD) || 'N/A'}</td>
+                    <td>${(Number(item.finalUnitPriceJOD)||0).toFixed(1)}</td>
+                    <td>${(Number(item.finalTotalJOD)||0).toFixed(1)}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -943,31 +1199,31 @@ This quotation is valid for 30 days from the date of issue`
                 ${project.services.commissioning.enabled ? `
                   <tr>
                     <td>Sub-contracting Commissioning</td>
-                    <td>${Math.round(calculationResults.commissioningServiceCost)}</td>
+                    <td>${(calculationResults.commissioningServiceCost).toFixed(1)}</td>
                   </tr>
                 ` : ''}
                 ${project.services.noiseControl.enabled ? `
                   <tr>
                     <td>Noise Control Studies</td>
-                    <td>${Math.round(calculationResults.noiseControlServiceCost)}</td>
+                    <td>${(calculationResults.noiseControlServiceCost).toFixed(1)}</td>
                   </tr>
                 ` : ''}
                 ${project.services.soundDesign.enabled ? `
                   <tr>
                     <td>Sound System Design</td>
-                    <td>${Math.round(calculationResults.soundDesignServiceCost)}</td>
+                    <td>${(calculationResults.soundDesignServiceCost).toFixed(1)}</td>
                   </tr>
                 ` : ''}
                 ${project.services.projectManagement ? `
                   <tr>
                     <td>Project Management</td>
-                    <td>${Math.round(calculationResults.equipmentDealerTotalJOD * 0.10)}</td>
+                    <td>${(calculationResults.equipmentDealerTotalJOD * 0.10).toFixed(1)}</td>
                   </tr>
                 ` : ''}
                 ${project.customServices.map(service => `
                   <tr>
                     <td>${service.name}</td>
-                    <td>${Math.round(service.price)}</td>
+                    <td>${(service.price).toFixed(1)}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -978,47 +1234,47 @@ This quotation is valid for 30 days from the date of issue`
             ${project.globalDiscount > 0 ? `
               <div class="totals-row">
                 <span>Equipment Subtotal (before discount):</span>
-                <span>${Math.round(calculationResults.equipmentTotalJODBeforeDiscount || 0)} JOD</span>
+                <span>${(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(1)} JOD</span>
               </div>
               <div class="totals-row discount">
-                <span>Equipment Discount (${(parseFloat(project.globalDiscount) || 0).toFixed(2)}%):</span>
-                <span>-${Math.round(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100)} JOD</span>
+                <span>Equipment Discount (${(parseFloat(project.globalDiscount) || 0).toFixed(1)}%):</span>
+                <span>-${(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(1)} JOD</span>
               </div>
               <div class="totals-row">
                 <span>Equipment Subtotal (after discount):</span>
-                <span>${Math.round((calculationResults.equipmentTotalJODBeforeDiscount || 0) - (((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100))} JOD</span>
+                <span>${((calculationResults.equipmentTotalJODBeforeDiscount || 0) - (((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100)).toFixed(1)} JOD</span>
               </div>
             ` : `
               <div class="totals-row">
                 <span>Equipment Subtotal:</span>
-                <span>${Math.round(calculationResults.equipmentTotalJODBeforeDiscount || 0)} JOD</span>
+                <span>${(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(1)} JOD</span>
               </div>
             `}
             ${calculationResults.customEquipmentDetails && calculationResults.customEquipmentDetails.length > 0 ? `
               <div class="totals-row">
                 <span>Custom Equipment Subtotal:</span>
-                <span>${Math.round(calculationResults.customEquipmentTotalJOD || 0)} JOD</span>
+                <span>${(calculationResults.customEquipmentTotalJOD || 0).toFixed(1)} JOD</span>
               </div>
             ` : ''}
             ${calculationResults.servicesTotal > 0 ? `
               <div class="totals-row">
                 <span>Services Subtotal:</span>
-                <span>${Math.round(calculationResults.servicesTotal || 0)} JOD</span>
+                <span>${(calculationResults.servicesTotal || 0).toFixed(1)} JOD</span>
               </div>
             ` : ''}
             <div class="totals-row">
               <span>Subtotal:</span>
-              <span>${Math.round(calculationResults.projectSubtotalJOD || 0)} JOD</span>
+              <span>${(calculationResults.projectSubtotalJOD || 0).toFixed(1)} JOD</span>
             </div>
             ${project.includeTax ? `
             <div class="totals-row">
               <span>VAT (16%):</span>
-              <span>${Math.round(calculationResults.projectTaxJOD || 0)} JOD</span>
+              <span>${(calculationResults.projectTaxJOD || 0).toFixed(1)} JOD</span>
             </div>
             ` : ''}
             <div class="totals-row total-final">
               <span>TOTAL:</span>
-              <span>${Math.round(calculationResults.projectTotalJOD || 0)} JOD</span>
+              <span>${(calculationResults.projectTotalJOD || 0).toFixed(1)} JOD</span>
             </div>
           </div>
           
@@ -1467,8 +1723,8 @@ This quotation is valid for 30 days from the date of issue`
                 <tr>
                   <td>${item.name || 'Unnamed Item'}</td>
                   <td>${item.quantity || 0}</td>
-                  <td>${Math.round(Number(item.clientPrice) || 0)}</td>
-                  <td>${Math.round((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0))}</td>
+                  <td>${(Number(item.clientPrice) || 0).toFixed(1)}</td>
+                  <td>${((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0)).toFixed(1)}</td>
                 </tr>
               `).join('')}
               ${(ncResults.services || []).length > 0 ? `
@@ -1477,8 +1733,8 @@ This quotation is valid for 30 days from the date of issue`
                   <tr>
                     <td>${service.name || 'Service'}</td>
                     <td>1</td>
-                    <td>${Math.round(service.price)}</td>
-                    <td>${Math.round(service.price)}</td>
+                    <td>${(service.price).toFixed(1)}</td>
+                    <td>${(service.price).toFixed(1)}</td>
                   </tr>
                 `).join('')}
               ` : ''}
@@ -1489,31 +1745,31 @@ This quotation is valid for 30 days from the date of issue`
             ${customQuotation.globalDiscount > 0 ? `
               <div class="totals-row">
                 <span>Subtotal (before discount):</span>
-                <span>${Math.round(ncResults.totalRevenueBeforeDiscount || 0)} ${customQuotation.currency}</span>
+                <span>${(ncResults.totalRevenueBeforeDiscount || 0).toFixed(1)} ${customQuotation.currency}</span>
               </div>
               <div class="totals-row discount">
-                <span>Discount (${(parseFloat(customQuotation.globalDiscount) || 0).toFixed(2)}%):</span>
-                <span>-${Math.round(ncResults.discountAmount || 0)} ${customQuotation.currency}</span>
+                <span>Discount (${(parseFloat(customQuotation.globalDiscount) || 0).toFixed(1)}%):</span>
+                <span>-${(ncResults.discountAmount || 0).toFixed(1)} ${customQuotation.currency}</span>
               </div>
               <div class="totals-row">
                 <span>Subtotal (after discount):</span>
-                <span>${Math.round(ncResults.subtotal || 0)} ${customQuotation.currency}</span>
+                <span>${(ncResults.subtotal || 0).toFixed(1)} ${customQuotation.currency}</span>
               </div>
             ` : `
               <div class="totals-row">
                 <span>Subtotal:</span>
-                <span>${Math.round(ncResults.subtotal || 0)} ${customQuotation.currency}</span>
+                <span>${(ncResults.subtotal || 0).toFixed(1)} ${customQuotation.currency}</span>
               </div>
             `}
             ${customQuotation.includeTax ? `
             <div class="totals-row">
               <span>VAT (16%):</span>
-              <span>${Math.round(ncResults.tax || 0)} ${customQuotation.currency}</span>
+              <span>${(ncResults.tax || 0).toFixed(1)} ${customQuotation.currency}</span>
             </div>
             ` : ''}
             <div class="totals-row total-final">
               <span>TOTAL:</span>
-              <span>${Math.round(ncResults.total || 0)} ${customQuotation.currency}</span>
+              <span>${(ncResults.total || 0).toFixed(1)} ${customQuotation.currency}</span>
             </div>
           </div>
 
@@ -2525,8 +2781,8 @@ This quotation is valid for 30 days from the date of issue"
                             <td className="p-3 font-mono">{equipmentDatabase.find(eq => eq.name === item.name)?.code || 'N/A'}</td>
                             <td className="p-3">{item.name}</td>
                             <td className="p-3 text-center">{item.quantity}</td>
-                            <td className="p-3 text-right">{Math.round(item.finalUnitPriceJOD) || 'N/A'}</td>
-                            <td className="p-3 text-right font-semibold">{Math.round(item.finalTotalJOD) || 'N/A'}</td>
+                            <td className="p-3 text-right">{(Number(item.finalUnitPriceJOD)||0).toFixed(1)}</td>
+                            <td className="p-3 text-right font-semibold">{(Number(item.finalTotalJOD)||0).toFixed(1)}</td>
                             <td className="p-3 text-right">{item.weightTotal.toFixed(1)}</td>
                           </tr>
                         ))}
@@ -2544,13 +2800,13 @@ This quotation is valid for 30 days from the date of issue"
                       <tfoot>
                         <tr className="bg-gray-100 font-semibold">
                           <td colSpan="4" className="p-3 text-right">Equipment Subtotal:</td>
-                          <td className="p-3 text-right">{Math.round(calculationResults.equipmentTotalJODBeforeDiscount || 0)} JOD</td>
+                          <td className="p-3 text-right">{(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(1)} JOD</td>
                           <td className="p-3 text-right">{calculationResults.totalWeight.toFixed(1)} kg</td>
                         </tr>
                         {calculationResults.customEquipmentDetails && calculationResults.customEquipmentDetails.length > 0 && (
                           <tr className="bg-blue-100 font-semibold">
                             <td colSpan="4" className="p-3 text-right">Custom Equipment Subtotal:</td>
-                            <td className="p-3 text-right">{Math.round(calculationResults.customEquipmentTotalJOD || 0)} JOD</td>
+                            <td className="p-3 text-right">{(calculationResults.customEquipmentTotalJOD || 0).toFixed(1)} JOD</td>
                             <td className="p-3 text-right">0.0 kg</td>
                           </tr>
                         )}
@@ -2567,25 +2823,25 @@ This quotation is valid for 30 days from the date of issue"
                   <div className={`grid ${project.globalDiscount > 0 ? 'grid-cols-5' : 'grid-cols-4'} gap-4 text-sm`}>
                     <div>
                       <span className="text-gray-600">Equipment Total:</span>
-                      <p className="font-semibold">{Math.round(calculationResults.equipmentTotalJOD || 0)} JOD</p>
+                      <p className="font-semibold">{(calculationResults.equipmentTotalJOD || 0).toFixed(1)} JOD</p>
                     </div>
                     <div>
                       <span className="text-gray-600">Services Total:</span>
-                      <p className="font-semibold">{Math.round(calculationResults.servicesTotal || 0)} JOD</p>
+                      <p className="font-semibold">{(calculationResults.servicesTotal || 0).toFixed(1)} JOD</p>
                     </div>
                     <div>
                       <span className="text-gray-600">Subtotal:</span>
-                      <p className="font-semibold">{Math.round(calculationResults.projectSubtotalJOD || 0)} JOD</p>
+                      <p className="font-semibold">{(calculationResults.projectSubtotalJOD || 0).toFixed(1)} JOD</p>
                     </div>
                     {project.globalDiscount > 0 && (
                       <div>
                         <span className="text-gray-600">Discount:</span>
-                        <p className="font-semibold text-red-600">-{(parseFloat(project.globalDiscount) || 0).toFixed(2)}%</p>
+                        <p className="font-semibold text-red-600">-{(parseFloat(project.globalDiscount) || 0).toFixed(1)}%</p>
                       </div>
                     )}
                     <div>
                       <span className="text-gray-600">Final (with 16% VAT):</span>
-                      <p className="font-semibold text-green-600">{Math.round(calculationResults.projectTotalJOD || 0)} JOD</p>
+                      <p className="font-semibold text-green-600">{(calculationResults.projectTotalJOD || 0).toFixed(1)} JOD</p>
                     </div>
                   </div>
                 </div>
@@ -2946,8 +3202,8 @@ This quotation is valid for 30 days from the date of issue"
                           <tr key={index} className="border-b border-gray-200">
                             <td className="p-3">{item.name || 'Unnamed Item'}</td>
                             <td className="text-center p-3">{item.quantity}</td>
-                            <td className="text-right p-3">{(Number(item.clientPrice) || 0).toFixed(2)} {customQuotation.currency}</td>
-                            <td className="text-right p-3">{((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)} {customQuotation.currency}</td>
+                            <td className="text-right p-3">{(Number(item.clientPrice) || 0).toFixed(1)} {customQuotation.currency}</td>
+                            <td className="text-right p-3">{((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0)).toFixed(1)} {customQuotation.currency}</td>
                           </tr>
                         ))}
                         {(ncResults.services || []).length > 0 && (
@@ -2959,8 +3215,8 @@ This quotation is valid for 30 days from the date of issue"
                               <tr key={`svc-${index}`} className="border-b border-gray-200">
                                 <td className="p-3">{service.name || 'Service'}</td>
                                 <td className="text-center p-3">1</td>
-                                <td className="text-right p-3">{(Number(service.price) || 0).toFixed(2)} {customQuotation.currency}</td>
-                                <td className="text-right p-3">{(Number(service.price) || 0).toFixed(2)} {customQuotation.currency}</td>
+                                <td className="text-right p-3">{(Number(service.price) || 0).toFixed(1)} {customQuotation.currency}</td>
+                                <td className="text-right p-3">{(Number(service.price) || 0).toFixed(1)} {customQuotation.currency}</td>
                               </tr>
                             ))}
                           </>
@@ -2975,27 +3231,27 @@ This quotation is valid for 30 days from the date of issue"
                       <>
                         <div className="flex justify-between mb-2">
                           <span className="font-medium">Subtotal (before discount):</span>
-                          <span>{ncResults.totalRevenueBeforeDiscount.toFixed(2)} {customQuotation.currency}</span>
+                          <span>{ncResults.totalRevenueBeforeDiscount.toFixed(1)} {customQuotation.currency}</span>
                         </div>
                         <div className="flex justify-between mb-2 text-red-600">
                           <span className="font-medium">Discount ({customQuotation.globalDiscount}%):</span>
-                          <span>-{ncResults.discountAmount.toFixed(2)} {customQuotation.currency}</span>
+                          <span>-{ncResults.discountAmount.toFixed(1)} {customQuotation.currency}</span>
                         </div>
                       </>
                     )}
                     <div className="flex justify-between mb-2">
                       <span className="font-medium">Subtotal{customQuotation.globalDiscount > 0 ? ' (after discount)' : ''}:</span>
-                      <span>{ncResults.subtotal.toFixed(2)} {customQuotation.currency}</span>
+                      <span>{ncResults.subtotal.toFixed(1)} {customQuotation.currency}</span>
                     </div>
                     {customQuotation.includeTax && (
                       <div className="flex justify-between mb-2">
                         <span className="font-medium">VAT (16%):</span>
-                        <span>{ncResults.tax.toFixed(2)} {customQuotation.currency}</span>
+                        <span>{ncResults.tax.toFixed(1)} {customQuotation.currency}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2 mt-2">
                       <span>Total:</span>
-                      <span className="text-green-600">{ncResults.total.toFixed(2)} {customQuotation.currency}</span>
+                      <span className="text-green-600">{ncResults.total.toFixed(1)} {customQuotation.currency}</span>
                     </div>
                   </div>
                 </div>
@@ -3455,17 +3711,17 @@ This quotation is valid for 30 days from the date of issue"
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
                             <p className="text-xs text-gray-500 font-medium">Logistics Pass-through</p>
                             <p className="text-lg font-bold text-gray-900 mt-1">{r.passThroughJOD.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">JOD billed at cost, 0% margin</p>
-                          </div>
-                          <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">Services Revenue</p>
-                            <p className="text-lg font-bold text-gray-900 mt-1">{r.servicesTotal.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">JOD</p>
+                            <p className="text-xs text-gray-400 mt-0.5">customs, shipping & import tax</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
                             <p className="text-xs text-gray-500 font-medium">Import Tax</p>
                             <p className="text-lg font-bold text-gray-900 mt-1">{r.vatJOD.toFixed(2)}</p>
                             <p className="text-xs text-gray-400 mt-0.5">JOD paid at customs</p>
+                          </div>
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">Services Revenue</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.servicesTotal.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
                             <p className="text-xs text-gray-500 font-medium">VAT to Remit</p>
@@ -3486,7 +3742,6 @@ This quotation is valid for 30 days from the date of issue"
                                     ...(r.customEquipmentTotalJOD > 0 ? [{ name: 'Custom Items', value: r.customEquipmentTotalJOD }] : []),
                                     ...(r.servicesTotal > 0 ? [{ name: 'Services', value: r.servicesTotal }] : []),
                                     { name: 'Logistics (0% margin)', value: r.passThroughJOD },
-                                    ...(r.vatJOD > 0 ? [{ name: 'Import Tax', value: r.vatJOD }] : []),
                                   ].filter(d => d.value > 0)}
                                   cx="50%" cy="50%" innerRadius={52} outerRadius={82} dataKey="value"
                                   label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
@@ -3508,7 +3763,6 @@ This quotation is valid for 30 days from the date of issue"
                                   data={[
                                     { name: 'Dealer Cost', value: r.equipmentDealerTotalJOD },
                                     { name: 'Logistics (pass-through)', value: r.passThroughJOD },
-                                    ...(r.vatJOD > 0 ? [{ name: 'Import Tax', value: r.vatJOD }] : []),
                                     { name: 'Equipment Profit', value: r.voidSalesProfit },
                                     ...(r.servicesTotal > 0 ? [{ name: 'Services Revenue', value: r.servicesTotal }] : []),
                                   ].filter(d => d.value > 0)}
@@ -3581,9 +3835,10 @@ This quotation is valid for 30 days from the date of issue"
                         {/* Logistics pass-through callout */}
                         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm">
                           <p className="font-medium text-blue-900 mb-2">Logistics — Pass-through (billed at cost, 0% margin)</p>
-                          <div className="grid grid-cols-3 gap-4 text-xs text-blue-700">
+                          <div className="grid grid-cols-4 gap-4 text-xs text-blue-700">
                             <div><span className="font-medium">Shipping:</span> {r.shipping.toFixed(2)} JOD</div>
                             <div><span className="font-medium">Customs:</span> {r.customs.toFixed(2)} JOD</div>
+                            <div><span className="font-medium">Import Tax:</span> {r.vatJOD.toFixed(2)} JOD</div>
                             <div><span className="font-medium">Total pass-through:</span> {r.passThroughJOD.toFixed(2)} JOD</div>
                           </div>
                         </div>
@@ -3610,7 +3865,7 @@ This quotation is valid for 30 days from the date of issue"
                             <div className="text-center p-4 bg-gray-50 rounded-lg">
                               <p className="text-gray-600 font-medium text-xs">Import Tax</p>
                               <p className="text-base text-gray-900 mt-1">{r.vatJOD.toFixed(2)} JOD</p>
-                              <p className="text-xs text-gray-400">paid at customs</p>
+                              <p className="text-xs text-gray-400">pass-through</p>
                             </div>
                           </div>
                         </div>
@@ -4342,25 +4597,380 @@ This quotation is valid for 30 days from the date of issue"
             </>
           )}
 
-          {/* Rental Section Content */}
+          {/* Rental Section Content — standalone, no redirects to Installation */}
           {activeSection === 'rental' && (
-            <div className="text-center py-20">
-              <Zap size={64} className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-2xl font-semibold text-gray-700 mb-4">Rental Services</h3>
-              <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                Our rental division is currently under development. This section will include equipment rental services 
-                for events, temporary installations, and short-term projects.
-              </p>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 max-w-lg mx-auto">
-                <h4 className="font-semibold text-gray-900 mb-2">Coming Soon</h4>
-                <ul className="text-left text-sm text-gray-600 space-y-1">
-                  <li>• Event sound system rentals</li>
-                  <li>• Temporary installation equipment</li>
-                  <li>• Short-term project solutions</li>
-                  <li>• Flexible rental periods</li>
-                  <li>• Delivery and setup services</li>
-                </ul>
+            <div>
+              {/* Rental sub-nav */}
+              <div className="border-b border-gray-200 mb-6">
+                <nav className="flex flex-wrap gap-2 sm:gap-0 sm:space-x-8 px-1 overflow-x-auto">
+                  {[
+                    { id: 'calendar', label: 'Calendar', icon: RefreshCw },
+                    { id: 'quotation', label: 'Quotation', icon: Calculator },
+                    { id: 'saved-projects', label: 'Saved Quotes', icon: FolderOpen },
+                    { id: 'documents', label: 'Documents', icon: FileText },
+                    ...(userRole === 'admin' ? [{ id: 'financials', label: 'Financials', icon: TrendingUp }] : []),
+                  ].map(tab => {
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setRentalTab(tab.id)}
+                        className={`py-2 sm:py-3 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-1 sm:space-x-2 transition-all whitespace-nowrap ${
+                          rentalTab === tab.id
+                            ? 'border-black text-black'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        <Icon size={14} />
+                        <span className="hidden sm:inline">{tab.label}</span>
+                        <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
               </div>
+
+              {/* Calendar */}
+              {rentalTab === 'calendar' && <RentalCalendar />}
+
+              {/* Rental Quotation Calculator */}
+              {rentalTab === 'quotation' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-900">Rental Quotation Generator</h3>
+                    <button onClick={startNewRentalQuotation} className="text-sm text-gray-500 hover:text-gray-700 underline">New Quotation</button>
+                  </div>
+
+                  {/* Project Info */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Client Name</label>
+                      <input type="text" placeholder="Enter client name" value={rentalQuotation.clientName}
+                        onChange={e => { setRentalQuotation(prev => ({ ...prev, clientName: e.target.value })); setRentalCalculated(false); }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Project / Event Name</label>
+                      <input type="text" placeholder="Enter project name" value={rentalQuotation.projectName}
+                        onChange={e => { setRentalQuotation(prev => ({ ...prev, projectName: e.target.value })); setRentalCalculated(false); }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
+                    </div>
+                  </div>
+
+                  {/* Items */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Rental Items</h3>
+                      <div className="flex items-center space-x-3">
+                        <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
+                          {[{ code: 'JOD', label: 'JOD' }, { code: 'USD', label: '$' }, { code: 'EUR', label: '€' }].map(({ code, label }) => (
+                            <button key={code} onClick={() => { setRentalQuotation(prev => ({ ...prev, currency: code })); setRentalCalculated(false); }}
+                              className={`px-3 py-2 font-medium transition-colors ${rentalQuotation.currency === code ? 'bg-black text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                        <button onClick={addRentalItem} className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
+                          <Plus size={16} /><span>Add Item</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {rentalQuotation.items.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500"><p>No items yet. Click "Add Item" to start.</p></div>
+                    ) : (
+                      <div className="space-y-3">
+                        {rentalQuotation.items.map((item, index) => (
+                          <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-3 items-center p-4 bg-gray-50 rounded-lg">
+                            <input type="text" placeholder="Item name / description" value={item.name}
+                              onChange={e => { setRentalQuotation(prev => ({ ...prev, items: prev.items.map((it, i) => i === index ? { ...it, name: e.target.value } : it) })); setRentalCalculated(false); }}
+                              className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
+                            <input type="number" placeholder="Cost price" value={item.cost}
+                              onChange={e => { setRentalQuotation(prev => ({ ...prev, items: prev.items.map((it, i) => i === index ? { ...it, cost: e.target.value } : it) })); setRentalCalculated(false); }}
+                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
+                            <input type="number" placeholder="Rental price" value={item.clientPrice}
+                              onChange={e => { setRentalQuotation(prev => ({ ...prev, items: prev.items.map((it, i) => i === index ? { ...it, clientPrice: e.target.value } : it) })); setRentalCalculated(false); }}
+                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
+                            <div className="flex items-center space-x-2">
+                              <input type="number" placeholder="Qty" value={item.quantity}
+                                onChange={e => { setRentalQuotation(prev => ({ ...prev, items: prev.items.map((it, i) => i === index ? { ...it, quantity: e.target.value } : it) })); setRentalCalculated(false); }}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
+                              <button onClick={() => { setRentalQuotation(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== index) })); setRentalCalculated(false); }}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Services */}
+                    <div className="mt-6 border-t border-gray-200 pt-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-base font-semibold text-gray-900">Additional Services</h4>
+                        <button onClick={addRentalService} className="flex items-center space-x-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm">
+                          <Plus size={14} /><span>Add Service</span>
+                        </button>
+                      </div>
+                      {rentalQuotation.services.length === 0 ? (
+                        <p className="text-sm text-gray-400 italic">No services added. Add delivery, setup, engineering, etc.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {rentalQuotation.services.map((service, index) => (
+                            <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center p-3 bg-gray-50 rounded-lg">
+                              <input type="text" placeholder="Service name (e.g. Setup & Teardown)" value={service.name}
+                                onChange={e => { setRentalQuotation(prev => ({ ...prev, services: prev.services.map((s, i) => i === index ? { ...s, name: e.target.value } : s) })); setRentalCalculated(false); }}
+                                className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm" />
+                              <div className="flex items-center space-x-2">
+                                <input type="number" placeholder="Price" value={service.price}
+                                  onChange={e => { setRentalQuotation(prev => ({ ...prev, services: prev.services.map((s, i) => i === index ? { ...s, price: e.target.value } : s) })); setRentalCalculated(false); }}
+                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black text-sm" />
+                                <button onClick={() => { setRentalQuotation(prev => ({ ...prev, services: prev.services.filter((_, i) => i !== index) })); setRentalCalculated(false); }}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Discount / Tax / Terms */}
+                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Global Discount (%)</label>
+                        <input type="number" min="0" max="100" value={rentalQuotation.globalDiscount}
+                          onChange={e => { setRentalQuotation(prev => ({ ...prev, globalDiscount: Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)) })); setRentalCalculated(false); }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
+                      </div>
+                      <div className="flex items-end">
+                        <label className="flex items-center space-x-3 cursor-pointer">
+                          <input type="checkbox" checked={rentalQuotation.includeTax}
+                            onChange={e => { setRentalQuotation(prev => ({ ...prev, includeTax: e.target.checked })); setRentalCalculated(false); }}
+                            className="w-5 h-5 text-black border-gray-300 rounded focus:ring-2 focus:ring-black cursor-pointer" />
+                          <span className="font-medium text-gray-700">Include VAT (16%)</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="mt-6">
+                      <label className="block font-medium text-gray-700 mb-2 text-sm">Terms &amp; Conditions</label>
+                      <textarea value={rentalQuotation.terms} rows="5"
+                        onChange={e => setRentalQuotation(prev => ({ ...prev, terms: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black resize-y text-sm" />
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap justify-end gap-3">
+                    <button onClick={calculateRental} className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
+                      <Calculator size={16} /><span>Calculate</span>
+                    </button>
+                    <button onClick={() => setShowRentalSaveModal(true)}
+                      disabled={rentalQuotation.items.length === 0 && rentalQuotation.services.length === 0}
+                      className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                      <Save size={16} /><span>{loadedRentalProjectId ? 'Update Quotation' : 'Save Quotation'}</span>
+                    </button>
+                    {loadedRentalProjectId && (
+                      <button onClick={() => { setLoadedRentalProjectId(null); setShowRentalSaveModal(true); }}
+                        className="flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+                        <Save size={16} /><span>Save as New</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Results */}
+                  {rentalCalculated && rentalResults && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 space-y-6">
+                      <h3 className="text-lg font-semibold text-gray-900">Quotation Summary</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-black text-white">
+                              <th className="text-left p-3 font-medium">Item Description</th>
+                              <th className="text-center p-3 font-medium">Qty</th>
+                              <th className="text-right p-3 font-medium">Unit Price</th>
+                              <th className="text-right p-3 font-medium">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rentalResults.items.map((item, index) => (
+                              <tr key={index} className="border-b border-gray-200">
+                                <td className="p-3">{item.name || 'Unnamed Item'}</td>
+                                <td className="text-center p-3">{item.quantity}</td>
+                                <td className="text-right p-3">{(Number(item.clientPrice) || 0).toFixed(1)} {rentalQuotation.currency}</td>
+                                <td className="text-right p-3">{((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0)).toFixed(1)} {rentalQuotation.currency}</td>
+                              </tr>
+                            ))}
+                            {(rentalResults.services || []).length > 0 && (
+                              <>
+                                <tr className="bg-gray-100"><td colSpan="4" className="p-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">Services</td></tr>
+                                {rentalResults.services.map((svc, index) => (
+                                  <tr key={`svc-${index}`} className="border-b border-gray-200">
+                                    <td className="p-3">{svc.name || 'Service'}</td>
+                                    <td className="text-center p-3">1</td>
+                                    <td className="text-right p-3">{(Number(svc.price) || 0).toFixed(1)} {rentalQuotation.currency}</td>
+                                    <td className="text-right p-3">{(Number(svc.price) || 0).toFixed(1)} {rentalQuotation.currency}</td>
+                                  </tr>
+                                ))}
+                              </>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="border-t border-gray-300 pt-4">
+                        {rentalQuotation.globalDiscount > 0 && (
+                          <>
+                            <div className="flex justify-between mb-2"><span className="font-medium">Subtotal (before discount):</span><span>{rentalResults.totalRevenueBeforeDiscount.toFixed(1)} {rentalQuotation.currency}</span></div>
+                            <div className="flex justify-between mb-2 text-red-600"><span className="font-medium">Discount ({rentalQuotation.globalDiscount}%):</span><span>-{rentalResults.discountAmount.toFixed(1)} {rentalQuotation.currency}</span></div>
+                          </>
+                        )}
+                        <div className="flex justify-between mb-2"><span className="font-medium">Subtotal:</span><span>{rentalResults.subtotal.toFixed(1)} {rentalQuotation.currency}</span></div>
+                        {rentalQuotation.includeTax && <div className="flex justify-between mb-2"><span className="font-medium">VAT (16%):</span><span>{rentalResults.tax.toFixed(1)} {rentalQuotation.currency}</span></div>}
+                        <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2 mt-2"><span>Total:</span><span className="text-green-600">{rentalResults.total.toFixed(1)} {rentalQuotation.currency}</span></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Rental Saved Projects */}
+              {rentalTab === 'saved-projects' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-900">Saved Rental Quotations ({savedRentalProjects.length})</h3>
+                    <button onClick={() => setRentalTab('quotation')} className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm">
+                      <Plus size={14} /><span>New Quotation</span>
+                    </button>
+                  </div>
+                  {savedRentalProjects.length === 0 ? (
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
+                      <FolderOpen size={48} className="mx-auto text-gray-400 mb-4" />
+                      <h4 className="text-lg font-medium text-gray-900 mb-2">No rental quotations yet</h4>
+                      <p className="text-gray-600">Go to the Quotation tab, add items, and click "Save Quotation".</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4">
+                      {savedRentalProjects.map(saved => (
+                        <div key={saved.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer group" onClick={() => loadRentalProject(saved)}>
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h4 className="text-lg font-semibold text-gray-900">{saved.projectName}</h4>
+                                <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">Rental</span>
+                                {saved.isCalculated && <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Calculated</span>}
+                              </div>
+                              <p className="text-gray-600 font-medium mb-1">{saved.clientName}</p>
+                              {userRole === 'admin' && saved.created_by_username && (
+                                <p className="text-blue-600 text-sm mb-1">Created by: {saved.created_by_username} ({saved.created_by_email})</p>
+                              )}
+                              <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+                                <span>{(saved.customEquipment || []).length} items</span>
+                                <span>•</span>
+                                <span>{(parseFloat(saved.total) || 0).toFixed(2)} {saved.currency || 'JOD'} total</span>
+                                <span>•</span>
+                                <span>Saved {saved.createdAt ? new Date(saved.createdAt).toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '') : 'Unknown'}</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {(saved.customEquipment || []).slice(0, 4).map((item, i) => (
+                                  <span key={i} className="inline-block px-2 py-1 bg-orange-50 text-orange-700 text-xs rounded">{item.name}</span>
+                                ))}
+                                {(saved.customEquipment || []).length > 4 && (
+                                  <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">+{(saved.customEquipment || []).length - 4} more</span>
+                                )}
+                              </div>
+                            </div>
+                            <button onClick={e => { e.stopPropagation(); deleteRentalProject(saved.id); }}
+                              className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Rental Documents */}
+              {rentalTab === 'documents' && (
+                <div className="space-y-4">
+                  {(!rentalCalculated || !rentalResults) ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+                      <Calculator size={40} className="mx-auto text-amber-400 mb-3" />
+                      <h4 className="font-semibold text-amber-900 mb-1">No rental quotation calculated yet</h4>
+                      <p className="text-amber-700 text-sm">Go to the Quotation tab, add items, and click Calculate — then come back here to download documents.</p>
+                      <button onClick={() => setRentalTab('quotation')} className="mt-4 px-4 py-2 bg-black text-white rounded-lg text-sm hover:bg-gray-800 transition-colors">Go to Quotation</button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Rental Quotation */}
+                      <div className="border border-gray-200 rounded-xl p-4">
+                        <h4 className="font-semibold text-gray-900 mb-3">Rental Quotation</h4>
+                        <div className="bg-white border rounded-lg p-4 text-sm space-y-2">
+                          <div className="border-b pb-2 mb-3">
+                            <h5 className="font-bold">Deep Sound For Technical Consultations</h5>
+                            <p className="text-xs text-gray-600">Housing Bank Complex 93 - Ground Floor 102</p>
+                            <p className="text-xs text-gray-600">Q. Nour St. - Welbdeh - Amman - Jordan</p>
+                            <span className="inline-block mt-1 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs font-medium rounded">RENTAL</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span>Client: {rentalQuotation.clientName || 'Client Name'}</span>
+                            <span>Date: {new Date().toLocaleDateString()}</span>
+                          </div>
+                          <div className="text-xs">Project: {rentalQuotation.projectName || 'Project Name'}</div>
+                          <div className="mt-3">
+                            {rentalResults.items.map((item, i) => (
+                              <div key={i} className="flex justify-between text-xs">
+                                <span>{item.name} x{item.quantity}</span>
+                                <span>{((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0)).toFixed(1)} {rentalQuotation.currency}</span>
+                              </div>
+                            ))}
+                            <div className="border-t mt-2 pt-2">
+                              {rentalQuotation.globalDiscount > 0 && <div className="flex justify-between text-xs text-red-600"><span>Discount ({rentalQuotation.globalDiscount}%):</span><span>-{(rentalResults.discountAmount || 0).toFixed(1)} {rentalQuotation.currency}</span></div>}
+                              <div className="flex justify-between text-xs"><span>Subtotal:</span><span>{(rentalResults.subtotal || 0).toFixed(1)} {rentalQuotation.currency}</span></div>
+                              {rentalQuotation.includeTax && <div className="flex justify-between text-xs"><span>VAT (16%):</span><span>{(rentalResults.tax || 0).toFixed(1)} {rentalQuotation.currency}</span></div>}
+                              <div className="flex justify-between font-semibold"><span>Total:</span><span>{(rentalResults.total || 0).toFixed(1)} {rentalQuotation.currency}</span></div>
+                            </div>
+                          </div>
+                        </div>
+                        <button onClick={downloadRentalQuotationPDF} className="mt-3 w-full flex items-center justify-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
+                          <Download size={16} /><span>Download Rental Quotation PDF</span>
+                        </button>
+                      </div>
+
+                      {/* Rental Invoice */}
+                      <div className="border border-gray-200 rounded-xl p-4">
+                        <h4 className="font-semibold text-gray-900 mb-3">Rental Invoice</h4>
+                        <div className="bg-white border rounded-lg p-4 text-sm space-y-2">
+                          <div className="border-b pb-2 mb-3">
+                            <h5 className="font-bold">Deep Sound For Technical Consultation LLC</h5>
+                            <p className="text-xs text-gray-600">Q. Nour St. - Welbdeh - Amman - Jordan</p>
+                            <p className="text-xs text-gray-600">Tax Reg No: 40261328</p>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span>Bill To: {rentalQuotation.clientName || 'Client Name'}</span>
+                            <span>Due: on receipt</span>
+                          </div>
+                          <div className="text-xs">Project: {rentalQuotation.projectName || 'Project Name'}</div>
+                          <div className="border-t mt-3 pt-2">
+                            <div className="flex justify-between text-xs"><span>Subtotal:</span><span>{(rentalResults.subtotal || 0).toFixed(2)} {rentalQuotation.currency}</span></div>
+                            {rentalQuotation.includeTax && <div className="flex justify-between text-xs"><span>VAT (16%):</span><span>{(rentalResults.tax || 0).toFixed(2)} {rentalQuotation.currency}</span></div>}
+                            <div className="flex justify-between font-semibold"><span>Total Due:</span><span>{(rentalResults.total || 0).toFixed(2)} {rentalQuotation.currency}</span></div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t text-xs text-gray-500">
+                            <p>Bank: Etihad Bank · CliQ: Deepsound</p>
+                            <p>IBAN: JO37UBSI1200000310179526015101</p>
+                          </div>
+                        </div>
+                        <button onClick={downloadRentalInvoicePDF} className="mt-3 w-full flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                          <Download size={16} /><span>Download Rental Invoice PDF</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Financials (admin only) */}
+              {rentalTab === 'financials' && <RentalsFinancials userRole={userRole} />}
             </div>
           )}
         </div>
@@ -4451,6 +5061,40 @@ This quotation is valid for 30 days from the date of issue"
                   className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   Save Project
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rental Save Modal */}
+      {showRentalSaveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Save Rental Quotation</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project / Event Name</label>
+                <input type="text" value={rentalQuotation.projectName}
+                  onChange={e => setRentalQuotation(prev => ({ ...prev, projectName: e.target.value }))}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-black focus:border-black"
+                  placeholder="Enter project name" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+                <input type="text" value={rentalQuotation.clientName}
+                  onChange={e => setRentalQuotation(prev => ({ ...prev, clientName: e.target.value }))}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-black focus:border-black"
+                  placeholder="Enter client name" />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button onClick={() => setShowRentalSaveModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">Cancel</button>
+                <button onClick={saveRentalProject}
+                  disabled={!rentalQuotation.projectName.trim() || !rentalQuotation.clientName.trim()}
+                  className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                  Save Quotation
                 </button>
               </div>
             </div>
