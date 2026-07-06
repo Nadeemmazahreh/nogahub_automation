@@ -441,10 +441,8 @@ class SupabaseService {
       let query = supabase
         .from(Tables.QUOTATIONS_LEGACY)
         .select('*')
+        .neq('project_type', 'rental')
         .order('created_at', { ascending: false });
-
-      // RLS will automatically filter projects based on user role
-      // Users see their own, admins see all
 
       const { data, error } = await query;
 
