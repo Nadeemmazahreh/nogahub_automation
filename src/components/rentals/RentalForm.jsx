@@ -253,7 +253,7 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
                 </select>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={lbl}>Event Title</label>
                 <input className={inp} value={form.title} onChange={e => set('title', e.target.value)} placeholder="Auto-filled from quotation" />
@@ -278,7 +278,7 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
               <label className={lbl}>Address</label>
               <input className={inp} value={form.venue_address} onChange={e => set('venue_address', e.target.value)} placeholder="Street, City" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={lbl}>Start *</label>
                 <input type="datetime-local" className={inp} value={form.start_at} onChange={e => set('start_at', e.target.value)} required />
@@ -305,7 +305,7 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
           {/* Logistics */}
           <div className={sec}>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Logistics</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={lbl}>Name</label>
                 <input className={inp} value={form.logistics_info.name} onChange={e => setLi('name', e.target.value)} placeholder="Logistics contact name" />
@@ -351,7 +351,7 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
           {/* Sound Engineering */}
           <div className={sec}>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sound Engineering</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={lbl}>Name</label>
                 <input className={inp} value={form.sound_info.name} onChange={e => setSi('name', e.target.value)} placeholder="Sound engineer name" />

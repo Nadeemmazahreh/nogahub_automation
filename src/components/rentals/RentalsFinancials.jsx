@@ -135,19 +135,19 @@ export default function RentalsFinancials({ userRole }) {
               {m.rentals.map(r => {
                 const cr = r.quotation?.calculation_results || {};
                 return (
-                  <div key={r.id} className="px-5 py-3 grid grid-cols-12 gap-2 text-sm items-center">
-                    <div className="col-span-5">
+                  <div key={r.id} className="px-5 py-3 flex flex-col sm:grid sm:grid-cols-12 gap-2 text-sm sm:items-center">
+                    <div className="sm:col-span-5">
                       <p className="font-medium text-gray-900 truncate">{r.title || r.quotation?.project_name || '—'}</p>
                       <p className="text-xs text-gray-400 truncate">{r.quotation?.client_name}</p>
                     </div>
-                    <div className="col-span-3 text-gray-500 text-xs">
+                    <div className="sm:col-span-3 text-gray-500 text-xs">
                       {new Date(r.start_at).toLocaleDateString('en-GB', { dateStyle: 'medium' })}
                     </div>
-                    <div className="col-span-2 text-right">
+                    <div className="sm:col-span-2 text-right">
                       <p className="font-semibold text-gray-900">{Number(r.quotation?.total || 0).toFixed(2)}</p>
                       <p className="text-xs text-gray-400">JOD</p>
                     </div>
-                    <div className="col-span-2 text-right">
+                    <div className="sm:col-span-2 text-right">
                       {Number(cr.vatToRemitJOD) > 0 && (
                         <>
                           <p className="text-xs text-gray-700">{Number(cr.vatToRemitJOD).toFixed(2)}</p>

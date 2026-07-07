@@ -2411,7 +2411,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Services</h3>
                 
                 <div className="space-y-3 mb-4">
-                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 min-h-[52px]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 sm:min-h-[52px]">
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -2445,7 +2445,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                       />
                       <span>Commissioning</span>
                     </label>
-                    <div className="flex items-center space-x-2 min-w-[180px] justify-end">
+                    <div className="flex items-center space-x-2 sm:min-w-[180px] justify-end">
                       {project.services.commissioning.enabled && (
                         <>
                           <span className="text-sm text-gray-600">Custom Value (JOD):</span>
@@ -2482,7 +2482,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 min-h-[52px]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 sm:min-h-[52px]">
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -2508,7 +2508,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                       />
                       <span>Noise Control Studies</span>
                     </label>
-                    <div className="flex items-center space-x-2 min-w-[180px] justify-end">
+                    <div className="flex items-center space-x-2 sm:min-w-[180px] justify-end">
                       {project.services.noiseControl.enabled && (
                         <>
                           <span className="text-sm text-gray-600">Custom Value (JOD):</span>
@@ -2535,7 +2535,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 min-h-[52px]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 sm:min-h-[52px]">
                     <label className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -2569,7 +2569,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                       />
                       <span>Sound System Design</span>
                     </label>
-                    <div className="flex items-center space-x-2 min-w-[180px] justify-end">
+                    <div className="flex items-center space-x-2 sm:min-w-[180px] justify-end">
                       {project.services.soundDesign.enabled && (
                         <>
                           <span className="text-sm text-gray-600">Custom Value (JOD):</span>
@@ -2876,7 +2876,7 @@ This quotation is valid for 30 days from the date of issue"
               {isCalculated && calculationResults && (
                 <div className="bg-gray-50 p-4 rounded-xl border">
                   <h4 className="font-semibold text-gray-900 mb-2">Project Summary</h4>
-                  <div className={`grid ${project.globalDiscount > 0 ? 'grid-cols-5' : 'grid-cols-4'} gap-4 text-sm`}>
+                  <div className={`grid grid-cols-2 ${project.globalDiscount > 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-4 text-sm`}>
                     <div>
                       <span className="text-gray-600">Equipment Total:</span>
                       <p className="font-semibold">{(calculationResults.equipmentTotalJOD || 0).toFixed(1)} JOD</p>
@@ -3836,7 +3836,7 @@ This quotation is valid for 30 days from the date of issue"
                         </div>
 
                         {/* Project totals row */}
-                        <div className="grid grid-cols-3 gap-4 text-sm border-t border-gray-100 pt-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm border-t border-gray-100 pt-4">
                           <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
                             <span className="text-gray-600">Subtotal (ex-VAT):</span>
                             <span className="font-semibold">{r.projectSubtotalJOD.toFixed(2)} JOD</span>
@@ -3891,7 +3891,7 @@ This quotation is valid for 30 days from the date of issue"
                         {/* Logistics pass-through callout */}
                         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm">
                           <p className="font-medium text-blue-900 mb-2">Logistics — Pass-through (billed at cost, 0% margin)</p>
-                          <div className="grid grid-cols-4 gap-4 text-xs text-blue-700">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs text-blue-700">
                             <div><span className="font-medium">Shipping:</span> {r.shipping.toFixed(2)} JOD</div>
                             <div><span className="font-medium">Customs:</span> {r.customs.toFixed(2)} JOD</div>
                             <div><span className="font-medium">Import Tax:</span> {r.vatJOD.toFixed(2)} JOD</div>
@@ -3902,7 +3902,7 @@ This quotation is valid for 30 days from the date of issue"
                         {/* Order cost breakdown */}
                         <div>
                           <h6 className="font-medium text-gray-800 mb-3 text-sm">Order Cost Breakdown</h6>
-                          <div className="grid grid-cols-4 gap-4 text-sm">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                             <div className="text-center p-4 bg-gray-50 rounded-lg">
                               <p className="text-gray-600 font-medium text-xs">Dealer Equipment</p>
                               <p className="text-base text-gray-900 mt-1">{r.equipmentDealerTotalJOD.toFixed(2)} JOD</p>
@@ -4029,7 +4029,7 @@ This quotation is valid for 30 days from the date of issue"
                       {entity.name}
                     </h4>
                     
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div>
                         <h5 className="font-medium text-gray-800 mb-2">Ownership Structure</h5>
                         <div className="space-y-2">
@@ -4072,7 +4072,7 @@ This quotation is valid for 30 days from the date of issue"
               {/* Key Personnel */}
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
                 <h4 className="text-xl font-semibold text-gray-900 mb-4">Key Personnel</h4>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <h5 className="font-medium text-gray-800 mb-2">Core Leadership</h5>
                     <div className="space-y-2">
@@ -4416,7 +4416,7 @@ This quotation is valid for 30 days from the date of issue"
                     <h4 className="font-semibold text-gray-900 mb-3">Void UK Purchase Order</h4>
                     <div className="bg-white border rounded-lg p-6 text-sm">
                       {/* Header Section */}
-                      <div className="grid grid-cols-2 gap-6 mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-4">
                         <div>
                           <h5 className="text-lg font-bold mb-1">Deep Sound For Technical Consultation LLC</h5>
                         </div>
@@ -4455,7 +4455,7 @@ This quotation is valid for 30 days from the date of issue"
                       {/* Ship To Section */}
                       <div className="mb-4">
                         <p className="font-semibold mb-2">Ship To:</p>
-                        <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                           <div>
                             <p><strong>Company:</strong> Deep Sound For Technical Consultation LLC</p>
                             <p><strong>Contact Person:</strong> Tarik Zuraikat</p>
@@ -4479,7 +4479,7 @@ This quotation is valid for 30 days from the date of issue"
                       </div>
 
                       {/* Delivery Info */}
-                      <div className="grid grid-cols-2 gap-6 mb-6 bg-gray-50 p-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6 bg-gray-50 p-3">
                         <div>
                           <p className="font-semibold text-sm">Delivery Date: {(() => {
                             const deliveryDate = new Date();
@@ -4493,7 +4493,7 @@ This quotation is valid for 30 days from the date of issue"
                       </div>
 
                       {/* Equipment Table */}
-                      <div className="mb-6">
+                      <div className="mb-6 overflow-x-auto">
                         <table className="w-full border-collapse border border-gray-300 text-xs">
                           <thead>
                             <tr className="bg-gray-100">
@@ -4575,7 +4575,7 @@ This quotation is valid for 30 days from the date of issue"
                       {/* Signature Section */}
                       <div className="border-t pt-4">
                         <p className="font-semibold text-sm mb-4">Confirmation of Purchase Order</p>
-                        <div className="grid grid-cols-3 gap-6 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
                           <div>
                             <p className="font-medium mb-2">Name</p>
                             <div className="border-b border-gray-400 h-6 mb-2"></div>
@@ -5025,7 +5025,7 @@ This quotation is valid for 30 days from the date of issue"
       {/* Save Project Modal */}
       {showSaveModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Save Project</h3>
             <div className="space-y-4">
               <div>
@@ -5071,7 +5071,7 @@ This quotation is valid for 30 days from the date of issue"
       {/* Save Custom Project Modal */}
       {showNcSaveModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Save Custom Project</h3>
             <div className="space-y-4">
               <div>
@@ -5117,7 +5117,7 @@ This quotation is valid for 30 days from the date of issue"
       {/* Rental Save Modal */}
       {showRentalSaveModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Save Rental Quotation</h3>
             <div className="space-y-4">
               <div>
