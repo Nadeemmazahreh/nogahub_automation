@@ -137,6 +137,7 @@ This quotation is valid for 14 days from the date of issue`;
     projectName: '',
     currency: 'JOD',
     items: [],
+    riderItems: [],
     services: [],
     globalDiscount: 0,
     includeTax: true,
@@ -505,13 +506,14 @@ This quotation is valid for 30 days from the date of issue`
   // ── Rental Quotation Calculator ────────────────────────────────────────────
 
   const calculateRental = () => {
-    if (rentalQuotation.items.length === 0 && rentalQuotation.services.length === 0) {
+    const riderItems = rentalQuotation.riderItems || [];
+    if (rentalQuotation.items.length === 0 && riderItems.length === 0 && rentalQuotation.services.length === 0) {
       toast.error('Please add at least one item or service');
       return;
     }
     let totalCost = 0;
     let totalRevenueBeforeDiscount = 0;
-    rentalQuotation.items.forEach(item => {
+    [...rentalQuotation.items, ...riderItems].forEach(item => {
       totalCost += (Number(item.cost) || 0) * (Number(item.quantity) || 0);
       totalRevenueBeforeDiscount += (Number(item.clientPrice) || 0) * (Number(item.quantity) || 0);
     });
@@ -523,13 +525,15 @@ This quotation is valid for 30 days from the date of issue`
     const total = subtotal + tax;
     const profit = subtotal - totalCost;
     const profitMargin = subtotal > 0 ? (profit / subtotal) * 100 : 0;
+    const normalizeItem = item => ({
+      ...item,
+      clientPrice: Number(item.clientPrice) || 0,
+      cost: Number(item.cost) || 0,
+      quantity: Number(item.quantity) || 0,
+    });
     setRentalResults({
-      items: rentalQuotation.items.map(item => ({
-        ...item,
-        clientPrice: Number(item.clientPrice) || 0,
-        cost: Number(item.cost) || 0,
-        quantity: Number(item.quantity) || 0,
-      })),
+      items: rentalQuotation.items.map(normalizeItem),
+      riderItems: riderItems.map(normalizeItem),
       services: validServices.map(s => ({ name: s.name, price: Number(s.price) || 0 })),
       totalCost, totalRevenueBeforeDiscount, discountAmount, subtotal, tax, total, profit, profitMargin,
     });
@@ -542,21 +546,26 @@ This quotation is valid for 30 days from the date of issue`
       toast.error('Please enter a project name and client name before saving.');
       return;
     }
-    if (rentalQuotation.items.length === 0 && rentalQuotation.services.length === 0) {
+    if (rentalQuotation.items.length === 0 && (rentalQuotation.riderItems || []).length === 0 && rentalQuotation.services.length === 0) {
       toast.error('Please add at least one item or service before saving.');
       return;
     }
+    // Full item fields persisted; `price` (line total) kept for legacy consumers.
+    const toSavedItem = item => ({
+      name: item.name,
+      cost: Number(item.cost) || 0,
+      clientPrice: Number(item.clientPrice) || 0,
+      quantity: Number(item.quantity) || 0,
+      price: (Number(item.clientPrice) || 0) * (Number(item.quantity) || 0),
+    });
     try {
       const result = await rentalQuotationsService.saveRentalQuotation({
         ...(loadedRentalProjectId ? { id: loadedRentalProjectId } : {}),
         clientName: rentalQuotation.clientName,
         projectName: rentalQuotation.projectName,
         currency: rentalQuotation.currency,
-        customEquipment: rentalQuotation.items.map(item => ({
-          name: `${item.name} (x${Number(item.quantity) || 0})`,
-          price: (Number(item.clientPrice) || 0) * (Number(item.quantity) || 0),
-          weight: 0,
-        })),
+        customEquipment: rentalQuotation.items.map(toSavedItem),
+        technicalRider: (rentalQuotation.riderItems || []).map(toSavedItem),
         customServices: rentalQuotation.services.map(s => ({ name: s.name, price: Number(s.price) || 0 })),
         globalDiscount: rentalQuotation.globalDiscount,
         includeTax: rentalQuotation.includeTax,
@@ -577,17 +586,23 @@ This quotation is valid for 30 days from the date of issue`
 
   const loadRentalProject = (saved) => {
     setLoadedRentalProjectId(saved.id || null);
-    const customItems = (saved.customEquipment || []).map(item => {
+    const fromSavedItem = item => {
+      if (item.clientPrice !== undefined) {
+        // New shape: full fields incl. cost were persisted.
+        return { name: item.name, cost: Number(item.cost) || 0, clientPrice: Number(item.clientPrice) || 0, quantity: Number(item.quantity) || 0 };
+      }
+      // Legacy shape: qty baked into name, price is line total, cost was never saved.
       const match = item.name.match(/\(x(\d+)\)$/);
       const qty = match ? parseInt(match[1]) : 1;
       const name = match ? item.name.replace(/\s*\(x\d+\)$/, '') : item.name;
       return { name, cost: 0, clientPrice: (Number(item.price) || 0) / (qty || 1), quantity: qty };
-    });
+    };
     setRentalQuotation({
       clientName: saved.clientName || '',
       projectName: saved.projectName || '',
       currency: saved.currency || 'JOD',
-      items: customItems,
+      items: (saved.customEquipment || []).map(fromSavedItem),
+      riderItems: (saved.technicalRider || []).map(fromSavedItem),
       services: (saved.customServices || []).map(s => ({ name: s.name || '', price: String(s.price || '') })),
       globalDiscount: saved.globalDiscount || 0,
       includeTax: saved.includeTax !== undefined ? saved.includeTax : true,
@@ -618,15 +633,56 @@ This quotation is valid for 30 days from the date of issue`
 
   const startNewRentalQuotation = () => {
     setLoadedRentalProjectId(null);
-    setRentalQuotation({ clientName: '', projectName: '', currency: 'JOD', items: [], services: [], globalDiscount: 0, includeTax: true, terms: RENTAL_DEFAULT_TERMS });
+    setRentalQuotation({ clientName: '', projectName: '', currency: 'JOD', items: [], riderItems: [], services: [], globalDiscount: 0, includeTax: true, terms: RENTAL_DEFAULT_TERMS });
     setRentalCalculated(false);
     setRentalResults(null);
   };
 
   const addRentalItem = () => {
-    setRentalQuotation(prev => ({ ...prev, items: [...prev.items, { name: '', cost: '', clientPrice: '', quantity: 1 }] }));
+    setRentalQuotation(prev => ({ ...prev, items: [...prev.items, { name: '', cost: '', clientPrice: '', quantity: '' }] }));
     setRentalCalculated(false);
   };
+
+  const addRentalRiderItem = () => {
+    setRentalQuotation(prev => ({ ...prev, riderItems: [...(prev.riderItems || []), { name: '', cost: '', clientPrice: '', quantity: '' }] }));
+    setRentalCalculated(false);
+  };
+
+  const setRentalListItem = (listKey, index, field, value) => {
+    setRentalQuotation(prev => ({ ...prev, [listKey]: prev[listKey].map((it, i) => i === index ? { ...it, [field]: value } : it) }));
+    setRentalCalculated(false);
+  };
+
+  const removeRentalListItem = (listKey, index) => {
+    setRentalQuotation(prev => ({ ...prev, [listKey]: prev[listKey].filter((_, i) => i !== index) }));
+    setRentalCalculated(false);
+  };
+
+  // Shared row renderer for BOQ and Technical Rider item lists.
+  const renderRentalItemRows = (listKey, list) => (
+    <div className="space-y-3">
+      {list.map((item, index) => (
+        <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-3 items-center p-4 bg-gray-50 rounded-lg">
+          <input type="text" placeholder="Item name / description" value={item.name}
+            onChange={e => setRentalListItem(listKey, index, 'name', e.target.value)}
+            className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
+          <input type="number" placeholder="Cost price" value={item.cost}
+            onChange={e => setRentalListItem(listKey, index, 'cost', e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
+          <input type="number" placeholder="Rental price" value={item.clientPrice}
+            onChange={e => setRentalListItem(listKey, index, 'clientPrice', e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
+          <div className="flex items-center space-x-2">
+            <input type="number" placeholder="Quantity" value={item.quantity}
+              onChange={e => setRentalListItem(listKey, index, 'quantity', e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
+            <button onClick={() => removeRentalListItem(listKey, index)}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   const addRentalService = () => {
     setRentalQuotation(prev => ({ ...prev, services: [...prev.services, { name: '', price: '' }] }));
@@ -661,7 +717,7 @@ th{background:#f2f2f2;}
 <div style="font-size:11px;margin-top:4px;"><strong>Quote No.:</strong> ${quoteNum}<br/><strong>Date:</strong> ${dateStr}<br/><strong>Valid for:</strong> 14 days</div></div></div></div>
 <div style="margin-bottom:15px;font-size:11px;"><strong>Client:</strong> ${rentalQuotation.clientName || 'Client Name'}<br/><strong>Project:</strong> ${rentalQuotation.projectName || 'Project Name'}</div>
 <table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price (${currency})</th><th>Total (${currency})</th></tr></thead><tbody>
-${rentalResults.items.map(i => `<tr><td>${i.name}</td><td>${i.quantity}</td><td>${(Number(i.clientPrice)||0).toFixed(1)}</td><td>${((Number(i.clientPrice)||0)*(Number(i.quantity)||0)).toFixed(1)}</td></tr>`).join('')}
+${[...rentalResults.items, ...(rentalResults.riderItems||[])].map(i => `<tr><td>${i.name}</td><td>${i.quantity}</td><td>${(Number(i.clientPrice)||0).toFixed(1)}</td><td>${((Number(i.clientPrice)||0)*(Number(i.quantity)||0)).toFixed(1)}</td></tr>`).join('')}
 ${(rentalResults.services||[]).filter(s=>s.name&&Number(s.price)>0).map(s=>`<tr><td>${s.name}</td><td>1</td><td>${(Number(s.price)||0).toFixed(1)}</td><td>${(Number(s.price)||0).toFixed(1)}</td></tr>`).join('')}
 </tbody></table>
 <div>
@@ -702,7 +758,7 @@ th{background:#f2f2f2;}
 <div style="font-size:11px;"><strong>Invoice No.:</strong> ${invoiceNum}<br/><strong>Date:</strong> ${dateStr}<br/><strong>Due:</strong> Due on receipt</div></div></div></div>
 <div style="margin-bottom:15px;font-size:11px;"><strong>Bill To:</strong><br/>${rentalQuotation.clientName||'Client Name'}<br/>${rentalQuotation.projectName||'Project Name'}</div>
 <table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price (${currency})</th><th>Total (${currency})</th></tr></thead><tbody>
-${rentalResults.items.map(i=>`<tr><td>${i.name}</td><td>${i.quantity}</td><td>${(Number(i.clientPrice)||0).toFixed(2)}</td><td>${((Number(i.clientPrice)||0)*(Number(i.quantity)||0)).toFixed(2)}</td></tr>`).join('')}
+${[...rentalResults.items, ...(rentalResults.riderItems||[])].map(i=>`<tr><td>${i.name}</td><td>${i.quantity}</td><td>${(Number(i.clientPrice)||0).toFixed(2)}</td><td>${((Number(i.clientPrice)||0)*(Number(i.quantity)||0)).toFixed(2)}</td></tr>`).join('')}
 ${(rentalResults.services||[]).filter(s=>s.name&&Number(s.price)>0).map(s=>`<tr><td>${s.name}</td><td>1</td><td>${(Number(s.price)||0).toFixed(2)}</td><td>${(Number(s.price)||0).toFixed(2)}</td></tr>`).join('')}
 </tbody></table>
 <div>
@@ -4660,7 +4716,7 @@ This quotation is valid for 30 days from the date of issue"
                   {/* Items */}
                   <div className="bg-white border border-gray-200 rounded-xl p-6">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Rental Items</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">BOQ</h3>
                       <div className="flex items-center space-x-3">
                         <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
                           {[{ code: 'JOD', label: 'JOD' }, { code: 'USD', label: '$' }, { code: 'EUR', label: '€' }].map(({ code, label }) => (
@@ -4678,30 +4734,20 @@ This quotation is valid for 30 days from the date of issue"
 
                     {rentalQuotation.items.length === 0 ? (
                       <div className="text-center py-8 text-gray-500"><p>No items yet. Click "Add Item" to start.</p></div>
-                    ) : (
-                      <div className="space-y-3">
-                        {rentalQuotation.items.map((item, index) => (
-                          <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-3 items-center p-4 bg-gray-50 rounded-lg">
-                            <input type="text" placeholder="Item name / description" value={item.name}
-                              onChange={e => { setRentalQuotation(prev => ({ ...prev, items: prev.items.map((it, i) => i === index ? { ...it, name: e.target.value } : it) })); setRentalCalculated(false); }}
-                              className="md:col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
-                            <input type="number" placeholder="Cost price" value={item.cost}
-                              onChange={e => { setRentalQuotation(prev => ({ ...prev, items: prev.items.map((it, i) => i === index ? { ...it, cost: e.target.value } : it) })); setRentalCalculated(false); }}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
-                            <input type="number" placeholder="Rental price" value={item.clientPrice}
-                              onChange={e => { setRentalQuotation(prev => ({ ...prev, items: prev.items.map((it, i) => i === index ? { ...it, clientPrice: e.target.value } : it) })); setRentalCalculated(false); }}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
-                            <div className="flex items-center space-x-2">
-                              <input type="number" placeholder="Qty" value={item.quantity}
-                                onChange={e => { setRentalQuotation(prev => ({ ...prev, items: prev.items.map((it, i) => i === index ? { ...it, quantity: e.target.value } : it) })); setRentalCalculated(false); }}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black" />
-                              <button onClick={() => { setRentalQuotation(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== index) })); setRentalCalculated(false); }}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
-                            </div>
-                          </div>
-                        ))}
+                    ) : renderRentalItemRows('items', rentalQuotation.items)}
+
+                    {/* Technical Rider */}
+                    <div className="mt-6 border-t border-gray-200 pt-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-base font-semibold text-gray-900">Technical Rider</h4>
+                        <button onClick={addRentalRiderItem} className="flex items-center space-x-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm">
+                          <Plus size={14} /><span>Add Rider Item</span>
+                        </button>
                       </div>
-                    )}
+                      {(rentalQuotation.riderItems || []).length === 0 ? (
+                        <p className="text-sm text-gray-400 italic">No technical rider items. Add mixers, mics, monitors, backline, etc.</p>
+                      ) : renderRentalItemRows('riderItems', rentalQuotation.riderItems)}
+                    </div>
 
                     {/* Services */}
                     <div className="mt-6 border-t border-gray-200 pt-6">
@@ -4764,7 +4810,7 @@ This quotation is valid for 30 days from the date of issue"
                       <Calculator size={16} /><span>Calculate</span>
                     </button>
                     <button onClick={() => setShowRentalSaveModal(true)}
-                      disabled={rentalQuotation.items.length === 0 && rentalQuotation.services.length === 0}
+                      disabled={rentalQuotation.items.length === 0 && (rentalQuotation.riderItems || []).length === 0 && rentalQuotation.services.length === 0}
                       className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
                       <Save size={16} /><span>{loadedRentalProjectId ? 'Update Quotation' : 'Save Quotation'}</span>
                     </button>
@@ -4791,7 +4837,7 @@ This quotation is valid for 30 days from the date of issue"
                             </tr>
                           </thead>
                           <tbody>
-                            {rentalResults.items.map((item, index) => (
+                            {[...rentalResults.items, ...(rentalResults.riderItems || [])].map((item, index) => (
                               <tr key={index} className="border-b border-gray-200">
                                 <td className="p-3">{item.name || 'Unnamed Item'}</td>
                                 <td className="text-center p-3">{item.quantity}</td>
@@ -4917,7 +4963,7 @@ This quotation is valid for 30 days from the date of issue"
                           </div>
                           <div className="text-xs">Project: {rentalQuotation.projectName || 'Project Name'}</div>
                           <div className="mt-3">
-                            {rentalResults.items.map((item, i) => (
+                            {[...rentalResults.items, ...(rentalResults.riderItems || [])].map((item, i) => (
                               <div key={i} className="flex justify-between text-xs">
                                 <span>{item.name} x{item.quantity}</span>
                                 <span>{((Number(item.clientPrice) || 0) * (Number(item.quantity) || 0)).toFixed(1)} {rentalQuotation.currency}</span>

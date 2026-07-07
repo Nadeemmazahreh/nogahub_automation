@@ -102,21 +102,41 @@ async function deleteEvent(token: string, eventId: string): Promise<void> {
 
 // ── Description builders ────────────────────────────────────────────────────
 
+function fmtLocal(iso: string, tz: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: tz || 'Asia/Amman' });
+}
+
+function bulletize(text: string): string {
+  return (text || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => `• ${l}`).join('\n');
+}
+
 function opsDescription(rental: Record<string, unknown>): string {
   const li = (rental.logistics_info as Record<string, string>) || {};
   const si = (rental.sound_info as Record<string, string>) || {};
+  const tz = rental.timezone as string;
   const lines: string[] = [];
 
   if (rental.venue) lines.push(`Venue: ${rental.venue}`);
   if (rental.venue_address) lines.push(`Address: ${rental.venue_address}`);
+  if (rental.venue_contact_name || rental.venue_contact_phone) {
+    lines.push(`Venue contact: ${[rental.venue_contact_name, rental.venue_contact_phone].filter(Boolean).join(' ')}`);
+  }
 
+  const rider = si.technical_rider || li.technical_rider;
   const logLines = [
-    li.load_in_time && `Load-in: ${li.load_in_time}`,
-    li.load_out_time && `Load-out: ${li.load_out_time}`,
+    (li.name || li.phone) && `Logistics: ${[li.name, li.phone].filter(Boolean).join(' ')}`,
+    li.uninstall_from && `Uninstall from: ${li.uninstall_from}`,
+    li.load_in_time && `Load-in: ${fmtLocal(li.load_in_time, tz)}`,
+    li.load_out_time && `Load-out: ${fmtLocal(li.load_out_time, tz)}`,
+    li.install_in && `Install in: ${li.install_in}`,
     li.no_of_guests && `Guests: ${li.no_of_guests}`,
-    si.soundcheck_time && `Soundcheck: ${si.soundcheck_time}`,
-    li.equipment_summary && `Equipment: ${li.equipment_summary}`,
-    li.technical_rider && `Technical rider: ${li.technical_rider}`,
+    (si.name || si.phone) && `Sound engineer: ${[si.name, si.phone].filter(Boolean).join(' ')}`,
+    si.soundcheck_time && `Soundcheck: ${fmtLocal(si.soundcheck_time, tz)}`,
+    (si.artist_name || si.artist_phone || si.artist_email) && `Artist: ${[si.artist_name, si.artist_phone, si.artist_email].filter(Boolean).join(' ')}`,
+    li.equipment_summary && `Equipment:\n${bulletize(li.equipment_summary)}`,
+    rider && `Technical rider: ${rider}`,
     (li.notes || li.delivery_notes) && `Notes: ${li.notes || li.delivery_notes}`,
   ].filter(Boolean);
   if (logLines.length) lines.push(`\n── EVENT INFO ──\n${logLines.join('\n')}`);
@@ -168,55 +188,107 @@ async function sendWhatsAppLogistics(rental: Record<string, unknown>, q: Record<
   const fmtEn = (d: Date) => d.toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short', timeZone: tz });
   const fmtAr = (d: Date) => d.toLocaleString('ar-JO', { dateStyle: 'full', timeStyle: 'short', timeZone: tz });
   const notes = li.notes || li.delivery_notes;
+  const rider = si.technical_rider || li.technical_rider;
+  const venueContact = [rental.venue_contact_name, rental.venue_contact_phone].filter(Boolean).join(' ');
+  const logisticsContact = [li.name, li.phone].filter(Boolean).join(' ');
+  const soundContact = [si.name, si.phone].filter(Boolean).join(' ');
+  const artist = [si.artist_name, si.artist_phone, si.artist_email].filter(Boolean).join(' ');
+  const loadIn = li.load_in_time ? new Date(li.load_in_time) : null;
+  const loadOut = li.load_out_time ? new Date(li.load_out_time) : null;
+  const soundcheck = si.soundcheck_time ? new Date(si.soundcheck_time) : null;
 
-  const [notesAr, riderAr, titleAr, venueAr] = await Promise.all([
+  const [notesAr, riderAr, titleAr, venueAr, uninstallAr, installAr, equipmentArLines] = await Promise.all([
     notes ? translateToArabic(notes) : Promise.resolve(''),
-    li.technical_rider ? translateToArabic(li.technical_rider) : Promise.resolve(''),
+    rider ? translateToArabic(rider) : Promise.resolve(''),
     rental.title ? translateToArabic(rental.title as string) : Promise.resolve(''),
     rental.venue ? translateToArabic(rental.venue as string) : Promise.resolve(''),
+    li.uninstall_from ? translateToArabic(li.uninstall_from) : Promise.resolve(''),
+    li.install_in ? translateToArabic(li.install_in) : Promise.resolve(''),
+    Promise.all(
+      (li.equipment_summary || '').split('\n').map(l => l.trim()).filter(Boolean).map(translateToArabic),
+    ),
   ]);
 
-  const english = [
-    '📢 New Booking Confirmed',
-    '─────────────────────',
+  const equipmentEn = bulletize(li.equipment_summary);
+  const equipmentAr = equipmentArLines.map(l => `• ${l}`).join('\n');
+
+  const headerEn = '📢 New Booking Confirmed\n─────────────────────';
+  const venueSectionEn = [
     rental.title && `📋 Event: ${rental.title}`,
     q.client_name && `👤 Client: ${q.client_name}`,
     rental.venue && `📍 Venue: ${rental.venue}`,
     rental.venue_address && `🗺️ Address: ${rental.venue_address}`,
+    venueContact && `☎️ Venue contact: ${venueContact}`,
     `📅 Start: ${fmtEn(start)}`,
     `🏁 End: ${fmtEn(end)}`,
-    li.load_in_time && `⏰ Load-in: ${li.load_in_time}`,
-    li.load_out_time && `⏰ Load-out: ${li.load_out_time}`,
-    li.no_of_guests && `👥 Guests: ${li.no_of_guests}`,
-    si.soundcheck_time && `🎙️ Soundcheck: ${si.soundcheck_time}`,
-    li.equipment_summary && `📦 Equipment: ${li.equipment_summary}`,
-    li.technical_rider && `📋 Technical Rider: ${li.technical_rider}`,
-    notes && `📝 Notes:\n${notes}`,
   ].filter(Boolean).join('\n');
+  const logisticsSectionEn = [
+    logisticsContact && `🚚 Logistics: ${logisticsContact}`,
+    li.uninstall_from && `📤 Uninstall from: ${li.uninstall_from}`,
+    loadIn && `⏰ Load-in: ${fmtEn(loadIn)}`,
+    loadOut && `⏰ Load-out: ${fmtEn(loadOut)}`,
+    li.install_in && `📥 Install in: ${li.install_in}`,
+    li.no_of_guests && `👥 Guests: ${li.no_of_guests}`,
+  ].filter(Boolean).join('\n');
+  const equipmentSectionEn = equipmentEn && `📦 Equipment:\n${equipmentEn}`;
+  const soundSectionEn = [
+    soundContact && `🎚️ Sound engineer: ${soundContact}`,
+    soundcheck && `🎙️ Soundcheck: ${fmtEn(soundcheck)}`,
+    artist && `🎤 Artist: ${artist}`,
+    rider && `📋 Technical Rider:\n${rider}`,
+  ].filter(Boolean).join('\n');
+  const notesSectionEn = notes && `📝 Notes:\n${notes}`;
 
-  const arabic = [
-    '📢 تم تأكيد حجز جديد',
-    '─────────────────────',
+  const english = [headerEn, venueSectionEn, logisticsSectionEn, equipmentSectionEn, soundSectionEn, notesSectionEn]
+    .filter(Boolean).join('\n\n');
+
+  const headerAr = '📢 تم تأكيد حجز جديد\n─────────────────────';
+  const venueSectionAr = [
     titleAr && `📋 الفعالية: ${titleAr}`,
     q.client_name && `👤 العميل: ${q.client_name}`,
     venueAr && `📍 المكان: ${venueAr}`,
     rental.venue_address && `🗺️ العنوان: ${rental.venue_address}`,
+    venueContact && `☎️ جهة اتصال المكان: ${venueContact}`,
     `📅 البداية: ${fmtAr(start)}`,
     `🏁 النهاية: ${fmtAr(end)}`,
-    li.load_in_time && `⏰ وقت التحميل: ${li.load_in_time}`,
-    li.load_out_time && `⏰ وقت التفريغ: ${li.load_out_time}`,
-    li.no_of_guests && `👥 عدد الضيوف: ${li.no_of_guests}`,
-    si.soundcheck_time && `🎙️ وقت الساوند تشيك: ${si.soundcheck_time}`,
-    li.equipment_summary && `📦 المعدات:\n${li.equipment_summary}`,
-    riderAr && `📋 المتطلبات التقنية: ${riderAr}`,
-    notesAr && `📝 ملاحظات:\n${toArabicNumerals(notesAr)}`,
   ].filter(Boolean).join('\n');
+  const logisticsSectionAr = [
+    logisticsContact && `🚚 اللوجستيات: ${logisticsContact}`,
+    uninstallAr && `📤 التفكيك من: ${uninstallAr}`,
+    loadIn && `⏰ وقت التحميل: ${fmtAr(loadIn)}`,
+    loadOut && `⏰ وقت التفريغ: ${fmtAr(loadOut)}`,
+    installAr && `📥 التركيب في: ${installAr}`,
+    li.no_of_guests && `👥 عدد الضيوف: ${li.no_of_guests}`,
+  ].filter(Boolean).join('\n');
+  const equipmentSectionAr = equipmentAr && `📦 المعدات:\n${equipmentAr}`;
+  const soundSectionAr = [
+    soundContact && `🎚️ مهندس الصوت: ${soundContact}`,
+    soundcheck && `🎙️ وقت الساوند تشيك: ${fmtAr(soundcheck)}`,
+    artist && `🎤 الفنان: ${artist}`,
+    riderAr && `📋 المتطلبات التقنية:\n${riderAr}`,
+  ].filter(Boolean).join('\n');
+  const notesSectionAr = notesAr && `📝 ملاحظات:\n${toArabicNumerals(notesAr)}`;
 
+  const arabic = [headerAr, venueSectionAr, logisticsSectionAr, equipmentSectionAr, soundSectionAr, notesSectionAr]
+    .filter(Boolean).join('\n\n');
+
+  const cc = (rental.country_code as string) || '962';
+  const toChatId = (n: string) => {
+    const digits = (n || '').replace(/\D/g, '').replace(/^0+/, '');
+    return digits ? `${cc}${digits}@c.us` : '';
+  };
   const toChatIds = (arr: unknown) =>
-    ((arr as string[]) || []).map(n => n.replace(/\D/g, '')).filter(Boolean).map(n => `${n}@c.us`);
+    ((arr as string[]) || []).map(toChatId).filter(Boolean);
 
-  const englishRecipients = toChatIds(rental.whatsapp_english_recipients);
-  const arabicRecipients = toChatIds(rental.whatsapp_arabic_recipients);
+  // English/Arabic recipient lists + per-role numbers routed by each role's language.
+  const englishRecipients = new Set(toChatIds(rental.whatsapp_english_recipients));
+  const arabicRecipients = new Set(toChatIds(rental.whatsapp_arabic_recipients));
+  for (const person of [li, si]) {
+    const cid = toChatId(person.phone);
+    if (!cid) continue;
+    (person.language === 'en' ? englishRecipients : arabicRecipients).add(cid);
+  }
+  // A number in both sets only gets the Arabic message once, English once — no de-dupe needed across languages.
 
   const send = (cid: string, message: string) => fetch(`${apiUrl}/waInstance${instanceId}/sendMessage/${token}`, {
     method: 'POST',

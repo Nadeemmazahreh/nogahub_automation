@@ -40,7 +40,7 @@ const rentalsService = {
   async listQuotations() {
     const { data, error } = await supabase
       .from(Tables.RENTALS_QUOTATIONS)
-      .select('id, project_name, client_name, total, custom_equipment')
+      .select('id, project_name, client_name, total, custom_equipment, technical_rider')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];

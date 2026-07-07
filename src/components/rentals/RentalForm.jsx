@@ -22,6 +22,12 @@ function addHours(date, h) {
   return d;
 }
 
+function toLocalPhone(raw) {
+  if (!raw) return raw;
+  const digits = raw.replace(/\D/g, '');
+  return digits.startsWith('962') ? `0${digits.slice(3)}` : raw;
+}
+
 export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
   const isEdit = Boolean(rental);
   const defaultStart = initialDate || new Date();
@@ -31,16 +37,32 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
   const [quotationsLoading, setQuotationsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  const DEFAULT_NOTES = 'For financial matters please contact Ammar at 0790149224';
+
+  const EMPTY_LOGISTICS = {
+    name: 'Mustafa Kanaan', phone: '078885679', email: '',
+    uninstall_from: '', load_in_time: '', load_out_time: '', install_in: '',
+    equipment_summary: '', no_of_guests: '', language: 'ar',
+    notes: DEFAULT_NOTES,
+  };
+  const EMPTY_SOUND = {
+    name: 'Sufian AlSaed', phone: '0799833020', soundcheck_time: '', technical_rider: '',
+    artist_name: '', artist_phone: '', artist_email: '', language: 'en',
+  };
+
   const [form, setForm] = useState({
-    rental_rental_quotation_id: '',
+    rental_quotation_id: '',
     title: '',
     client_name: '',
     start_at: toLocalDatetimeValue(isEdit ? rental.start_at : defaultStart),
     end_at: toLocalDatetimeValue(isEdit ? rental.end_at : defaultEnd),
     venue: '',
     venue_address: '',
-    logistics_info: { load_in_time: '', load_out_time: '', equipment_summary: '', no_of_guests: '', technical_rider: '', notes: 'Sound Engineer\n- Name: Sufian AlSaed\n- Number: +962799833020\n\nLogistics\n- Name: Mustafa Kanaan\n- Number: +96278885679\n\nFinance\n- Name: Ammar Heis\n- Number: +962790149224' },
-    sound_info: { soundcheck_time: '' },
+    venue_contact_name: '',
+    venue_contact_phone: '',
+    country_code: '962',
+    logistics_info: { ...EMPTY_LOGISTICS },
+    sound_info: { ...EMPTY_SOUND },
     additional_attendees: '',
     whatsapp_arabic_recipients: '',
     whatsapp_english_recipients: '',
@@ -56,18 +78,33 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
         end_at: toLocalDatetimeValue(rental.end_at),
         venue: rental.venue || '',
         venue_address: rental.venue_address || '',
+        venue_contact_name: rental.venue_contact_name || '',
+        venue_contact_phone: toLocalPhone(rental.venue_contact_phone) || '',
+        country_code: rental.country_code || '962',
         logistics_info: {
-          load_in_time: '', load_out_time: '', equipment_summary: '', no_of_guests: '', technical_rider: '',
+          ...EMPTY_LOGISTICS,
           // ponytail: merge legacy delivery_notes + engineer_notes into notes on load
-          notes: (rental.logistics_info?.notes) || [rental.logistics_info?.delivery_notes, rental.sound_info?.engineer_notes].filter(Boolean).join('\n') || '',
+          notes: (rental.logistics_info?.notes) || [rental.logistics_info?.delivery_notes, rental.sound_info?.engineer_notes].filter(Boolean).join('\n') || DEFAULT_NOTES,
           ...(rental.logistics_info || {}),
+          phone: toLocalPhone(rental.logistics_info?.phone) || EMPTY_LOGISTICS.phone,
+          load_in_time: toLocalDatetimeValue(rental.logistics_info?.load_in_time),
+          load_out_time: toLocalDatetimeValue(rental.logistics_info?.load_out_time),
         },
-        sound_info: { soundcheck_time: rental.sound_info?.soundcheck_time || '' },
+        sound_info: {
+          ...EMPTY_SOUND,
+          ...(rental.sound_info || {}),
+          // legacy rows stored the rider under logistics_info
+          technical_rider: rental.sound_info?.technical_rider || rental.logistics_info?.technical_rider || '',
+          phone: toLocalPhone(rental.sound_info?.phone) || EMPTY_SOUND.phone,
+          artist_phone: toLocalPhone(rental.sound_info?.artist_phone) || '',
+          soundcheck_time: toLocalDatetimeValue(rental.sound_info?.soundcheck_time),
+        },
         additional_attendees: (rental.additional_attendees || []).join(', '),
         whatsapp_arabic_recipients: (rental.whatsapp_arabic_recipients || []).join(', '),
         whatsapp_english_recipients: (rental.whatsapp_english_recipients || []).join(', '),
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rental]);
 
   useEffect(() => {
@@ -80,10 +117,12 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
   function handleQuotationChange(e) {
     const id = e.target.value;
     const q = quotations.find(q => q.id === id);
-    const equipmentSummary = (q?.custom_equipment || [])
+    const summarize = (items) => (items || [])
       .filter(item => item.name)
       .map(item => item.quantity > 1 ? `${item.quantity}× ${item.name}` : item.name)
       .join('\n');
+    const equipmentSummary = summarize(q?.custom_equipment);
+    const riderSummary = summarize(q?.technical_rider);
     setForm(f => ({
       ...f,
       rental_quotation_id: id,
@@ -92,6 +131,10 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
       logistics_info: {
         ...f.logistics_info,
         equipment_summary: equipmentSummary || f.logistics_info.equipment_summary,
+      },
+      sound_info: {
+        ...f.sound_info,
+        technical_rider: riderSummary || f.sound_info.technical_rider,
       },
     }));
   }
@@ -116,8 +159,18 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
         end_at: new Date(form.end_at).toISOString(),
         venue: form.venue.trim() || null,
         venue_address: form.venue_address.trim() || null,
-        logistics_info: form.logistics_info,
-        sound_info: form.sound_info,
+        venue_contact_name: form.venue_contact_name.trim() || null,
+        venue_contact_phone: form.venue_contact_phone.trim() || null,
+        country_code: form.country_code.trim() || '962',
+        logistics_info: {
+          ...form.logistics_info,
+          load_in_time: form.logistics_info.load_in_time ? new Date(form.logistics_info.load_in_time).toISOString() : '',
+          load_out_time: form.logistics_info.load_out_time ? new Date(form.logistics_info.load_out_time).toISOString() : '',
+        },
+        sound_info: {
+          ...form.sound_info,
+          soundcheck_time: form.sound_info.soundcheck_time ? new Date(form.sound_info.soundcheck_time).toISOString() : '',
+        },
         additional_attendees: form.additional_attendees.split(',').map(s => s.trim()).filter(Boolean),
         whatsapp_arabic_recipients: form.whatsapp_arabic_recipients.split(',').map(s => s.trim()).filter(Boolean),
         whatsapp_english_recipients: form.whatsapp_english_recipients.split(',').map(s => s.trim()).filter(Boolean),
@@ -235,34 +288,112 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
                 <input type="datetime-local" className={inp} value={form.end_at} onChange={e => set('end_at', e.target.value)} required />
               </div>
               <div>
-                <label className={lbl}>Load-in Time</label>
-                <input className={inp} value={form.logistics_info.load_in_time} onChange={e => setLi('load_in_time', e.target.value)} placeholder="e.g. 08:00" />
-              </div>
-              <div>
-                <label className={lbl}>Load-out Time</label>
-                <input className={inp} value={form.logistics_info.load_out_time} onChange={e => setLi('load_out_time', e.target.value)} placeholder="e.g. 23:00" />
-              </div>
-              <div>
                 <label className={lbl}>No. of Guests</label>
                 <input className={inp} value={form.logistics_info.no_of_guests} onChange={e => setLi('no_of_guests', e.target.value)} placeholder="e.g. 500" />
               </div>
               <div>
-                <label className={lbl}>Soundcheck Time</label>
-                <input className={inp} value={form.sound_info.soundcheck_time} onChange={e => setSi('soundcheck_time', e.target.value)} placeholder="e.g. 14:00" />
+                <label className={lbl}>Venue Contact Name</label>
+                <input className={inp} value={form.venue_contact_name} onChange={e => set('venue_contact_name', e.target.value)} placeholder="e.g. Ahmad" />
+              </div>
+              <div>
+                <label className={lbl}>Venue Contact Number</label>
+                <input className={inp} value={form.venue_contact_phone} onChange={e => set('venue_contact_phone', e.target.value)} placeholder="e.g. 0790000000" />
+              </div>
+            </div>
+          </div>
+
+          {/* Logistics */}
+          <div className={sec}>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Logistics</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={lbl}>Name</label>
+                <input className={inp} value={form.logistics_info.name} onChange={e => setLi('name', e.target.value)} placeholder="Logistics contact name" />
+              </div>
+              <div>
+                <label className={lbl}>Number</label>
+                <input className={inp} value={form.logistics_info.phone} onChange={e => setLi('phone', e.target.value)} placeholder="e.g. 0780000000" />
+              </div>
+              <div>
+                <label className={lbl}>Email</label>
+                <input type="email" className={inp} value={form.logistics_info.email} onChange={e => setLi('email', e.target.value)} placeholder="e.g. logistics@nogahub.com" />
+              </div>
+              <div>
+                <label className={lbl}>Uninstall From</label>
+                <input className={inp} value={form.logistics_info.uninstall_from} onChange={e => setLi('uninstall_from', e.target.value)} placeholder="e.g. Warehouse / previous venue" />
+              </div>
+              <div>
+                <label className={lbl}>Load-in</label>
+                <input type="datetime-local" className={inp} value={form.logistics_info.load_in_time} onChange={e => setLi('load_in_time', e.target.value)} />
+              </div>
+              <div>
+                <label className={lbl}>Load-out</label>
+                <input type="datetime-local" className={inp} value={form.logistics_info.load_out_time} onChange={e => setLi('load_out_time', e.target.value)} />
+              </div>
+              <div>
+                <label className={lbl}>Install In</label>
+                <input className={inp} value={form.logistics_info.install_in} onChange={e => setLi('install_in', e.target.value)} placeholder="e.g. Main hall, stage left" />
+              </div>
+              <div>
+                <label className={lbl}>Language</label>
+                <select className={inp} value={form.logistics_info.language} onChange={e => setLi('language', e.target.value)}>
+                  <option value="ar">Arabic</option>
+                  <option value="en">English</option>
+                </select>
               </div>
             </div>
             <div>
-              <label className={lbl}>Equipment</label>
+              <label className={lbl}>Equipment (auto-filled from quotation)</label>
               <textarea className={inp} rows={3} value={form.logistics_info.equipment_summary} onChange={e => setLi('equipment_summary', e.target.value)} placeholder={'e.g. 12× L-Acoustics K2\n2× subs'} />
             </div>
-            <div>
-              <label className={lbl}>Technical Rider</label>
-              <input className={inp} value={form.logistics_info.technical_rider} onChange={e => setLi('technical_rider', e.target.value)} placeholder="e.g. Link to rider or summary" />
+          </div>
+
+          {/* Sound Engineering */}
+          <div className={sec}>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sound Engineering</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={lbl}>Name</label>
+                <input className={inp} value={form.sound_info.name} onChange={e => setSi('name', e.target.value)} placeholder="Sound engineer name" />
+              </div>
+              <div>
+                <label className={lbl}>Number</label>
+                <input className={inp} value={form.sound_info.phone} onChange={e => setSi('phone', e.target.value)} placeholder="e.g. 0790000000" />
+              </div>
+              <div>
+                <label className={lbl}>Sound Check</label>
+                <input type="datetime-local" className={inp} value={form.sound_info.soundcheck_time} onChange={e => setSi('soundcheck_time', e.target.value)} />
+              </div>
+              <div>
+                <label className={lbl}>Language</label>
+                <select className={inp} value={form.sound_info.language} onChange={e => setSi('language', e.target.value)}>
+                  <option value="en">English</option>
+                  <option value="ar">Arabic</option>
+                </select>
+              </div>
+              <div>
+                <label className={lbl}>Artist Name</label>
+                <input className={inp} value={form.sound_info.artist_name} onChange={e => setSi('artist_name', e.target.value)} placeholder="e.g. Band / DJ name" />
+              </div>
+              <div>
+                <label className={lbl}>Artist Number</label>
+                <input className={inp} value={form.sound_info.artist_phone} onChange={e => setSi('artist_phone', e.target.value)} placeholder="e.g. 0790000000" />
+              </div>
+              <div className="col-span-2">
+                <label className={lbl}>Artist Email</label>
+                <input type="email" className={inp} value={form.sound_info.artist_email} onChange={e => setSi('artist_email', e.target.value)} placeholder="e.g. artist@example.com" />
+              </div>
             </div>
             <div>
-              <label className={lbl}>Notes</label>
-              <textarea className={inp} rows={3} value={form.logistics_info.notes} onChange={e => setLi('notes', e.target.value)} placeholder="Access codes, parking, engineer requirements, special instructions…" />
+              <label className={lbl}>Technical Rider (auto-filled from quotation)</label>
+              <textarea className={inp} rows={3} value={form.sound_info.technical_rider} onChange={e => setSi('technical_rider', e.target.value)} placeholder={'e.g. 1× X32 mixer\n4× SM58'} />
             </div>
+          </div>
+
+          {/* Notes */}
+          <div className={sec}>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Notes</p>
+            <textarea className={inp} rows={3} value={form.logistics_info.notes} onChange={e => setLi('notes', e.target.value)} placeholder="Access codes, parking, special instructions…" />
           </div>
 
           {/* Additional Attendees */}
@@ -283,28 +414,37 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
               </p>
             </div>
             <div>
-              <label className={lbl}>Arabic message number(s) (comma-separated, international format)</label>
+              <label className={lbl}>Arabic message number(s) (comma-separated, local format)</label>
               <input
                 className={inp}
                 value={form.whatsapp_arabic_recipients}
                 onChange={e => set('whatsapp_arabic_recipients', e.target.value)}
-                placeholder="e.g. 962799123456, 962791987654"
+                placeholder="e.g. 0799123456, 0791987654"
               />
               <p className="text-xs text-gray-400 mt-1">
                 These numbers receive the Arabic WhatsApp notification only.
               </p>
             </div>
             <div>
-              <label className={lbl}>English message number(s) (comma-separated, international format)</label>
+              <label className={lbl}>English message number(s) (comma-separated, local format)</label>
               <input
                 className={inp}
                 value={form.whatsapp_english_recipients}
                 onChange={e => set('whatsapp_english_recipients', e.target.value)}
-                placeholder="e.g. 962799123456, 962791987654"
+                placeholder="e.g. 0799123456, 0791987654"
               />
               <p className="text-xs text-gray-400 mt-1">
                 These numbers receive the English WhatsApp notification only.
               </p>
+            </div>
+            <div>
+              <label className={lbl}>Country Code (applied to all numbers above)</label>
+              <input
+                className={inp}
+                value={form.country_code}
+                onChange={e => set('country_code', e.target.value.replace(/\D/g, ''))}
+                placeholder="e.g. 962"
+              />
             </div>
           </div>
 

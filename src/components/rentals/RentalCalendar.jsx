@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Plus, RefreshCw, Calendar, Link2, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, RefreshCw, Calendar, Link2, CheckCircle, Pencil, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import rentalsService from '../../services/rentalsService';
 import RentalForm from './RentalForm';
@@ -110,6 +110,18 @@ export default function RentalCalendar() {
       loadMonth();
     } catch (err) {
       toast.error(`Sync failed: ${err.message}`);
+    }
+  }
+
+  async function handleCancel(rental, e) {
+    e.stopPropagation();
+    if (!window.confirm('Cancel this rental? Google Calendar events will be deleted.')) return;
+    try {
+      await rentalsService.cancelRental(rental.id);
+      toast.success('Rental cancelled and calendar events removed');
+      loadMonth();
+    } catch (err) {
+      toast.error(`Cancel failed: ${err.message}`);
     }
   }
 
@@ -265,6 +277,20 @@ export default function RentalCalendar() {
                       <RefreshCw size={13} />
                     </button>
                   )}
+                  <button
+                    onClick={(e) => openEdit(r, e)}
+                    className="text-gray-400 hover:text-gray-700 transition-colors"
+                    title="Edit rental"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    onClick={(e) => handleCancel(r, e)}
+                    className="text-gray-400 hover:text-red-600 transition-colors"
+                    title="Cancel rental"
+                  >
+                    <Ban size={13} />
+                  </button>
                 </div>
               </div>
             ))}
