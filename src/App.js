@@ -3889,11 +3889,16 @@ This quotation is valid for 30 days from the date of issue"
                       </div>
                       <div className="p-6 space-y-6">
                         {/* KPI cards */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
                             <p className="text-xs text-gray-500 font-medium">Equipment Value (MSRP)</p>
                             <p className="text-lg font-bold text-gray-900 mt-1">{r.equipmentMsrpValueJOD.toFixed(2)}</p>
                             <p className="text-xs text-gray-400 mt-0.5">JOD list price</p>
+                          </div>
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">Equipment Value (After Discount)</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.discountedEquipmentValueJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD billed for equipment</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
                             <p className="text-xs text-gray-500 font-medium">Internal Landed Cost</p>
