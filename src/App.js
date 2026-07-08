@@ -721,8 +721,9 @@ ${[...rentalResults.items, ...(rentalResults.riderItems||[])].map(i => `<tr><td>
 ${(rentalResults.services||[]).filter(s=>s.name&&Number(s.price)>0).map(s=>`<tr><td>${s.name}</td><td>1</td><td>${(Number(s.price)||0).toFixed(1)}</td><td>${(Number(s.price)||0).toFixed(1)}</td></tr>`).join('')}
 </tbody></table>
 <div>
-${rentalQuotation.globalDiscount>0?`<div class="totals-row"><span>Subtotal (before discount):</span><span>${(rentalResults.totalRevenueBeforeDiscount||0).toFixed(1)} ${currency}</span></div><div class="totals-row" style="color:red;"><span>Discount (${rentalQuotation.globalDiscount}%):</span><span>-${(rentalResults.discountAmount||0).toFixed(1)} ${currency}</span></div>`:''}
-<div class="totals-row"><span>Subtotal:</span><span>${(rentalResults.subtotal||0).toFixed(1)} ${currency}</span></div>
+<div class="totals-row"><span>Subtotal:</span><span>${(rentalResults.totalRevenueBeforeDiscount||0).toFixed(1)} ${currency}</span></div>
+${rentalQuotation.globalDiscount>0?`<div class="totals-row" style="color:red;"><span>Discount:</span><span>-${(rentalResults.discountAmount||0).toFixed(1)} ${currency}</span></div>`:''}
+${rentalQuotation.globalDiscount>0&&rentalQuotation.includeTax?`<div class="totals-row"><span>Subtotal:</span><span>${(rentalResults.subtotal||0).toFixed(1)} ${currency}</span></div>`:''}
 ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><span>${(rentalResults.tax||0).toFixed(1)} ${currency}</span></div>`:''}
 <div class="totals-row total-final"><span>Total:</span><span>${(rentalResults.total||0).toFixed(1)} ${currency}</span></div>
 </div>
@@ -1287,41 +1288,22 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
           ` : ''}
           
           <div class="totals">
-            ${project.globalDiscount > 0 ? `
-              <div class="totals-row">
-                <span>Equipment Subtotal (before discount):</span>
-                <span>${(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(1)} JOD</span>
-              </div>
-              <div class="totals-row discount">
-                <span>Equipment Discount (${(parseFloat(project.globalDiscount) || 0).toFixed(1)}%):</span>
-                <span>-${(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(1)} JOD</span>
-              </div>
-              <div class="totals-row">
-                <span>Equipment Subtotal (after discount):</span>
-                <span>${((calculationResults.equipmentTotalJODBeforeDiscount || 0) - (((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100)).toFixed(1)} JOD</span>
-              </div>
-            ` : `
-              <div class="totals-row">
-                <span>Equipment Subtotal:</span>
-                <span>${(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(1)} JOD</span>
-              </div>
-            `}
-            ${calculationResults.customEquipmentDetails && calculationResults.customEquipmentDetails.length > 0 ? `
-              <div class="totals-row">
-                <span>Custom Equipment Subtotal:</span>
-                <span>${(calculationResults.customEquipmentTotalJOD || 0).toFixed(1)} JOD</span>
-              </div>
-            ` : ''}
-            ${calculationResults.servicesTotal > 0 ? `
-              <div class="totals-row">
-                <span>Services Subtotal:</span>
-                <span>${(calculationResults.servicesTotal || 0).toFixed(1)} JOD</span>
-              </div>
-            ` : ''}
             <div class="totals-row">
               <span>Subtotal:</span>
-              <span>${(calculationResults.projectSubtotalJOD || 0).toFixed(1)} JOD</span>
+              <span>${((calculationResults.equipmentTotalJODBeforeDiscount || 0) + (calculationResults.customEquipmentTotalJOD || 0) + (calculationResults.servicesTotal || 0)).toFixed(1)} JOD</span>
             </div>
+            ${project.globalDiscount > 0 ? `
+              <div class="totals-row discount">
+                <span>Equipment Discount:</span>
+                <span>-${(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(1)} JOD</span>
+              </div>
+            ` : ''}
+            ${project.globalDiscount > 0 && project.includeTax ? `
+              <div class="totals-row">
+                <span>Subtotal:</span>
+                <span>${(calculationResults.projectSubtotalJOD || 0).toFixed(1)} JOD</span>
+              </div>
+            ` : ''}
             ${project.includeTax ? `
             <div class="totals-row">
               <span>VAT (16%):</span>
@@ -1798,25 +1780,22 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
           </table>
 
           <div class="totals">
+            <div class="totals-row">
+              <span>Subtotal:</span>
+              <span>${(ncResults.totalRevenueBeforeDiscount || 0).toFixed(1)} ${customQuotation.currency}</span>
+            </div>
             ${customQuotation.globalDiscount > 0 ? `
-              <div class="totals-row">
-                <span>Subtotal (before discount):</span>
-                <span>${(ncResults.totalRevenueBeforeDiscount || 0).toFixed(1)} ${customQuotation.currency}</span>
-              </div>
               <div class="totals-row discount">
-                <span>Discount (${(parseFloat(customQuotation.globalDiscount) || 0).toFixed(1)}%):</span>
+                <span>Discount:</span>
                 <span>-${(ncResults.discountAmount || 0).toFixed(1)} ${customQuotation.currency}</span>
               </div>
-              <div class="totals-row">
-                <span>Subtotal (after discount):</span>
-                <span>${(ncResults.subtotal || 0).toFixed(1)} ${customQuotation.currency}</span>
-              </div>
-            ` : `
+            ` : ''}
+            ${customQuotation.globalDiscount > 0 && customQuotation.includeTax ? `
               <div class="totals-row">
                 <span>Subtotal:</span>
                 <span>${(ncResults.subtotal || 0).toFixed(1)} ${customQuotation.currency}</span>
               </div>
-            `}
+            ` : ''}
             ${customQuotation.includeTax ? `
             <div class="totals-row">
               <span>VAT (16%):</span>
@@ -4194,17 +4173,6 @@ This quotation is valid for 30 days from the date of issue"
                             <span>{Math.round(item.finalTotalJOD) || 'N/A'} JOD</span>
                           </div>
                         ))}
-                        <div className="flex justify-between text-xs font-medium mt-2 pt-2 border-t">
-                          <span>Equipment Subtotal:</span>
-                          <span>{(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(2)} JOD</span>
-                        </div>
-                        {project.globalDiscount > 0 && (
-                          <div className="flex justify-between text-xs text-red-600">
-                            <span>Equipment Discount ({(parseFloat(project.globalDiscount) || 0).toFixed(2)}%):</span>
-                            <span>-{(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(2)} JOD</span>
-                          </div>
-                        )}
-                        
                         {calculationResults.customEquipmentDetails && calculationResults.customEquipmentDetails.length > 0 && (
                           <>
                             <h6 className="font-semibold mt-3 mb-2">Custom Equipment:</h6>
@@ -4214,10 +4182,6 @@ This quotation is valid for 30 days from the date of issue"
                                 <span>{Math.round(item.finalTotalJOD) || 'N/A'} JOD</span>
                               </div>
                             ))}
-                            <div className="flex justify-between text-xs font-medium mt-2 pt-2 border-t">
-                              <span>Custom Equipment Subtotal:</span>
-                              <span>{(calculationResults.customEquipmentTotalJOD || 0).toFixed(2)} JOD</span>
-                            </div>
                           </>
                         )}
                         
@@ -4254,18 +4218,26 @@ This quotation is valid for 30 days from the date of issue"
                                 <span>{service.price.toFixed(2)} JOD</span>
                               </div>
                             ))}
-                            <div className="flex justify-between text-xs font-medium mt-2 pt-2 border-t">
-                              <span>Services Subtotal:</span>
-                              <span>{Math.round(calculationResults.servicesTotal || 0)} JOD</span>
-                            </div>
                           </>
                         )}
-                        
+
                         <div className="border-t mt-3 pt-2">
                           <div className="flex justify-between text-xs">
                             <span>Subtotal:</span>
-                            <span>{Math.round(calculationResults.projectSubtotalJOD || 0)} JOD</span>
+                            <span>{Math.round((calculationResults.equipmentTotalJODBeforeDiscount || 0) + (calculationResults.customEquipmentTotalJOD || 0) + (calculationResults.servicesTotal || 0))} JOD</span>
                           </div>
+                          {project.globalDiscount > 0 && (
+                            <div className="flex justify-between text-xs text-red-600">
+                              <span>Equipment Discount:</span>
+                              <span>-{(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(2)} JOD</span>
+                            </div>
+                          )}
+                          {project.globalDiscount > 0 && project.includeTax && (
+                            <div className="flex justify-between text-xs">
+                              <span>Subtotal:</span>
+                              <span>{Math.round(calculationResults.projectSubtotalJOD || 0)} JOD</span>
+                            </div>
+                          )}
                           {project.includeTax && (
                             <div className="flex justify-between text-xs">
                               <span>VAT (16%):</span>
@@ -4279,7 +4251,7 @@ This quotation is valid for 30 days from the date of issue"
                         </div>
                       </div>
                     </div>
-                    
+
                     <button 
                       onClick={() => downloadQuotationPDF(calculationResults, project)}
                       className="mt-3 w-full flex items-center justify-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -4318,22 +4290,22 @@ This quotation is valid for 30 days from the date of issue"
                           ))}
 
                           <div className="border-t mt-3 pt-2">
-                            {customQuotation.globalDiscount > 0 && (
-                              <>
-                                <div className="flex justify-between text-xs">
-                                  <span>Subtotal (before discount):</span>
-                                  <span>{Math.round(ncResults.totalRevenueBeforeDiscount || 0)} JOD</span>
-                                </div>
-                                <div className="flex justify-between text-xs text-red-600">
-                                  <span>Discount ({customQuotation.globalDiscount}%):</span>
-                                  <span>-{Math.round(ncResults.discountAmount || 0)} JOD</span>
-                                </div>
-                              </>
-                            )}
                             <div className="flex justify-between text-xs">
-                              <span>Subtotal{customQuotation.globalDiscount > 0 ? ' (after discount)' : ''}:</span>
-                              <span>{Math.round(ncResults.subtotal || 0)} JOD</span>
+                              <span>Subtotal:</span>
+                              <span>{Math.round(ncResults.totalRevenueBeforeDiscount || 0)} JOD</span>
                             </div>
+                            {customQuotation.globalDiscount > 0 && (
+                              <div className="flex justify-between text-xs text-red-600">
+                                <span>Discount:</span>
+                                <span>-{Math.round(ncResults.discountAmount || 0)} JOD</span>
+                              </div>
+                            )}
+                            {customQuotation.globalDiscount > 0 && customQuotation.includeTax && (
+                              <div className="flex justify-between text-xs">
+                                <span>Subtotal:</span>
+                                <span>{Math.round(ncResults.subtotal || 0)} JOD</span>
+                              </div>
+                            )}
                             {customQuotation.includeTax && (
                               <div className="flex justify-between text-xs">
                                 <span>VAT (16%):</span>
@@ -4902,13 +4874,13 @@ This quotation is valid for 30 days from the date of issue"
                         </table>
                       </div>
                       <div className="border-t border-gray-300 pt-4">
+                        <div className="flex justify-between mb-2"><span className="font-medium">Subtotal:</span><span>{rentalResults.totalRevenueBeforeDiscount.toFixed(1)} {rentalQuotation.currency}</span></div>
                         {rentalQuotation.globalDiscount > 0 && (
-                          <>
-                            <div className="flex justify-between mb-2"><span className="font-medium">Subtotal (before discount):</span><span>{rentalResults.totalRevenueBeforeDiscount.toFixed(1)} {rentalQuotation.currency}</span></div>
-                            <div className="flex justify-between mb-2 text-red-600"><span className="font-medium">Discount ({rentalQuotation.globalDiscount}%):</span><span>-{rentalResults.discountAmount.toFixed(1)} {rentalQuotation.currency}</span></div>
-                          </>
+                          <div className="flex justify-between mb-2 text-red-600"><span className="font-medium">Discount:</span><span>-{rentalResults.discountAmount.toFixed(1)} {rentalQuotation.currency}</span></div>
                         )}
-                        <div className="flex justify-between mb-2"><span className="font-medium">Subtotal:</span><span>{rentalResults.subtotal.toFixed(1)} {rentalQuotation.currency}</span></div>
+                        {rentalQuotation.globalDiscount > 0 && rentalQuotation.includeTax && (
+                          <div className="flex justify-between mb-2"><span className="font-medium">Subtotal:</span><span>{rentalResults.subtotal.toFixed(1)} {rentalQuotation.currency}</span></div>
+                        )}
                         {rentalQuotation.includeTax && <div className="flex justify-between mb-2"><span className="font-medium">VAT (16%):</span><span>{rentalResults.tax.toFixed(1)} {rentalQuotation.currency}</span></div>}
                         <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2 mt-2"><span>Total:</span><span className="text-green-600">{rentalResults.total.toFixed(1)} {rentalQuotation.currency}</span></div>
                       </div>
@@ -5010,8 +4982,9 @@ This quotation is valid for 30 days from the date of issue"
                               </div>
                             ))}
                             <div className="border-t mt-2 pt-2">
-                              {rentalQuotation.globalDiscount > 0 && <div className="flex justify-between text-xs text-red-600"><span>Discount ({rentalQuotation.globalDiscount}%):</span><span>-{(rentalResults.discountAmount || 0).toFixed(1)} {rentalQuotation.currency}</span></div>}
-                              <div className="flex justify-between text-xs"><span>Subtotal:</span><span>{(rentalResults.subtotal || 0).toFixed(1)} {rentalQuotation.currency}</span></div>
+                              <div className="flex justify-between text-xs"><span>Subtotal:</span><span>{(rentalResults.totalRevenueBeforeDiscount || 0).toFixed(1)} {rentalQuotation.currency}</span></div>
+                              {rentalQuotation.globalDiscount > 0 && <div className="flex justify-between text-xs text-red-600"><span>Discount:</span><span>-{(rentalResults.discountAmount || 0).toFixed(1)} {rentalQuotation.currency}</span></div>}
+                              {rentalQuotation.globalDiscount > 0 && rentalQuotation.includeTax && <div className="flex justify-between text-xs"><span>Subtotal:</span><span>{(rentalResults.subtotal || 0).toFixed(1)} {rentalQuotation.currency}</span></div>}
                               {rentalQuotation.includeTax && <div className="flex justify-between text-xs"><span>VAT (16%):</span><span>{(rentalResults.tax || 0).toFixed(1)} {rentalQuotation.currency}</span></div>}
                               <div className="flex justify-between font-semibold"><span>Total:</span><span>{(rentalResults.total || 0).toFixed(1)} {rentalQuotation.currency}</span></div>
                             </div>

@@ -121,63 +121,6 @@ export const generateEquipmentRow = (item, index) => `
 `;
 
 /**
- * Generate totals section HTML
- */
-export const generateTotalsSection = (calculationResults, project) => {
-  const hasDiscount = project.globalDiscount > 0;
-
-  return `
-    <div class="totals">
-      ${hasDiscount ? `
-        <div class="totals-row">
-          <span>Equipment Subtotal (before discount):</span>
-          <span>${Math.round(calculationResults.equipmentTotalJODBeforeDiscount || 0)} JOD</span>
-        </div>
-        <div class="totals-row discount">
-          <span>Equipment Discount (${(parseFloat(project.globalDiscount) || 0).toFixed(2)}%):</span>
-          <span>-${Math.round(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100)} JOD</span>
-        </div>
-        <div class="totals-row">
-          <span>Equipment Subtotal (after discount):</span>
-          <span>${Math.round((calculationResults.equipmentTotalJODBeforeDiscount || 0) - (((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100))} JOD</span>
-        </div>
-      ` : `
-        <div class="totals-row">
-          <span>Equipment Subtotal:</span>
-          <span>${Math.round(calculationResults.equipmentTotalJODBeforeDiscount || 0)} JOD</span>
-        </div>
-      `}
-      ${calculationResults.customEquipmentDetails && calculationResults.customEquipmentDetails.length > 0 ? `
-        <div class="totals-row">
-          <span>Custom Equipment Subtotal:</span>
-          <span>${Math.round(calculationResults.customEquipmentTotalJOD || 0)} JOD</span>
-        </div>
-      ` : ''}
-      ${calculationResults.servicesTotal > 0 ? `
-        <div class="totals-row">
-          <span>Services Subtotal:</span>
-          <span>${Math.round(calculationResults.servicesTotal || 0)} JOD</span>
-        </div>
-      ` : ''}
-      <div class="totals-row">
-        <span>Subtotal:</span>
-        <span>${Math.round(calculationResults.projectSubtotalJOD || 0)} JOD</span>
-      </div>
-      ${project.includeTax ? `
-      <div class="totals-row">
-        <span>VAT (16%):</span>
-        <span>${Math.round(calculationResults.projectTaxJOD || 0)} JOD</span>
-      </div>
-      ` : ''}
-      <div class="totals-row total-final">
-        <span>TOTAL:</span>
-        <span>${Math.round(calculationResults.projectTotalJOD || 0)} JOD</span>
-      </div>
-    </div>
-  `;
-};
-
-/**
  * Generate notes section HTML
  */
 export const generateNotesSection = () => `
