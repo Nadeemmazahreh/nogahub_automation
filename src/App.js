@@ -1011,8 +1011,8 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
     // For BOQ display: use full prices without discount (equipmentTotalJODBeforeDiscount)
     // For project summary: apply discount to final subtotal
     const subtotalBeforeDiscount = equipmentTotalJODBeforeDiscount + customEquipmentTotalJOD + servicesTotal;
-    const discountAmount = subtotalBeforeDiscount * (project.globalDiscount / 100);
-    const projectSubtotalJOD = subtotalBeforeDiscount - discountAmount;
+    const discountAmount = equipmentTotalJODBeforeDiscount - equipmentTotalJOD; // discount applies to equipment only
+    const projectSubtotalJOD = equipmentTotalJOD + customEquipmentTotalJOD + servicesTotal;
     const projectTaxJOD = project.includeTax ? (projectSubtotalJOD * 0.16) : 0; // 16% VAT if includeTax is true
     const projectTotalJOD = projectSubtotalJOD + projectTaxJOD;
 
@@ -1477,8 +1477,9 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
             <div class="section-title">Vendor Contact:</div>
             <div style="font-size: 11px;">
               Void Acoustics Research Ltd.<br/>
-              Unit 15, Dawkins Road Industrial Estate<br/>
-              Poole, Dorset, BH15 4JY<br/>
+              Unit L, The Fulcrum<br/>
+              Vantage Way<br/>
+              Poole, Dorset, BH12 4NU<br/>
               United Kingdom
             </div>
           </div>
@@ -1504,7 +1505,6 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                   <td style="text-align: center;">${String(index + 1).padStart(3, '0')}</td>
                   <td>
                     <strong>${item.name}</strong><br/>
-                    <span style="font-size: 9px; color: #6b7280;">Fiberglass enclosure, ${item.power || 'N/A'}, Professional Audio Equipment</span><br/>
                     <span style="font-size: 9px; color: #9ca3af;">Delivery Date: ${deliveryDate}</span>
                   </td>
                   <td style="text-align: center;">${item.quantity}</td>
@@ -2370,7 +2370,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                       setProject(prev => ({ ...prev, globalDiscount: parseFloat(e.target.value) || 0 }));
                       setIsCalculated(false);
                     }}
-                    className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                    className="flex-1 sm:flex-none sm:w-32 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                     placeholder="0-50%"
                   />
                 </div>
@@ -2620,7 +2620,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                   </div>
                   
                   {project.customEquipment.map((equipment, index) => (
-                    <div key={index} className="flex items-center space-x-3 mb-2">
+                    <div key={index} className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                       <input
                         type="text"
                         placeholder="Equipment name"
@@ -2634,7 +2634,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                           }));
                           setIsCalculated(false);
                         }}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        className="w-full sm:w-auto sm:flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                       />
                       <input
                         type="number"
@@ -2649,7 +2649,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                           }));
                           setIsCalculated(false);
                         }}
-                        className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        className="flex-1 sm:flex-none sm:w-32 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                       />
                       <input
                         type="number"
@@ -2664,7 +2664,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                           }));
                           setIsCalculated(false);
                         }}
-                        className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        className="flex-1 sm:flex-none sm:w-32 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                       />
                       <button
                         onClick={() => {
@@ -2695,7 +2695,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                   </div>
                   
                   {project.customServices.map((service, index) => (
-                    <div key={index} className="flex items-center space-x-3 mb-2">
+                    <div key={index} className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                       <input
                         type="text"
                         placeholder="Service name"
@@ -2709,7 +2709,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                           }));
                           setIsCalculated(false);
                         }}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        className="w-full sm:w-auto sm:flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                       />
                       <input
                         type="number"
@@ -2724,7 +2724,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                           }));
                           setIsCalculated(false);
                         }}
-                        className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        className="flex-1 sm:flex-none sm:w-32 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                       />
                       <button
                         onClick={() => {
@@ -2786,7 +2786,7 @@ This quotation is valid for 30 days from the date of issue"
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-end space-x-4 mt-6">
+                <div className="flex flex-wrap justify-end gap-3 mt-6">
                   <button
                     onClick={handleCalculate}
                     className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -2818,8 +2818,50 @@ This quotation is valid for 30 days from the date of issue"
               {isCalculated && calculationResults && (
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Bill of Quantities (BOQ)</h3>
-                  
-                  <div className="overflow-x-auto">
+
+                  {/* Mobile card list — table hidden below sm */}
+                  <div className="sm:hidden space-y-3">
+                    {calculationResults.equipmentDetails.map((item, index) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-lg p-3">
+                        <div className="flex justify-between items-start gap-2 mb-2">
+                          <p className="font-medium text-sm">{item.name}</p>
+                          <span className="font-mono text-xs text-gray-500 whitespace-nowrap">{equipmentDatabase.find(eq => eq.name === item.name)?.code || 'N/A'}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                          <div className="flex justify-between"><span className="text-gray-500">Qty</span><span>{item.quantity}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-500">Unit (JOD)</span><span>{(Number(item.finalUnitPriceJOD)||0).toFixed(1)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-500">Weight (kg)</span><span>{item.weightTotal.toFixed(1)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-500">Total (JOD)</span><span className="font-semibold">{(Number(item.finalTotalJOD)||0).toFixed(1)}</span></div>
+                        </div>
+                      </div>
+                    ))}
+                    {calculationResults.customEquipmentDetails && calculationResults.customEquipmentDetails.map((item, index) => (
+                      <div key={`custom-${index}`} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="flex justify-between items-start gap-2 mb-2">
+                          <p className="font-medium text-sm">{item.name}</p>
+                          <span className="font-mono text-xs text-gray-500 whitespace-nowrap">{item.code}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                          <div className="flex justify-between"><span className="text-gray-500">Qty</span><span>{item.quantity}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-500">Unit (JOD)</span><span>{Math.round(item.finalUnitPriceJOD) || 'N/A'}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-500">Weight (kg)</span><span>{item.weightTotal.toFixed(1)}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-500">Total (JOD)</span><span className="font-semibold">{Math.round(item.finalTotalJOD) || 'N/A'}</span></div>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="bg-gray-100 rounded-lg p-3 text-sm font-semibold flex justify-between">
+                      <span>Equipment Subtotal</span>
+                      <span>{(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(1)} JOD · {calculationResults.totalWeight.toFixed(1)} kg</span>
+                    </div>
+                    {calculationResults.customEquipmentDetails && calculationResults.customEquipmentDetails.length > 0 && (
+                      <div className="bg-blue-100 rounded-lg p-3 text-sm font-semibold flex justify-between">
+                        <span>Custom Equipment Subtotal</span>
+                        <span>{(calculationResults.customEquipmentTotalJOD || 0).toFixed(1)} JOD</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-black text-white">
@@ -2896,7 +2938,7 @@ This quotation is valid for 30 days from the date of issue"
                       </div>
                     )}
                     <div>
-                      <span className="text-gray-600">Final (with 16% VAT):</span>
+                      <span className="text-gray-600">{project.includeTax ? 'Final (with 16% VAT):' : 'Final (VAT not included):'}</span>
                       <p className="font-semibold text-green-600">{(calculationResults.projectTotalJOD || 0).toFixed(1)} JOD</p>
                     </div>
                   </div>
@@ -2944,9 +2986,9 @@ This quotation is valid for 30 days from the date of issue"
 
               {/* Items Section */}
               <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Custom Equipment</h3>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
                       {[
                         { code: 'JOD', label: 'JOD' },
@@ -3210,7 +3252,7 @@ This quotation is valid for 30 days from the date of issue"
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-4">
+              <div className="flex flex-wrap justify-end gap-3">
                 <button
                   onClick={calculateCustom}
                   className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -3333,12 +3375,12 @@ This quotation is valid for 30 days from the date of issue"
                   {savedProjects.map((savedProject) => (
                     <div
                       key={savedProject.id}
-                      className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer group"
+                      className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer group"
                       onClick={() => loadSavedProject(savedProject)}
                     >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
                             <h4 className="text-lg font-semibold text-gray-900">{savedProject.projectName}</h4>
                             {savedProject.projectType === 'soundDesign' && (
                               <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
@@ -3362,7 +3404,7 @@ This quotation is valid for 30 days from the date of issue"
                               Created by: {savedProject.created_by_username || savedProject.users?.username} ({savedProject.created_by_email || savedProject.users?.email})
                             </p>
                           )}
-                          <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mb-2">
                             <span>{(savedProject.equipment?.length || 0) + (savedProject.customEquipment?.length || 0)} items</span>
                             <span>•</span>
                             <span>{(parseFloat(savedProject.total) || 0).toFixed(2)} JOD total</span>
@@ -3726,7 +3768,7 @@ This quotation is valid for 30 days from the date of issue"
                         <div>
                           <p className="text-xs text-gray-400">Total Project Value</p>
                           <p className="text-xl font-bold mt-1">{r.projectTotalJOD.toFixed(2)}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">JOD (incl. VAT)</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{project.includeTax ? 'JOD (incl. VAT)' : 'JOD (VAT not included)'}</p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-400">Internal Landed Cost</p>
@@ -4472,8 +4514,9 @@ This quotation is valid for 30 days from the date of issue"
                         <p className="font-semibold mb-2">Vendor Contact:</p>
                         <div className="text-xs space-y-1">
                           <p>Void Acoustics Research Ltd.</p>
-                          <p>Unit 15, Dawkins Road Industrial Estate</p>
-                          <p>Poole, Dorset, BH15 4JY</p>
+                          <p>Unit L, The Fulcrum</p>
+                          <p>Vantage Way</p>
+                          <p>Poole, Dorset, BH12 4NU</p>
                           <p>United Kingdom</p>
                         </div>
                       </div>
@@ -4515,9 +4558,6 @@ This quotation is valid for 30 days from the date of issue"
                                 <td className="border border-gray-300 p-2 text-center">{String(index + 1).padStart(3, '0')}</td>
                                 <td className="border border-gray-300 p-2">
                                   <div className="font-medium">{item.name}</div>
-                                  <div className="text-gray-600 text-xs mt-1">
-                                    Fiberglass enclosure, {item.power || 'N/A'}, {item.specs || 'Professional Audio Equipment'}
-                                  </div>
                                   <div className="text-gray-500 text-xs">Delivery Date: {(() => {
                                     const deliveryDate = new Date();
                                     deliveryDate.setDate(deliveryDate.getDate() + 14);
@@ -4715,9 +4755,9 @@ This quotation is valid for 30 days from the date of issue"
 
                   {/* Items */}
                   <div className="bg-white border border-gray-200 rounded-xl p-6">
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
                       <h3 className="text-lg font-semibold text-gray-900">BOQ</h3>
-                      <div className="flex items-center space-x-3">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
                           {[{ code: 'JOD', label: 'JOD' }, { code: 'USD', label: '$' }, { code: 'EUR', label: '€' }].map(({ code, label }) => (
                             <button key={code} onClick={() => { setRentalQuotation(prev => ({ ...prev, currency: code })); setRentalCalculated(false); }}
@@ -4895,10 +4935,10 @@ This quotation is valid for 30 days from the date of issue"
                   ) : (
                     <div className="grid gap-4">
                       {savedRentalProjects.map(saved => (
-                        <div key={saved.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer group" onClick={() => loadRentalProject(saved)}>
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
+                        <div key={saved.id} className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer group" onClick={() => loadRentalProject(saved)}>
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
                                 <h4 className="text-lg font-semibold text-gray-900">{saved.projectName}</h4>
                                 <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">Rental</span>
                                 {saved.isCalculated && <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Calculated</span>}
@@ -4907,7 +4947,7 @@ This quotation is valid for 30 days from the date of issue"
                               {userRole === 'admin' && saved.created_by_username && (
                                 <p className="text-blue-600 text-sm mb-1">Created by: {saved.created_by_username} ({saved.created_by_email})</p>
                               )}
-                              <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mb-2">
                                 <span>{(saved.customEquipment || []).length} items</span>
                                 <span>•</span>
                                 <span>{(parseFloat(saved.total) || 0).toFixed(2)} {saved.currency || 'JOD'} total</span>
