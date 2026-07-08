@@ -913,10 +913,11 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
         const customsPerUnit = dealerPriceJOD * customsShare;
 
         // Calculate final unit price (MSRP price + shipping + customs) - BOQ should be above MSRP
-        const finalUnitPriceJOD = msrpPriceJOD + shippingPerUnit + customsPerUnit;
-        
-        // Calculate total for this item (final unit price × quantity)
-        const finalTotalJOD = finalUnitPriceJOD * item.quantity;
+        // Round to displayed precision first so line total = displayed unit price × quantity exactly
+        const finalUnitPriceJOD = Math.round((msrpPriceJOD + shippingPerUnit + customsPerUnit) * 10) / 10;
+
+        // Calculate total for this item (rounded unit price × quantity)
+        const finalTotalJOD = Math.round(finalUnitPriceJOD * item.quantity * 10) / 10;
 
         // Calculate totals for other purposes
         const dealerTotalJOD = dealerPriceJOD * item.quantity;
@@ -948,7 +949,9 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
     
     // Apply global discount only for project summary calculations
     const globalDiscountMultiplier = (100 - project.globalDiscount) / 100;
-    const equipmentTotalJOD = equipmentTotalJODBeforeDiscount * globalDiscountMultiplier;
+    // Round discount amount first so Subtotal - Discount adds up exactly at displayed precision
+    const discountAmountRounded = Math.round(equipmentTotalJODBeforeDiscount * project.globalDiscount / 100 * 10) / 10;
+    const equipmentTotalJOD = equipmentTotalJODBeforeDiscount - discountAmountRounded;
     
     // Step 5.1: Process custom equipment (no discount applied, no shipping/customs)
     const customEquipmentDetails = project.customEquipment.map((equipment, index) => {
@@ -964,8 +967,8 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
           weightTotal: 0, // Custom equipment has no physical weight
           shippingPerUnit: 0,
           customsPerUnit: 0,
-          finalUnitPriceJOD: equipment.price,
-          finalTotalJOD: equipment.price * equipment.weight,
+          finalUnitPriceJOD: Math.round(equipment.price * 10) / 10,
+          finalTotalJOD: Math.round(equipment.price * 10) / 10 * equipment.weight,
           weight: 0,
           category: "custom"
         };
@@ -1014,7 +1017,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
     const subtotalBeforeDiscount = equipmentTotalJODBeforeDiscount + customEquipmentTotalJOD + servicesTotal;
     const discountAmount = equipmentTotalJODBeforeDiscount - equipmentTotalJOD; // discount applies to equipment only
     const projectSubtotalJOD = equipmentTotalJOD + customEquipmentTotalJOD + servicesTotal;
-    const projectTaxJOD = project.includeTax ? (projectSubtotalJOD * 0.16) : 0; // 16% VAT if includeTax is true
+    const projectTaxJOD = project.includeTax ? Math.round(projectSubtotalJOD * 0.16 * 10) / 10 : 0; // 16% VAT if includeTax is true
     const projectTotalJOD = projectSubtotalJOD + projectTaxJOD;
 
     // Step 6: Void profit calculations
@@ -1295,7 +1298,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
             ${project.globalDiscount > 0 ? `
               <div class="totals-row discount">
                 <span>Equipment Discount:</span>
-                <span>-${(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(1)} JOD</span>
+                <span>-${(calculationResults.discountAmount || 0).toFixed(1)} JOD</span>
               </div>
             ` : ''}
             ${project.globalDiscount > 0 && project.includeTax ? `
