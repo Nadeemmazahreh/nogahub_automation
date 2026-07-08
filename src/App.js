@@ -4011,6 +4011,7 @@ This quotation is valid for 30 days from the date of issue"
                           <div className="text-center p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
                             <p className="text-xs text-gray-600 font-medium">Effective Discount</p>
                             <p className="text-2xl font-bold text-yellow-700 mt-1">{r.effectiveDiscountPct.toFixed(1)}%</p>
+                            <p className="text-sm font-semibold text-yellow-700 mt-0.5">−{(r.discountAmount || 0).toFixed(2)} JOD</p>
                             <p className="text-xs text-gray-400 mt-0.5">vs list pricing</p>
                           </div>
                           <div className="text-center p-4 bg-gray-50 rounded-lg">
