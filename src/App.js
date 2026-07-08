@@ -3896,9 +3896,9 @@ This quotation is valid for 30 days from the date of issue"
                             <p className="text-xs text-gray-400 mt-0.5">JOD list price</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">Equipment Value (After Discount)</p>
+                            <p className="text-xs text-gray-500 font-medium">Equipment Value (MSRP)</p>
                             <p className="text-lg font-bold text-gray-900 mt-1">{r.discountedEquipmentValueJOD.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">JOD billed for equipment</p>
+                            <p className="text-xs text-gray-400 mt-0.5">After discount</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
                             <p className="text-xs text-gray-500 font-medium">Internal Landed Cost</p>
