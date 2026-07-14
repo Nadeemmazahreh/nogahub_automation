@@ -948,10 +948,11 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
     const equipmentDetailsFinal = equipmentDetails;
     
     // Apply global discount only for project summary calculations
+    // Discount applies to the MSRP component only — shipping is weight-based and
+    // customs/import taxes are assessed on the dealer import value, so neither
+    // shrinks when the client gets a discount (logistics stay a true 0-margin pass-through)
     const globalDiscountMultiplier = (100 - project.globalDiscount) / 100;
-    // Round discount amount first so Subtotal - Discount adds up exactly at displayed precision
-    const discountAmountRounded = Math.round(equipmentTotalJODBeforeDiscount * project.globalDiscount / 100 * 10) / 10;
-    const equipmentTotalJOD = equipmentTotalJODBeforeDiscount - discountAmountRounded;
+    const equipmentTotalJOD = equipmentClientTotalJOD * globalDiscountMultiplier + totalShippingCost + totalCustomsExclTax020;
     
     // Step 5.1: Process custom equipment (no discount applied, no shipping/customs)
     const customEquipmentDetails = project.customEquipment.map((equipment, index) => {
@@ -1946,7 +1947,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
           <div class="totals">
             ${project.globalDiscount > 0 ? `
               <div class="totals-row"><span>Subtotal (before discount):</span><span>${(calculationResults.equipmentTotalJODBeforeDiscount || 0).toFixed(2)} JOD</span></div>
-              <div class="totals-row" style="color:red;"><span>Discount (${project.globalDiscount}%):</span><span>-${(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(2)} JOD</span></div>
+              <div class="totals-row" style="color:red;"><span>Discount (${project.globalDiscount}%):</span><span>-${(calculationResults.discountAmount || 0).toFixed(2)} JOD</span></div>
             ` : ''}
             <div class="totals-row"><span>Subtotal:</span><span>${(calculationResults.projectSubtotalJOD || 0).toFixed(2)} JOD</span></div>
             ${project.includeTax ? `<div class="totals-row"><span>VAT (16%):</span><span>${(calculationResults.projectTaxJOD || 0).toFixed(2)} JOD</span></div>` : ''}
@@ -3889,11 +3890,16 @@ This quotation is valid for 30 days from the date of issue"
                       </div>
                       <div className="p-6 space-y-6">
                         {/* KPI cards */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
                             <p className="text-xs text-gray-500 font-medium">Equipment Value (MSRP)</p>
                             <p className="text-lg font-bold text-gray-900 mt-1">{r.equipmentMsrpValueJOD.toFixed(2)}</p>
                             <p className="text-xs text-gray-400 mt-0.5">JOD list price</p>
+                          </div>
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">Equipment Value (After Discount)</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.discountedEquipmentValueJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">After discount</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
                             <p className="text-xs text-gray-500 font-medium">Internal Landed Cost</p>
@@ -4006,6 +4012,7 @@ This quotation is valid for 30 days from the date of issue"
                           <div className="text-center p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
                             <p className="text-xs text-gray-600 font-medium">Effective Discount</p>
                             <p className="text-2xl font-bold text-yellow-700 mt-1">{r.effectiveDiscountPct.toFixed(1)}%</p>
+                            <p className="text-sm font-semibold text-yellow-700 mt-0.5">−{(r.discountAmount || 0).toFixed(2)} JOD</p>
                             <p className="text-xs text-gray-400 mt-0.5">vs list pricing</p>
                           </div>
                           <div className="text-center p-4 bg-gray-50 rounded-lg">
@@ -4232,7 +4239,7 @@ This quotation is valid for 30 days from the date of issue"
                           {project.globalDiscount > 0 && (
                             <div className="flex justify-between text-xs text-red-600">
                               <span>Equipment Discount:</span>
-                              <span>-{(((calculationResults.equipmentTotalJODBeforeDiscount || 0) * project.globalDiscount) / 100).toFixed(2)} JOD</span>
+                              <span>-{(calculationResults.discountAmount || 0).toFixed(2)} JOD</span>
                             </div>
                           )}
                           {project.globalDiscount > 0 && project.includeTax && (
