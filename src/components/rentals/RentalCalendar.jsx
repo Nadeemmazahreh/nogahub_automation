@@ -102,6 +102,21 @@ export default function RentalCalendar() {
     setFormOpen(true);
   }
 
+  async function handleConfirm(rental, e) {
+    e.stopPropagation();
+    try {
+      const syncResult = await rentalsService.confirmRental(rental.id);
+      if (syncResult?.error) {
+        toast.success('Confirmed — calendar sync failed. Use Resync.');
+      } else {
+        toast.success('Rental confirmed — calendar synced & notifications sent!');
+      }
+      loadMonth();
+    } catch (err) {
+      toast.error(`Confirm failed: ${err.message}`);
+    }
+  }
+
   async function handleResync(rental, e) {
     e.stopPropagation();
     try {
@@ -262,13 +277,20 @@ export default function RentalCalendar() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    r.sync_status === 'synced' ? 'bg-green-100 text-green-700' :
-                    r.sync_status === 'failed' ? 'bg-red-100 text-red-700' :
-                    'bg-yellow-100 text-yellow-700'
+                    r.status === 'booked' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                   }`}>
-                    {r.sync_status}
+                    {r.status === 'booked' ? 'Confirmed' : 'Pending'}
                   </span>
-                  {r.sync_status !== 'synced' && (
+                  {r.status === 'pending' && (
+                    <button
+                      onClick={(e) => handleConfirm(r, e)}
+                      className="text-gray-400 hover:text-green-600 transition-colors"
+                      title="Confirm: sync calendar & send notifications"
+                    >
+                      <CheckCircle size={13} />
+                    </button>
+                  )}
+                  {r.status === 'booked' && r.sync_status !== 'synced' && (
                     <button
                       onClick={async (e) => { e.stopPropagation(); await handleResync(r, e); }}
                       className="text-gray-400 hover:text-gray-700 transition-colors"

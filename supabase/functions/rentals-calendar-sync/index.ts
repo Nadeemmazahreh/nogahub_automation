@@ -17,13 +17,14 @@
  *   GREEN_API_INSTANCE_ID      — Green API instance ID (e.g. 710701671399)
  *   GREEN_API_TOKEN            — Green API apiTokenInstance
  *   GREEN_API_URL              — Green API base URL (e.g. https://7107.api.greenapi.com)
- *   WHATSAPP_LOGISTICS_CHAT_ID — WhatsApp group/number chat ID (e.g. 9627XXXXXXXX@c.us or group@g.us)
  *   SUPABASE_SERVICE_ROLE_KEY  — auto-provided
  *   SUPABASE_URL               — auto-provided
  *   SUPABASE_ANON_KEY          — auto-provided
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { jsPDF } from 'https://esm.sh/jspdf@2.5.2';
+import { ARABIC_FONT_BASE64, ARABIC_FONT_BOLD_BASE64 } from './arabic-font-data.ts';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -172,14 +173,24 @@ async function translateToArabic(text: string): Promise<string> {
   }
 }
 
-// ── WhatsApp notification (Green API) ───────────────────────────────────────
+// ── Booking code ─────────────────────────────────────────────────────────────
 
-async function sendWhatsAppLogistics(rental: Record<string, unknown>, q: Record<string, unknown>): Promise<void> {
-  const instanceId = Deno.env.get('GREEN_API_INSTANCE_ID');
-  const token = Deno.env.get('GREEN_API_TOKEN');
-  const apiUrl = Deno.env.get('GREEN_API_URL');
-  if (!instanceId || !token || !apiUrl) return; // silently skip if not configured
+function generateBookingCode(rental: Record<string, unknown>): string {
+  const tz = (rental.timezone as string) || 'Asia/Amman';
+  const d = new Date(rental.start_at as string);
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(d).reduce((acc, p) => ({ ...acc, [p.type]: p.value }), {} as Record<string, string>);
+  const seq = String(Math.floor(Math.random() * 99) + 1).padStart(2, '0');
+  return `NGH-${parts.year}${parts.month}${parts.day}-${seq}`;
+}
 
+// ── PDF (English page 1 / Arabic page 2) ────────────────────────────────────
+
+type PdfField = { label: string; value: string; multiline?: boolean };
+type PdfSection = { header: string; fields: PdfField[] };
+
+async function buildEventPdf(rental: Record<string, unknown>, q: Record<string, unknown>, bookingCode: string): Promise<Uint8Array> {
   const li = (rental.logistics_info as Record<string, string>) || {};
   const si = (rental.sound_info as Record<string, string>) || {};
   const start = new Date(rental.start_at as string);
@@ -188,116 +199,278 @@ async function sendWhatsAppLogistics(rental: Record<string, unknown>, q: Record<
   const fmtEn = (d: Date) => d.toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short', timeZone: tz });
   const fmtAr = (d: Date) => d.toLocaleString('ar-JO', { dateStyle: 'full', timeStyle: 'short', timeZone: tz });
   const notes = li.notes || li.delivery_notes;
-  const rider = si.technical_rider || li.technical_rider;
-  const venueContact = [rental.venue_contact_name, rental.venue_contact_phone].filter(Boolean).join(' ');
-  const logisticsContact = [li.name, li.phone].filter(Boolean).join(' ');
-  const soundContact = [si.name, si.phone].filter(Boolean).join(' ');
-  const artist = [si.artist_name, si.artist_phone, si.artist_email].filter(Boolean).join(' ');
+  const rider = si.technical_rider || li.technical_rider; // kept in English on both pages — not translated, per request
   const loadIn = li.load_in_time ? new Date(li.load_in_time) : null;
   const loadOut = li.load_out_time ? new Date(li.load_out_time) : null;
   const soundcheck = si.soundcheck_time ? new Date(si.soundcheck_time) : null;
 
-  const [notesAr, riderAr, titleAr, venueAr, uninstallAr, installAr, equipmentArLines] = await Promise.all([
+  // Everything user-facing is translated except equipment list + technical rider.
+  const [
+    notesAr, titleAr, venueAr, uninstallAr, installAr,
+    clientNameAr, venueAddressAr, venueContactNameAr, logisticsNameAr, soundNameAr, artistNameAr,
+  ] = await Promise.all([
     notes ? translateToArabic(notes) : Promise.resolve(''),
-    rider ? translateToArabic(rider) : Promise.resolve(''),
     rental.title ? translateToArabic(rental.title as string) : Promise.resolve(''),
     rental.venue ? translateToArabic(rental.venue as string) : Promise.resolve(''),
     li.uninstall_from ? translateToArabic(li.uninstall_from) : Promise.resolve(''),
     li.install_in ? translateToArabic(li.install_in) : Promise.resolve(''),
-    Promise.all(
-      (li.equipment_summary || '').split('\n').map(l => l.trim()).filter(Boolean).map(translateToArabic),
-    ),
+    q.client_name ? translateToArabic(q.client_name as string) : Promise.resolve(''),
+    rental.venue_address ? translateToArabic(rental.venue_address as string) : Promise.resolve(''),
+    rental.venue_contact_name ? translateToArabic(rental.venue_contact_name as string) : Promise.resolve(''),
+    li.name ? translateToArabic(li.name) : Promise.resolve(''),
+    si.name ? translateToArabic(si.name) : Promise.resolve(''),
+    si.artist_name ? translateToArabic(si.artist_name) : Promise.resolve(''),
   ]);
 
-  const equipmentEn = bulletize(li.equipment_summary);
-  const equipmentAr = equipmentArLines.map(l => `• ${l}`).join('\n');
+  const equipmentEn = bulletize(li.equipment_summary); // untranslated, per request
 
-  const headerEn = '📢 New Booking Confirmed\n─────────────────────';
-  const venueSectionEn = [
-    rental.title && `📋 Event: ${rental.title}`,
-    q.client_name && `👤 Client: ${q.client_name}`,
-    rental.venue && `📍 Venue: ${rental.venue}`,
-    rental.venue_address && `🗺️ Address: ${rental.venue_address}`,
-    venueContact && `☎️ Venue contact: ${venueContact}`,
-    `📅 Start: ${fmtEn(start)}`,
-    `🏁 End: ${fmtEn(end)}`,
-  ].filter(Boolean).join('\n');
-  const logisticsSectionEn = [
-    logisticsContact && `🚚 Logistics: ${logisticsContact}`,
-    li.uninstall_from && `📤 Uninstall from: ${li.uninstall_from}`,
-    loadIn && `⏰ Load-in: ${fmtEn(loadIn)}`,
-    loadOut && `⏰ Load-out: ${fmtEn(loadOut)}`,
-    li.install_in && `📥 Install in: ${li.install_in}`,
-    li.no_of_guests && `👥 Guests: ${li.no_of_guests}`,
-  ].filter(Boolean).join('\n');
-  const equipmentSectionEn = equipmentEn && `📦 Equipment:\n${equipmentEn}`;
-  const soundSectionEn = [
-    soundContact && `🎚️ Sound engineer: ${soundContact}`,
-    soundcheck && `🎙️ Soundcheck: ${fmtEn(soundcheck)}`,
-    artist && `🎤 Artist: ${artist}`,
-    rider && `📋 Technical Rider:\n${rider}`,
-  ].filter(Boolean).join('\n');
-  const notesSectionEn = notes && `📝 Notes:\n${notes}`;
+  const venueContactEn = [rental.venue_contact_name, rental.venue_contact_phone].filter(Boolean).join(' ');
+  const logisticsContactEn = [li.name, li.phone].filter(Boolean).join(' ');
+  const soundContactEn = [si.name, si.phone].filter(Boolean).join(' ');
+  const artistEn = [si.artist_name, si.artist_phone, si.artist_email].filter(Boolean).join(' ');
 
-  const english = [headerEn, venueSectionEn, logisticsSectionEn, equipmentSectionEn, soundSectionEn, notesSectionEn]
-    .filter(Boolean).join('\n\n');
+  const venueContactAr = [venueContactNameAr, toArabicNumerals(rental.venue_contact_phone as string || '')].filter(Boolean).join(' ');
+  const logisticsContactAr = [logisticsNameAr, toArabicNumerals(li.phone || '')].filter(Boolean).join(' ');
+  const soundContactAr = [soundNameAr, toArabicNumerals(si.phone || '')].filter(Boolean).join(' ');
+  const artistAr = [artistNameAr, toArabicNumerals(si.artist_phone || ''), si.artist_email].filter(Boolean).join(' ');
 
-  const headerAr = '📢 تم تأكيد حجز جديد\n─────────────────────';
-  const venueSectionAr = [
-    titleAr && `📋 الفعالية: ${titleAr}`,
-    q.client_name && `👤 العميل: ${q.client_name}`,
-    venueAr && `📍 المكان: ${venueAr}`,
-    rental.venue_address && `🗺️ العنوان: ${rental.venue_address}`,
-    venueContact && `☎️ جهة اتصال المكان: ${venueContact}`,
-    `📅 البداية: ${fmtAr(start)}`,
-    `🏁 النهاية: ${fmtAr(end)}`,
-  ].filter(Boolean).join('\n');
-  const logisticsSectionAr = [
-    logisticsContact && `🚚 اللوجستيات: ${logisticsContact}`,
-    uninstallAr && `📤 التفكيك من: ${uninstallAr}`,
-    loadIn && `⏰ وقت التحميل: ${fmtAr(loadIn)}`,
-    loadOut && `⏰ وقت التفريغ: ${fmtAr(loadOut)}`,
-    installAr && `📥 التركيب في: ${installAr}`,
-    li.no_of_guests && `👥 عدد الضيوف: ${li.no_of_guests}`,
-  ].filter(Boolean).join('\n');
-  const equipmentSectionAr = equipmentAr && `📦 المعدات:\n${equipmentAr}`;
-  const soundSectionAr = [
-    soundContact && `🎚️ مهندس الصوت: ${soundContact}`,
-    soundcheck && `🎙️ وقت الساوند تشيك: ${fmtAr(soundcheck)}`,
-    artist && `🎤 الفنان: ${artist}`,
-    riderAr && `📋 المتطلبات التقنية:\n${riderAr}`,
-  ].filter(Boolean).join('\n');
-  const notesSectionAr = notesAr && `📝 ملاحظات:\n${toArabicNumerals(notesAr)}`;
+  const f = (label: string, value: unknown, multiline = false): PdfField => ({ label, value: value ? String(value) : '', multiline });
 
-  const arabic = [headerAr, venueSectionAr, logisticsSectionAr, equipmentSectionAr, soundSectionAr, notesSectionAr]
-    .filter(Boolean).join('\n\n');
+  const sectionsEn: PdfSection[] = [
+    {
+      header: 'Event Info', fields: [
+        f('Event', rental.title),
+        f('Client', q.client_name),
+        f('Venue', rental.venue),
+        f('Address', rental.venue_address),
+        f('Venue contact', venueContactEn),
+        f('Start', fmtEn(start)),
+        f('End', fmtEn(end)),
+      ],
+    },
+    {
+      header: 'Logistics', fields: [
+        f('Logistics', logisticsContactEn),
+        f('Uninstall from', li.uninstall_from),
+        f('Load-in', loadIn && fmtEn(loadIn)),
+        f('Load-out', loadOut && fmtEn(loadOut)),
+        f('Install in', li.install_in),
+        f('Guests', li.no_of_guests),
+        f('Equipment', equipmentEn, true),
+      ],
+    },
+    {
+      header: 'Sound Engineering', fields: [
+        f('Sound engineer', soundContactEn),
+        f('Soundcheck', soundcheck && fmtEn(soundcheck)),
+        f('Artist', artistEn),
+        f('Technical Rider', rider, true),
+      ],
+    },
+  ];
+  if (notes) sectionsEn.push({ header: 'Notes', fields: [f('', notes, true)] });
 
-  const cc = (rental.country_code as string) || '962';
-  const toChatId = (n: string) => {
-    const digits = (n || '').replace(/\D/g, '').replace(/^0+/, '');
-    return digits ? `${cc}${digits}@c.us` : '';
+  const sectionsAr: PdfSection[] = [
+    {
+      header: 'معلومات الفعالية', fields: [
+        f('الفعالية', titleAr),
+        f('العميل', clientNameAr),
+        f('المكان', venueAr),
+        f('العنوان', venueAddressAr),
+        f('جهة اتصال المكان', venueContactAr),
+        f('البداية', fmtAr(start)),
+        f('النهاية', fmtAr(end)),
+      ],
+    },
+    {
+      header: 'اللوجستيات', fields: [
+        f('اللوجستيات', logisticsContactAr),
+        f('التفكيك من', uninstallAr),
+        f('وقت التحميل', loadIn && fmtAr(loadIn)),
+        f('وقت التفريغ', loadOut && fmtAr(loadOut)),
+        f('التركيب في', installAr),
+        f('عدد الضيوف', li.no_of_guests && toArabicNumerals(String(li.no_of_guests))),
+        f('المعدات', equipmentEn, true), // label translated, list stays English per request
+      ],
+    },
+    {
+      header: 'الهندسة الصوتية', fields: [
+        f('مهندس الصوت', soundContactAr),
+        f('وقت الساوند تشيك', soundcheck && fmtAr(soundcheck)),
+        f('الفنان', artistAr),
+        f('الرايدر التقني', rider, true), // label translated, list stays English per request
+      ],
+    },
+  ];
+  if (notesAr) sectionsAr.push({ header: 'ملاحظات', fields: [f('', toArabicNumerals(notesAr), true)] });
+
+  const doc = new jsPDF();
+  const marginX = 15;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const contentWidth = pageWidth - marginX * 2;
+  const headerH = 22;
+  const lineH = 6;
+
+  doc.addFileToVFS('Amiri-Regular.ttf', ARABIC_FONT_BASE64);
+  doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+  doc.addFileToVFS('Amiri-Bold.ttf', ARABIC_FONT_BOLD_BASE64);
+  doc.addFont('Amiri-Bold.ttf', 'Amiri', 'bold');
+
+  const drawTopBar = (rtl: boolean) => {
+    doc.setFillColor(20, 20, 20);
+    doc.rect(0, 0, pageWidth, headerH, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(rtl ? 'Amiri' : 'helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.text(rtl ? 'تفاصيل الحجز' : 'Booking Details', rtl ? pageWidth - marginX : marginX, 14, { align: rtl ? 'right' : 'left' });
+    doc.setFont(rtl ? 'Amiri' : 'helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(bookingCode, rtl ? marginX : pageWidth - marginX, 14, { align: rtl ? 'left' : 'right' });
+    doc.setTextColor(0, 0, 0);
   };
-  const toChatIds = (arr: unknown) =>
-    ((arr as string[]) || []).map(toChatId).filter(Boolean);
 
-  // English/Arabic recipient lists + per-role numbers routed by each role's language.
-  const englishRecipients = new Set(toChatIds(rental.whatsapp_english_recipients));
-  const arabicRecipients = new Set(toChatIds(rental.whatsapp_arabic_recipients));
-  for (const person of [li, si]) {
-    const cid = toChatId(person.phone);
-    if (!cid) continue;
-    (person.language === 'en' ? englishRecipients : arabicRecipients).add(cid);
-  }
-  // A number in both sets only gets the Arabic message once, English once — no de-dupe needed across languages.
+  // Draws "label: value" on one line — bold label, normal value. Falls back to a
+  // plain wrapped line (label losing its bold) only for the rare overlong value.
+  const drawField = (fontName: string, rtl: boolean, y: number, label: string, value: string): number => {
+    const labelText = `${label}:`;
+    doc.setFont(fontName, 'bold');
+    const labelW = doc.getTextWidth(labelText);
+    doc.setFont(fontName, 'normal');
+    const valueW = doc.getTextWidth(value);
+    const gap = 2;
+    if (labelW + gap + valueW <= contentWidth) {
+      const edge = rtl ? pageWidth - marginX : marginX;
+      doc.setFont(fontName, 'bold');
+      doc.text(labelText, edge, y, { align: rtl ? 'right' : 'left' });
+      doc.setFont(fontName, 'normal');
+      const valueX = rtl ? edge - labelW - gap : edge + labelW + gap;
+      doc.text(value, valueX, y, { align: rtl ? 'right' : 'left' });
+      return 1;
+    }
+    const wrapped: string[] = doc.splitTextToSize(`${labelText} ${value}`, contentWidth);
+    wrapped.forEach((w, i) => doc.text(w, rtl ? pageWidth - marginX : marginX, y + i * lineH, { align: rtl ? 'right' : 'left' }));
+    return wrapped.length;
+  };
 
-  const send = (cid: string, message: string) => fetch(`${apiUrl}/waInstance${instanceId}/sendMessage/${token}`, {
+  const writeSections = (sections: PdfSection[], rtl: boolean) => {
+    const fontName = rtl ? 'Amiri' : 'helvetica';
+    drawTopBar(rtl);
+    let y = headerH + 12;
+    const ensureRoom = () => { if (y > 280) { doc.addPage(); y = 20; } };
+    for (const section of sections) {
+      const fields = section.fields.filter(field => field.value);
+      if (!fields.length) continue;
+      if (y > 265) { doc.addPage(); y = 20; }
+      doc.setFont(fontName, 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(90, 90, 90);
+      doc.text(section.header, rtl ? pageWidth - marginX : marginX, y, { align: rtl ? 'right' : 'left' });
+      y += 5;
+      doc.setDrawColor(210, 210, 210);
+      doc.line(marginX, y, pageWidth - marginX, y);
+      y += 7;
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10.5);
+      for (const field of fields) {
+        ensureRoom();
+        if (field.multiline) {
+          if (field.label) {
+            doc.setFont(fontName, 'bold');
+            doc.text(`${field.label}:`, rtl ? pageWidth - marginX : marginX, y, { align: rtl ? 'right' : 'left' });
+            y += lineH;
+          }
+          doc.setFont(fontName, 'normal');
+          const wrapped: string[] = doc.splitTextToSize(field.value, contentWidth);
+          for (const w of wrapped) {
+            ensureRoom();
+            doc.text(w, rtl ? pageWidth - marginX : marginX, y, { align: rtl ? 'right' : 'left' });
+            y += lineH;
+          }
+        } else {
+          y += drawField(fontName, rtl, y, field.label, field.value) * lineH;
+        }
+      }
+      y += 6;
+    }
+  };
+
+  writeSections(sectionsEn, false);
+  doc.addPage();
+  writeSections(sectionsAr, true);
+
+  return new Uint8Array(doc.output('arraybuffer'));
+}
+
+// ── WhatsApp notifications (Green API) ──────────────────────────────────────
+
+function toChatId(countryCode: string, n: string): string {
+  const digits = (n || '').replace(/\D/g, '').replace(/^0+/, '');
+  return digits ? `${countryCode}${digits}@c.us` : '';
+}
+
+async function sendWhatsAppText(apiUrl: string, instanceId: string, token: string, chatId: string, message: string): Promise<void> {
+  await fetch(`${apiUrl}/waInstance${instanceId}/sendMessage/${token}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chatId: cid, message }),
+    body: JSON.stringify({ chatId, message }),
   });
+}
 
-  for (const cid of englishRecipients) await send(cid, english);
-  for (const cid of arabicRecipients) await send(cid, arabic);
+async function sendWhatsAppFile(apiUrl: string, instanceId: string, token: string, chatId: string, caption: string, fileName: string, fileBytes: Uint8Array): Promise<void> {
+  const form = new FormData();
+  form.set('chatId', chatId);
+  form.set('caption', caption);
+  form.set('fileName', fileName);
+  form.set('file', new Blob([fileBytes as BlobPart], { type: 'application/pdf' }), fileName);
+  await fetch(`${apiUrl}/waInstance${instanceId}/sendFileByUpload/${token}`, { method: 'POST', body: form });
+}
+
+async function sendRentalNotifications(rental: Record<string, unknown>, q: Record<string, unknown>, bookingCode: string): Promise<void> {
+  const instanceId = Deno.env.get('GREEN_API_INSTANCE_ID');
+  const token = Deno.env.get('GREEN_API_TOKEN');
+  const apiUrl = Deno.env.get('GREEN_API_URL');
+  if (!instanceId || !token || !apiUrl) return; // silently skip if not configured
+
+  const cc = (rental.country_code as string) || '962';
+  const tz = (rental.timezone as string) || 'Asia/Amman';
+  const start = new Date(rental.start_at as string);
+  const end = new Date(rental.end_at as string);
+  const fmtEn = (d: Date) => d.toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz }) +
+    ` at ${d.toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz })}`;
+
+  // Client confirmation
+  const clientChatId = toChatId(cc, rental.client_phone as string);
+  if (clientChatId) {
+    const message = [
+      `Dear ${q.client_name || rental.client_name || 'Client'},`,
+      '',
+      'Your booking is confirmed:',
+      `Booking ID: ${bookingCode}`,
+      `Event: ${rental.title || ''}`,
+      `Venue: ${rental.venue || ''}`,
+      `Address: ${rental.venue_address || ''}`,
+      `Start: ${fmtEn(start)}`,
+      `End: ${fmtEn(end)}`,
+      '',
+      'Nogahub wishes you a beautiful event!',
+    ].join('\n');
+    await sendWhatsAppText(apiUrl, instanceId, token, clientChatId, message);
+  }
+
+  // Team PDF (logistics + sound engineer)
+  const li = (rental.logistics_info as Record<string, string>) || {};
+  const si = (rental.sound_info as Record<string, string>) || {};
+  const teamChatIds = new Set([toChatId(cc, li.phone), toChatId(cc, si.phone)].filter(Boolean));
+  if (teamChatIds.size) {
+    const pdfBytes = await buildEventPdf(rental, q, bookingCode);
+    const caption = [
+      'New Event Confirmed!',
+      `Date: ${fmtEn(start)}`,
+      `Location: ${rental.venue || ''}`,
+    ].join('\n');
+    const fileName = `${bookingCode}.pdf`;
+    for (const cid of teamChatIds) await sendWhatsAppFile(apiUrl, instanceId, token, cid, caption, fileName, pdfBytes);
+  }
 }
 
 // ── Handler ─────────────────────────────────────────────────────────────────
@@ -376,8 +549,10 @@ Deno.serve(async (req: Request) => {
     }).eq('id', rental_id);
 
     if (!syncError) {
+      const bookingCode = (rental.booking_code as string) || generateBookingCode(rental);
+      if (!rental.booking_code) await admin.from('v1_rentals').update({ booking_code: bookingCode }).eq('id', rental_id);
       // ponytail: fire-and-forget, WhatsApp failure must not break calendar sync
-      sendWhatsAppLogistics(rental, q).catch(e => console.warn('WhatsApp notify failed:', e));
+      sendRentalNotifications(rental, q, bookingCode).catch(e => console.warn('WhatsApp notify failed:', e));
     }
 
     return new Response(

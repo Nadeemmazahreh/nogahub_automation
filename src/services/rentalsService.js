@@ -94,22 +94,26 @@ const rentalsService = {
     return data;
   },
 
-  /** Create rental then immediately sync calendar. Returns { rental, syncResult }. */
-  async createAndSync(rentalData) {
-    const rental = await this.createRental(rentalData);
-    let syncResult = null;
-    try {
-      syncResult = await this.syncCalendar(rental.id);
-    } catch (e) {
-      console.error('Calendar sync failed (rental saved):', e);
-      syncResult = { error: e.message };
-    }
-    return { rental, syncResult };
-  },
-
   /** Manual resync (Resync button). */
   async resyncRental(id) {
     return this.syncCalendar(id, 'sync');
+  },
+
+  /** Confirm a pending rental: marks it booked, then syncs calendar + sends notifications. */
+  async confirmRental(id) {
+    const { error } = await supabase
+      .from(Tables.RENTALS)
+      .update({ status: 'booked' })
+      .eq('id', id);
+    if (error) throw error;
+    let syncResult = null;
+    try {
+      syncResult = await this.syncCalendar(id, 'sync');
+    } catch (e) {
+      console.error('Calendar sync failed (rental confirmed):', e);
+      syncResult = { error: e.message };
+    }
+    return syncResult;
   },
 
   /** Cancel: deletes calendar events and marks rental cancelled. */

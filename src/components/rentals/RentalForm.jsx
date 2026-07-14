@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Users, RefreshCw, Loader } from 'lucide-react';
+import { X, Calendar, Users, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 import rentalsService from '../../services/rentalsService';
 
@@ -42,12 +42,12 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
   const EMPTY_LOGISTICS = {
     name: 'Mustafa Kanaan', phone: '078885679', email: '',
     uninstall_from: '', load_in_time: '', load_out_time: '', install_in: '',
-    equipment_summary: '', no_of_guests: '', language: 'ar',
+    equipment_summary: '', no_of_guests: '',
     notes: DEFAULT_NOTES,
   };
   const EMPTY_SOUND = {
     name: 'Sufian AlSaed', phone: '0799833020', soundcheck_time: '', technical_rider: '',
-    artist_name: '', artist_phone: '', artist_email: '', language: 'en',
+    artist_name: '', artist_phone: '', artist_email: '',
   };
 
   const [form, setForm] = useState({
@@ -64,8 +64,7 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
     logistics_info: { ...EMPTY_LOGISTICS },
     sound_info: { ...EMPTY_SOUND },
     additional_attendees: '',
-    whatsapp_arabic_recipients: '',
-    whatsapp_english_recipients: '',
+    client_phone: '',
   });
 
   useEffect(() => {
@@ -100,8 +99,7 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
           soundcheck_time: toLocalDatetimeValue(rental.sound_info?.soundcheck_time),
         },
         additional_attendees: (rental.additional_attendees || []).join(', '),
-        whatsapp_arabic_recipients: (rental.whatsapp_arabic_recipients || []).join(', '),
-        whatsapp_english_recipients: (rental.whatsapp_english_recipients || []).join(', '),
+        client_phone: toLocalPhone(rental.client_phone) || '',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -172,28 +170,15 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
           soundcheck_time: form.sound_info.soundcheck_time ? new Date(form.sound_info.soundcheck_time).toISOString() : '',
         },
         additional_attendees: form.additional_attendees.split(',').map(s => s.trim()).filter(Boolean),
-        whatsapp_arabic_recipients: form.whatsapp_arabic_recipients.split(',').map(s => s.trim()).filter(Boolean),
-        whatsapp_english_recipients: form.whatsapp_english_recipients.split(',').map(s => s.trim()).filter(Boolean),
+        client_phone: form.client_phone.trim() || null,
       };
 
       if (isEdit) {
-        await rentalsService.updateRental(rental.id, payload);
-        const syncId = 'cal-sync';
-        toast.loading('Syncing Google Calendar…', { id: syncId });
-        try {
-          await rentalsService.resyncRental(rental.id);
-          toast.success('Rental updated & calendar synced', { id: syncId });
-        } catch {
-          toast.error('Saved — calendar sync failed. Use Resync.', { id: syncId });
-        }
+        await rentalsService.updateRental(rental.id, { ...payload, status: 'pending' });
       } else {
-        const { syncResult } = await rentalsService.createAndSync(payload);
-        if (syncResult?.error) {
-          toast.success('Rental saved — calendar sync failed. Use Resync.');
-        } else {
-          toast.success('Rental booked & Google Calendar events created!');
-        }
+        await rentalsService.createRental(payload);
       }
+      toast.success('Rental saved — pending confirmation. Confirm from the calendar to sync & notify.');
       onSaved();
     } catch (err) {
       toast.error(`Failed: ${err.message}`);
@@ -334,13 +319,6 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
                 <label className={lbl}>Install In</label>
                 <input className={inp} value={form.logistics_info.install_in} onChange={e => setLi('install_in', e.target.value)} placeholder="e.g. Main hall, stage left" />
               </div>
-              <div>
-                <label className={lbl}>Language</label>
-                <select className={inp} value={form.logistics_info.language} onChange={e => setLi('language', e.target.value)}>
-                  <option value="ar">Arabic</option>
-                  <option value="en">English</option>
-                </select>
-              </div>
             </div>
             <div>
               <label className={lbl}>Equipment (auto-filled from quotation)</label>
@@ -363,13 +341,6 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
               <div>
                 <label className={lbl}>Sound Check</label>
                 <input type="datetime-local" className={inp} value={form.sound_info.soundcheck_time} onChange={e => setSi('soundcheck_time', e.target.value)} />
-              </div>
-              <div>
-                <label className={lbl}>Language</label>
-                <select className={inp} value={form.sound_info.language} onChange={e => setSi('language', e.target.value)}>
-                  <option value="en">English</option>
-                  <option value="ar">Arabic</option>
-                </select>
               </div>
               <div>
                 <label className={lbl}>Artist Name</label>
@@ -414,27 +385,15 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
               </p>
             </div>
             <div>
-              <label className={lbl}>Arabic message number(s) (comma-separated, local format)</label>
+              <label className={lbl}>Client Number</label>
               <input
                 className={inp}
-                value={form.whatsapp_arabic_recipients}
-                onChange={e => set('whatsapp_arabic_recipients', e.target.value)}
-                placeholder="e.g. 0799123456, 0791987654"
+                value={form.client_phone}
+                onChange={e => set('client_phone', e.target.value)}
+                placeholder="e.g. 0799123456"
               />
               <p className="text-xs text-gray-400 mt-1">
-                These numbers receive the Arabic WhatsApp notification only.
-              </p>
-            </div>
-            <div>
-              <label className={lbl}>English message number(s) (comma-separated, local format)</label>
-              <input
-                className={inp}
-                value={form.whatsapp_english_recipients}
-                onChange={e => set('whatsapp_english_recipients', e.target.value)}
-                placeholder="e.g. 0799123456, 0791987654"
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                These numbers receive the English WhatsApp notification only.
+                Client receives the WhatsApp booking confirmation. Logistics and sound engineer numbers receive the event PDF.
               </p>
             </div>
             <div>
@@ -473,7 +432,7 @@ export default function RentalForm({ initialDate, rental, onSaved, onClose }) {
             >
               {submitting
                 ? <><Loader size={13} className="animate-spin" /> Saving…</>
-                : <><RefreshCw size={13} /> {isEdit ? 'Save & Resync Calendar' : 'Book & Sync Calendar'}</>
+                : 'Save'
               }
             </button>
           </div>
