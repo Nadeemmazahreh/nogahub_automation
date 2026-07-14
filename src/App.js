@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, Download, Building2, Zap, Save, FolderOpen, RefreshCw } from 'lucide-react';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Calculator, FileText, TrendingUp, LogIn, LogOut, Plus, Trash2, Download, Building2, Zap, Save, FolderOpen, RefreshCw, Truck } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import supabaseService from './services/supabaseService';
 import { useAuth } from './hooks/useAuth';
@@ -8,13 +7,10 @@ import * as simpleAuth from './utils/simpleAuth';
 import logoImage from './logo-no-background.png';
 import SearchableDropdown from './components/shared/SearchableDropdown';
 import NogaHubLogo from './components/shared/NogaHubLogo';
-import { BUSINESS_CONSTANTS, SERVICE_PRICING, ROLE_FEES, SHIPPING_CUSTOMS, TAX_RATES, VOID_PROFIT_DISTRIBUTION, NOGAHUB_PROFIT_DISTRIBUTION } from './config/constants';
+import { BUSINESS_CONSTANTS, SERVICE_PRICING, SHIPPING_CUSTOMS, TAX_RATES, ORIGINATION_FEE_RATE } from './config/constants';
 import RentalCalendar from './components/rentals/RentalCalendar';
 import RentalsFinancials from './components/rentals/RentalsFinancials';
 import rentalQuotationsService from './services/rentalQuotationsService';
-
-// Board-level pie chart color palette
-const BOARD_COLORS = ['#111827', '#374151', '#6b7280', '#9ca3af', '#d1d5db', '#f3f4f6'];
 
 // Helper function to get full currency name
 const getCurrencyName = (currencyCode) => {
@@ -834,13 +830,6 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
     projectManagement: SERVICE_PRICING.PROJECT_MANAGEMENT
   }), []);
 
-  // Role-based fees from centralized config
-  const roleFees = useMemo(() => ({
-    producer: ROLE_FEES.PRODUCER,
-    projectManager: ROLE_FEES.PROJECT_MANAGER,
-    nogahubFee: ROLE_FEES.NOGAHUB_FEE
-  }), []);
-
    // Updated calculation based on new logic - v2
   const calculateProjectCosts = useCallback(() => {
     if (project.equipment.length === 0 && project.customEquipment.length === 0) return null;
@@ -849,7 +838,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
     let equipmentDealerTotalJOD = 0;
     let equipmentClientTotalJOD = 0;
     let totalWeight = 0;
-    
+
     // First pass: calculate totals without shipping/customs
     project.equipment.forEach(item => {
       const equipment = equipmentDatabase.find(eq => eq.code === item.code);
@@ -859,12 +848,26 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
         const dealerTotalJOD = dealerPriceJOD * item.quantity;
         const clientTotalJOD = clientPriceJOD * item.quantity;
         const weightTotal = equipment.weight * item.quantity;
-        
+
         equipmentDealerTotalJOD += dealerTotalJOD;
         equipmentClientTotalJOD += clientTotalJOD;
         totalWeight += weightTotal;
       }
     });
+
+    // First pass over shipped custom equipment — pools into the same shipping/customs base
+    let customShippedCostTotalJOD = 0;
+    let customShippedWeight = 0;
+    project.customEquipment.forEach(equipment => {
+      const qty = Number(equipment.weight) || 0;
+      const cost = Number(equipment.cost) || 0;
+      if (equipment.shipped && equipment.name && qty > 0 && equipment.shipWeight > 0) {
+        customShippedCostTotalJOD += cost * qty;
+        customShippedWeight += Number(equipment.shipWeight) * qty;
+      }
+    });
+    const voidWeight = totalWeight; // Void's own weight, before pooling in shipped custom items
+    totalWeight += customShippedWeight;
 
     // Step 2: Calculate door-to-door cost for internal use (keeping old logic for profit calculations)
     const shippingCost = totalWeight * shippingRatePerKg;
@@ -873,28 +876,59 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
     const deliveryOrderCost = SHIPPING_CUSTOMS.DELIVERY_ORDER_COST;
     const totalShippingCost = shippingCost + clearanceCost + transportCost + deliveryOrderCost;
 
-    const taxableAmount = equipmentDealerTotalJOD + totalShippingCost;
+    // Import base = catalog dealer cost + shipped custom equipment cost
+    const importBaseJOD = equipmentDealerTotalJOD + customShippedCostTotalJOD;
+
+    const taxableAmount = importBaseJOD + totalShippingCost;
     const tax001 = taxableAmount * TAX_RATES.TAX_001;
     const tax020 = (taxableAmount + tax001) * TAX_RATES.TAX_020;
-    const tax215 = equipmentDealerTotalJOD * TAX_RATES.TAX_215;
+    const tax215 = importBaseJOD * TAX_RATES.TAX_215;
     const tax301 = TAX_RATES.TAX_301;
     const tax111 = shippingCost * TAX_RATES.TAX_111;
     const tax016 = TAX_RATES.TAX_016;
     const tax019 = TAX_RATES.TAX_019;
     const tax070 = taxableAmount * TAX_RATES.TAX_070;
-    
+
     const totalCustoms = tax001 + tax020 + tax215 + tax301 + tax111 + tax016 + tax019 + tax070;
     const totalCustomsExclTax020 = tax001 + tax215 + tax301 + tax111 + tax016 + tax019 + tax070;
-    
-    // Door-to-door cost including tax020 (for internal calculations)
-    const doorToDoorCostJOD = equipmentDealerTotalJOD + totalShippingCost + totalCustoms;
-    
-    // Door-to-door cost excluding tax020 (for final equipment pricing to avoid tax duplication)
-    const doorToDoorCostExclTax020JOD = equipmentDealerTotalJOD + totalShippingCost + totalCustomsExclTax020;
 
-    // Step 3: Calculate shipping and customs shares based on total costs
-    const shippingShare = totalShippingCost / equipmentDealerTotalJOD;
-    const customsShare = totalCustomsExclTax020 / equipmentDealerTotalJOD; // Use excluding tax020 to avoid duplication
+    // Door-to-door cost including tax020 (for internal calculations)
+    const doorToDoorCostJOD = importBaseJOD + totalShippingCost + totalCustoms;
+
+    // Door-to-door cost excluding tax020 (for final equipment pricing to avoid tax duplication)
+    const doorToDoorCostExclTax020JOD = importBaseJOD + totalShippingCost + totalCustomsExclTax020;
+
+    // Step 3: the flat clearance/transport/DO fees (one bill per shipment) are split between
+    // Void and shipped custom equipment by weight share — Void alone ships → Void carries the
+    // full 150; nothing shipped on the custom side → custom carries none; mixed shipment → split
+    // proportionally. Void's per-kg weight-based freight itself is never diluted (each side pays
+    // its own weight × rate), only the flat fee pool is shared.
+    const fixedShippingFeesJOD = clearanceCost + transportCost + deliveryOrderCost;
+    const voidFixedFeeShareJOD = totalWeight > 0 ? fixedShippingFeesJOD * (voidWeight / totalWeight) : 0;
+    const shippingCostVoidOnly = voidWeight * shippingRatePerKg;
+    const totalShippingCostVoidOnly = shippingCostVoidOnly + voidFixedFeeShareJOD;
+    const taxableAmountVoidOnly = equipmentDealerTotalJOD + totalShippingCostVoidOnly;
+    const tax001VoidOnly = taxableAmountVoidOnly * TAX_RATES.TAX_001;
+    const tax215VoidOnly = equipmentDealerTotalJOD * TAX_RATES.TAX_215;
+    const tax111VoidOnly = shippingCostVoidOnly * TAX_RATES.TAX_111;
+    const tax070VoidOnly = taxableAmountVoidOnly * TAX_RATES.TAX_070;
+    const totalCustomsExclTax020VoidOnly = tax001VoidOnly + tax215VoidOnly + tax301 + tax111VoidOnly + tax016 + tax019 + tax070VoidOnly;
+
+    // ponytail: guard divide-by-zero when weight/dealer base is 0 (e.g. custom-only project)
+    const shippingPerKg = voidWeight > 0 ? totalShippingCostVoidOnly / voidWeight : 0;
+    const customsShare = equipmentDealerTotalJOD > 0 ? totalCustomsExclTax020VoidOnly / equipmentDealerTotalJOD : 0;
+
+    const voidShippingJOD = totalShippingCostVoidOnly;
+    const voidCustomsJOD = totalCustomsExclTax020VoidOnly;
+    const voidPassThroughJOD = voidShippingJOD + voidCustomsJOD;
+
+    // Custom's shipping = its own weight × rate + its weight-share of the flat fees (falls out of
+    // the subtraction below since voidFixedFeeShareJOD + customFixedFeeShareJOD === fixedShippingFeesJOD).
+    // Customs/duty marginal stays value-share based (see customsShareCustom).
+    const customShippedShippingMarginalJOD = totalShippingCost - totalShippingCostVoidOnly;
+    const customShippedCustomsMarginalJOD = totalCustomsExclTax020 - totalCustomsExclTax020VoidOnly;
+    const shippingPerKgCustom = customShippedWeight > 0 ? customShippedShippingMarginalJOD / customShippedWeight : 0;
+    const customsShareCustom = customShippedCostTotalJOD > 0 ? customShippedCustomsMarginalJOD / customShippedCostTotalJOD : 0;
 
     // Step 4: Second pass - calculate final equipment details with shipping/customs
     const equipmentDetails = project.equipment.map(item => {
@@ -906,9 +940,9 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
         // Use MSRP if available, otherwise fall back to dealerUSD
         const msrpPriceJOD = (equipment.msrpUSD || equipment.dealerUSD) * exchangeRate;
 
-        // Calculate shipping cost per unit (dealer cost × shipping share)
-        const shippingPerUnit = dealerPriceJOD * shippingShare;
-        
+        // Calculate shipping cost per unit (item's own weight × per-kg rate)
+        const shippingPerUnit = equipment.weight * shippingPerKg;
+
         // Calculate customs/clearance per unit (dealer cost × customs share)
         const customsPerUnit = dealerPriceJOD * customsShare;
 
@@ -952,33 +986,63 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
     // customs/import taxes are assessed on the dealer import value, so neither
     // shrinks when the client gets a discount (logistics stay a true 0-margin pass-through)
     const globalDiscountMultiplier = (100 - project.globalDiscount) / 100;
-    const equipmentTotalJOD = equipmentClientTotalJOD * globalDiscountMultiplier + totalShippingCost + totalCustomsExclTax020;
+    const equipmentTotalJOD = equipmentClientTotalJOD * globalDiscountMultiplier + voidPassThroughJOD;
     
-    // Step 5.1: Process custom equipment (no discount applied, no shipping/customs)
+    // Step 5.1: Process custom equipment — no discount applied; shipped items get pooled
+    // shipping (weight-based) and customs (cost-based) share, same rates as catalog equipment.
+    // Local items stay a straight price/cost line with no logistics.
     const customEquipmentDetails = project.customEquipment.map((equipment, index) => {
-      if (equipment.name && equipment.price > 0 && equipment.weight > 0) {
+      const qty = Number(equipment.weight) || 0; // "weight" field doubles as quantity
+      const price = Number(equipment.price) || 0;
+      const cost = Number(equipment.cost) || price; // fallback preserves old zero-margin behavior
+      if (equipment.name && price > 0 && qty > 0) {
+        const isShipped = !!equipment.shipped && Number(equipment.shipWeight) > 0;
+        const shippingPerUnit = isShipped ? Number(equipment.shipWeight) * shippingPerKgCustom : 0;
+        const customsPerUnit = isShipped ? cost * customsShareCustom : 0;
+        const weightTotal = isShipped ? Number(equipment.shipWeight) * qty : 0;
+
+        // Shipped items pass shipping + customs through to the client on top of the entered
+        // price (0-margin pass-through, same model as catalog equipment) — the client total
+        // rises when an item is marked shipped instead of quietly eating into margin.
+        const finalUnitPriceJOD = Math.round((price + shippingPerUnit + customsPerUnit) * 10) / 10;
+        const finalTotalJOD = Math.round(finalUnitPriceJOD * qty * 10) / 10;
+
         return {
           code: `CUSTOM-${index + 1}`,
           name: equipment.name,
-          quantity: equipment.weight, // Using weight field as quantity
-          dealerPriceJOD: equipment.price,
-          clientPriceJOD: equipment.price,
-          dealerTotalJOD: equipment.price * equipment.weight,
-          clientTotalJOD: equipment.price * equipment.weight,
-          weightTotal: 0, // Custom equipment has no physical weight
-          shippingPerUnit: 0,
-          customsPerUnit: 0,
-          finalUnitPriceJOD: Math.round(equipment.price * 10) / 10,
-          finalTotalJOD: Math.round(equipment.price * 10) / 10 * equipment.weight,
-          weight: 0,
-          category: "custom"
+          quantity: qty,
+          dealerPriceJOD: cost,
+          clientPriceJOD: price,
+          dealerTotalJOD: cost * qty,
+          clientTotalJOD: price * qty,
+          weightTotal,
+          shippingPerUnit,
+          customsPerUnit,
+          finalUnitPriceJOD,
+          finalTotalJOD,
+          weight: isShipped ? Number(equipment.shipWeight) : 0,
+          category: "custom",
+          shipped: isShipped
         };
       }
       return null;
     }).filter(Boolean);
 
-    // Calculate custom equipment totals
+    // Calculate custom equipment totals — split by shipped vs local
     const customEquipmentTotalJOD = customEquipmentDetails.reduce((sum, item) => sum + item.finalTotalJOD, 0);
+    const customShippedItems = customEquipmentDetails.filter(item => item.shipped);
+    const customLocalItems = customEquipmentDetails.filter(item => !item.shipped);
+    const customShippedRevenueJOD = customShippedItems.reduce((sum, item) => sum + item.finalTotalJOD, 0);
+    const customShippedPriceOnlyJOD = customShippedItems.reduce((sum, item) => sum + item.clientTotalJOD, 0);
+    const customShippedCostAllocatedJOD = customShippedItems.reduce((sum, item) => sum + item.dealerTotalJOD, 0);
+    const customShippedShippingJOD = customShippedItems.reduce((sum, item) => sum + item.shippingPerUnit * item.quantity, 0);
+    const customShippedCustomsJOD = customShippedItems.reduce((sum, item) => sum + item.customsPerUnit * item.quantity, 0);
+    const customShippedLogisticsJOD = customShippedShippingJOD + customShippedCustomsJOD;
+    const customShippedProfitJOD = customShippedRevenueJOD - customShippedCostAllocatedJOD - customShippedLogisticsJOD;
+    const customLocalRevenueJOD = customLocalItems.reduce((sum, item) => sum + item.finalTotalJOD, 0);
+    const customLocalCostJOD = customLocalItems.reduce((sum, item) => sum + item.dealerTotalJOD, 0);
+    const customLocalProfitJOD = customLocalRevenueJOD - customLocalCostJOD;
+    const customShippedWeightKg = customShippedItems.reduce((sum, item) => sum + item.weightTotal, 0);
 
     // Step 4: Calculate services based on equipment dealer cost percentages
     let servicesTotal = 0;
@@ -1021,45 +1085,31 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
     const projectTaxJOD = project.includeTax ? Math.round(projectSubtotalJOD * 0.16 * 10) / 10 : 0; // 16% VAT if includeTax is true
     const projectTotalJOD = projectSubtotalJOD + projectTaxJOD;
 
-    // Step 6: Void profit calculations
-    const voidSalesProfit = equipmentTotalJOD - doorToDoorCostExclTax020JOD;
+    // Step 6: Void profit calculations (Void catalog stream only)
+    const voidLandedCostExclTax020JOD = equipmentDealerTotalJOD + voidPassThroughJOD;
+    const voidSalesProfit = equipmentTotalJOD - voidLandedCostExclTax020JOD;
 
     // Board-level margin metrics
     // Correct denominator: discounted MSRP value (excludes logistics pass-through and VAT)
     const equipmentMsrpValueJOD = equipmentClientTotalJOD; // MSRP total before discount
     const discountedEquipmentValueJOD = equipmentClientTotalJOD * globalDiscountMultiplier;
-    const passThroughJOD = totalShippingCost + totalCustomsExclTax020 + tax020; // billed at cost, 0 margin (incl. import VAT)
+    const passThroughJOD = voidPassThroughJOD; // billed at cost, 0 margin (import VAT excluded — never billed to client)
     const vatJOD = tax020; // import VAT (input tax) paid at customs
     const vatToRemitJOD = project.includeTax ? Math.max(0, projectTaxJOD - vatJOD) : 0; // ponytail: floor at 0 — output<input is possible on heavy discount; remit 0 not negative
     const equipmentGrossMargin = discountedEquipmentValueJOD > 0 ? voidSalesProfit / discountedEquipmentValueJOD : 0;
     const effectiveDiscountPct = project.globalDiscount || 0;
 
-    // Step 7: Profit pool allocations
-    const producerFee = voidSalesProfit * roleFees.producer; // 5% producer pool
-    const nogahubFee = voidSalesProfit * roleFees.nogahubFee; // 37.5% management fee
+    // Service provider pools — all services are 100% pass-through to providers, 0 profit for NogaHub
+    const noiseControlEngineerFee = noiseControlServiceCost;
+    const soundSystemDesignerFee = soundDesignServiceCost;
+    const serviceProviderPayout = servicesTotal;
+    const nogahubServiceProfit = 0;
 
-    // Service provider pools
-    const noiseControlEngineerFee = noiseControlServiceCost * 0.40; // 40% provider pool
-    const soundSystemDesignerFee = soundDesignServiceCost * 0.50; // 50% provider pool
-    const serviceProviderPayout = noiseControlEngineerFee + soundSystemDesignerFee;
-    const nogahubServiceProfit = servicesTotal - serviceProviderPayout;
-    const nogahubRevenue = servicesTotal + nogahubFee;
-
-    // Step 8: Void profit distribution pools
-    const voidRetainedEarnings = voidSalesProfit * VOID_PROFIT_DISTRIBUTION.RETAINED_EARNINGS; // 5%
-    const voidShareholderDistribution = voidSalesProfit * VOID_PROFIT_DISTRIBUTION.SHAREHOLDER_DISTRIBUTION; // 52.5%
-
-    // Step 9: Nogahub fee allocation pools
-    const nogahubProjectDirector = nogahubFee * 0.20;
-    const nogahubProjectManager = nogahubFee * 0.15;
-    const nogahubJuniorPM = nogahubFee * 0.08;
-    const nogahubLogistics = nogahubFee * 0.03;
-    const nogahubAccounting = nogahubFee * 0.02;
-    const nogahubLegal = nogahubFee * 0.03;
-    const nogahubAdmin = nogahubFee * 0.02;
-    const nogahubRetainedEarnings = nogahubFee * NOGAHUB_PROFIT_DISTRIBUTION.RETAINED_EARNINGS; // 27%
-    const nogahubShareholderDistribution = nogahubFee * NOGAHUB_PROFIT_DISTRIBUTION.SHAREHOLDER_DISTRIBUTION; // 20%
-    const nogahubOperatingAllocation = nogahubProjectDirector + nogahubProjectManager + nogahubJuniorPM + nogahubLogistics + nogahubAccounting + nogahubLegal + nogahubAdmin; // 53%
+    // Step 7: Gross profit across all streams, then the 2% origination fee (charged only on
+    // Void equipment revenue, after discount) to land on the final distributable profit.
+    const grossProfitJOD = voidSalesProfit + customShippedProfitJOD + customLocalProfitJOD + nogahubServiceProfit;
+    const originationFeeJOD = discountedEquipmentValueJOD * ORIGINATION_FEE_RATE;
+    const finalProfitJOD = grossProfitJOD - originationFeeJOD;
 
     // Calculate equipment dealer total in USD for PO
     const equipmentDealerTotalUSD = project.equipment.reduce((sum, item) => {
@@ -1089,8 +1139,6 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
       projectTaxJOD,
       projectTotalJOD,
       voidSalesProfit,
-      producerFee,
-      nogahubFee,
       commissioningServiceCost,
       noiseControlServiceCost,
       soundDesignServiceCost,
@@ -1109,18 +1157,47 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
       vatToRemitJOD,
       equipmentGrossMargin,
       effectiveDiscountPct,
-      nogahubRevenue,
       serviceProviderPayout,
       nogahubServiceProfit,
-      breakdown: {
-        voidRetainedEarnings,
-        voidShareholderDistribution,
-        nogahubOperatingAllocation,
-        nogahubRetainedEarnings,
-        nogahubShareholderDistribution,
-      }
+      // Per-stream revenue/cost/profit split for the Profit Analysis section
+      streams: {
+        voidShipped: {
+          revenue: equipmentTotalJOD,
+          cost: equipmentDealerTotalJOD,
+          shipping: voidShippingJOD,
+          customs: voidCustomsJOD,
+          profit: voidSalesProfit,
+          weightKg: voidWeight,
+          itemCount: project.equipment.filter(item => item.quantity > 0).length
+        },
+        customShipped: {
+          revenue: customShippedRevenueJOD,
+          priceOnly: customShippedPriceOnlyJOD,
+          cost: customShippedCostAllocatedJOD,
+          shipping: customShippedShippingJOD,
+          customs: customShippedCustomsJOD,
+          logistics: customShippedLogisticsJOD,
+          profit: customShippedProfitJOD,
+          weightKg: customShippedWeightKg,
+          itemCount: customShippedItems.length
+        },
+        customLocal: {
+          revenue: customLocalRevenueJOD,
+          cost: customLocalCostJOD,
+          profit: customLocalProfitJOD,
+          itemCount: customLocalItems.length
+        },
+        services: {
+          revenue: servicesTotal,
+          cost: 0,
+          profit: nogahubServiceProfit
+        }
+      },
+      grossProfitJOD,
+      originationFeeJOD,
+      finalProfitJOD
     };
-  }, [project, equipmentDatabase, exchangeRate, shippingRatePerKg, servicePricing, roleFees]);
+  }, [project, equipmentDatabase, exchangeRate, shippingRatePerKg, servicePricing]);
 
   // Handle calculate button
   const handleCalculate = useCallback(() => {
@@ -1614,7 +1691,7 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
   const addCustomEquipment = () => {
     setProject(prev => ({
       ...prev,
-      customEquipment: [...prev.customEquipment, { name: '', price: '', weight: '' }]
+      customEquipment: [...prev.customEquipment, { name: '', cost: '', price: '', weight: '', shipped: false, shipWeight: '' }]
     }));
     setIsCalculated(false);
   };
@@ -2602,53 +2679,63 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                     </button>
                   </div>
                   
-                  {project.customEquipment.map((equipment, index) => (
+                  {project.customEquipment.map((equipment, index) => {
+                    const updateItem = (patch) => {
+                      setProject(prev => ({
+                        ...prev,
+                        customEquipment: prev.customEquipment.map((eq, i) =>
+                          i === index ? { ...eq, ...patch } : eq
+                        )
+                      }));
+                      setIsCalculated(false);
+                    };
+                    return (
                     <div key={index} className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                       <input
                         type="text"
                         placeholder="Equipment name"
                         value={equipment.name}
-                        onChange={(e) => {
-                          setProject(prev => ({
-                            ...prev,
-                            customEquipment: prev.customEquipment.map((eq, i) =>
-                              i === index ? { ...eq, name: e.target.value } : eq
-                            )
-                          }));
-                          setIsCalculated(false);
-                        }}
+                        onChange={(e) => updateItem({ name: e.target.value })}
                         className="w-full sm:w-auto sm:flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Cost (JOD)"
+                        value={equipment.cost}
+                        onChange={(e) => updateItem({ cost: e.target.value })}
+                        className="flex-1 sm:flex-none sm:w-28 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                       />
                       <input
                         type="number"
                         placeholder="Price (JOD)"
                         value={equipment.price}
-                        onChange={(e) => {
-                          setProject(prev => ({
-                            ...prev,
-                            customEquipment: prev.customEquipment.map((eq, i) =>
-                              i === index ? { ...eq, price: e.target.value } : eq
-                            )
-                          }));
-                          setIsCalculated(false);
-                        }}
-                        className="flex-1 sm:flex-none sm:w-32 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        onChange={(e) => updateItem({ price: e.target.value })}
+                        className="flex-1 sm:flex-none sm:w-28 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                       />
                       <input
                         type="number"
                         placeholder="Qty"
                         value={equipment.weight}
-                        onChange={(e) => {
-                          setProject(prev => ({
-                            ...prev,
-                            customEquipment: prev.customEquipment.map((eq, i) =>
-                              i === index ? { ...eq, weight: e.target.value } : eq
-                            )
-                          }));
-                          setIsCalculated(false);
-                        }}
-                        className="flex-1 sm:flex-none sm:w-32 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        onChange={(e) => updateItem({ weight: e.target.value })}
+                        className="flex-1 sm:flex-none sm:w-24 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
                       />
+                      <button
+                        type="button"
+                        title={equipment.shipped ? 'Shipped item — click to mark local' : 'Local item — click to mark shipped'}
+                        onClick={() => updateItem({ shipped: !equipment.shipped })}
+                        className={`p-2 rounded-lg transition-colors ${equipment.shipped ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      >
+                        <Truck size={16} />
+                      </button>
+                      {equipment.shipped && (
+                        <input
+                          type="number"
+                          placeholder="kg/unit"
+                          value={equipment.shipWeight}
+                          onChange={(e) => updateItem({ shipWeight: e.target.value })}
+                          className="flex-1 sm:flex-none sm:w-24 min-w-0 px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      )}
                       <button
                         onClick={() => {
                           setProject(prev => ({
@@ -2662,7 +2749,8 @@ ${rentalQuotation.includeTax?`<div class="totals-row"><span>VAT (16%):</span><sp
                         <Trash2 size={16} />
                       </button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Custom Services */}
@@ -3736,15 +3824,33 @@ This quotation is valid for 30 days from the date of issue"
                 </div>
               )}
 
-              {isCalculated && calculationResults && (() => {
+              {isCalculated && calculationResults && !calculationResults.streams && (
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                  <p className="text-orange-800">This project was calculated with an older version. Click "Calculate" again to refresh the financial analysis.</p>
+                </div>
+              )}
+
+              {isCalculated && calculationResults && calculationResults.streams && (() => {
                 const r = calculationResults;
+                const s = r.streams;
                 const blendedNetMargin = r.projectSubtotalJOD > 0
-                  ? ((r.voidSalesProfit + r.nogahubServiceProfit) / r.projectSubtotalJOD) * 100
+                  ? (r.finalProfitJOD / r.projectSubtotalJOD) * 100
                   : 0;
+                const soundSystemRows = [
+                  { key: 'voidShipped', label: 'Sound System (Shipped)', data: s.voidShipped },
+                ];
+                const nogahubRows = [
+                  { key: 'customShipped', label: 'Custom Equipment (Shipped)', data: s.customShipped },
+                  { key: 'customLocal', label: 'Custom Equipment (Local)', data: s.customLocal },
+                  { key: 'services', label: 'Services', data: s.services },
+                ];
+                const soundSystemProfit = s.voidShipped.profit;
+                const soundSystemFinalProfit = soundSystemProfit - r.originationFeeJOD;
+                const nogahubGrossProfit = s.customShipped.profit + s.customLocal.profit + s.services.profit;
 
                 return (
                   <>
-                    {/* ── EXECUTIVE SUMMARY BAND ── */}
+                    {/* ── 1. EXECUTIVE SUMMARY ── */}
                     <div className="bg-gray-900 text-white rounded-xl p-6">
                       <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-5">Executive Summary</p>
                       <div className="grid grid-cols-2 sm:grid-cols-5 gap-6">
@@ -3754,19 +3860,19 @@ This quotation is valid for 30 days from the date of issue"
                           <p className="text-xs text-gray-500 mt-0.5">{project.includeTax ? 'JOD (incl. VAT)' : 'JOD (VAT not included)'}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-400">Internal Landed Cost</p>
+                          <p className="text-xs text-gray-400">Total Landed Cost</p>
                           <p className="text-xl font-bold mt-1">{r.doorToDoorCostJOD.toFixed(2)}</p>
                           <p className="text-xs text-gray-500 mt-0.5">JOD incl. customs, shipping &amp; import tax</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-400">Equipment Sales Profit</p>
-                          <p className="text-xl font-bold mt-1 text-green-400">{r.voidSalesProfit.toFixed(2)}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">JOD</p>
+                          <p className="text-xs text-gray-400">Final Profit</p>
+                          <p className="text-xl font-bold mt-1 text-green-400">{r.finalProfitJOD.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">JOD after origination fee</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-400">Equip. Gross Margin</p>
-                          <p className="text-xl font-bold mt-1 text-green-400">{(r.equipmentGrossMargin * 100).toFixed(1)}%</p>
-                          <p className="text-xs text-gray-500 mt-0.5">profit ÷ MSRP value</p>
+                          <p className="text-xs text-gray-400">Blended Margin</p>
+                          <p className="text-xl font-bold mt-1 text-green-400">{blendedNetMargin.toFixed(1)}%</p>
+                          <p className="text-xs text-gray-500 mt-0.5">final profit ÷ subtotal</p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-400">Effective Discount</p>
@@ -3776,92 +3882,46 @@ This quotation is valid for 30 days from the date of issue"
                       </div>
                     </div>
 
-                    {/* ── SECTION A: PROJECT CONSOLIDATED ── */}
+                    {/* ── 2. REVENUE ── */}
                     <div className="border border-gray-200 rounded-xl overflow-hidden">
                       <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-                        <h4 className="font-semibold text-gray-900">A — Project (Consolidated)</h4>
+                        <h4 className="font-semibold text-gray-900">Revenue</h4>
                       </div>
                       <div className="p-6 space-y-6">
-                        {/* Revenue breakdown cards */}
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">Equipment Revenue (MSRP)</p>
+                            <p className="text-xs text-gray-500 font-medium">Sound System (MSRP)</p>
                             <p className="text-lg font-bold text-gray-900 mt-1">{r.discountedEquipmentValueJOD.toFixed(2)}</p>
                             <p className="text-xs text-gray-400 mt-0.5">JOD after discount</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">Logistics Pass-through</p>
-                            <p className="text-lg font-bold text-gray-900 mt-1">{r.passThroughJOD.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">customs, shipping & import tax</p>
+                            <p className="text-xs text-gray-500 font-medium">Custom Items Shipped</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{s.customShipped.priceOnly.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD, excl. logistics</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">Import Tax</p>
-                            <p className="text-lg font-bold text-gray-900 mt-1">{r.vatJOD.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">JOD paid at customs</p>
+                            <p className="text-xs text-gray-500 font-medium">Custom Items Local</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{s.customLocal.revenue.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">Services Revenue</p>
+                            <p className="text-xs text-gray-500 font-medium">Services</p>
                             <p className="text-lg font-bold text-gray-900 mt-1">{r.servicesTotal.toFixed(2)}</p>
                             <p className="text-xs text-gray-400 mt-0.5">JOD</p>
                           </div>
                           <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">VAT to Remit</p>
-                            <p className="text-lg font-bold text-gray-900 mt-1">{r.vatToRemitJOD.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">output VAT − import</p>
+                            <p className="text-xs text-gray-500 font-medium">Sound System Logistics Pass-through</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{r.passThroughJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">billed to client, 0% margin</p>
+                          </div>
+                          <div className="p-4 bg-gray-50 rounded-lg text-center">
+                            <p className="text-xs text-gray-500 font-medium">Custom Shipped Logistics</p>
+                            <p className="text-lg font-bold text-gray-900 mt-1">{s.customShipped.logistics.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">absorbed in item price</p>
                           </div>
                         </div>
 
-                        {/* Pie charts */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                          <div className="border border-gray-100 rounded-lg p-4">
-                            <h5 className="font-medium text-gray-800 mb-3 text-sm">Revenue Composition</h5>
-                            <ResponsiveContainer width="100%" height={250}>
-                              <PieChart>
-                                <Pie
-                                  data={[
-                                    { name: 'Equipment (MSRP)', value: r.discountedEquipmentValueJOD },
-                                    ...(r.customEquipmentTotalJOD > 0 ? [{ name: 'Custom Items', value: r.customEquipmentTotalJOD }] : []),
-                                    ...(r.servicesTotal > 0 ? [{ name: 'Services', value: r.servicesTotal }] : []),
-                                    { name: 'Logistics (0% margin)', value: r.passThroughJOD },
-                                  ].filter(d => d.value > 0)}
-                                  cx="50%" cy="50%" innerRadius={52} outerRadius={82} dataKey="value"
-                                  label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
-                                  labelLine={false}
-                                >
-                                  {[0,1,2,3,4].map(i => <Cell key={i} fill={BOARD_COLORS[i % BOARD_COLORS.length]} />)}
-                                </Pie>
-                                <Tooltip formatter={(v) => `${Number(v).toFixed(2)} JOD`} />
-                                <Legend iconSize={10} wrapperStyle={{fontSize: '11px'}} />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-
-                          <div className="border border-gray-100 rounded-lg p-4">
-                            <h5 className="font-medium text-gray-800 mb-3 text-sm">Where Client Money Goes</h5>
-                            <ResponsiveContainer width="100%" height={250}>
-                              <PieChart>
-                                <Pie
-                                  data={[
-                                    { name: 'Dealer Cost', value: r.equipmentDealerTotalJOD },
-                                    { name: 'Logistics (pass-through)', value: r.passThroughJOD },
-                                    { name: 'Equipment Profit', value: r.voidSalesProfit },
-                                    ...(r.servicesTotal > 0 ? [{ name: 'Services Revenue', value: r.servicesTotal }] : []),
-                                  ].filter(d => d.value > 0)}
-                                  cx="50%" cy="50%" innerRadius={52} outerRadius={82} dataKey="value"
-                                  label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
-                                  labelLine={false}
-                                >
-                                  {[0,1,2,3,4].map(i => <Cell key={i} fill={BOARD_COLORS[i % BOARD_COLORS.length]} />)}
-                                </Pie>
-                                <Tooltip formatter={(v) => `${Number(v).toFixed(2)} JOD`} />
-                                <Legend iconSize={10} wrapperStyle={{fontSize: '11px'}} />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-
-                        {/* Project totals row */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm border-t border-gray-100 pt-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-sm border-t border-gray-100 pt-4">
                           <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
                             <span className="text-gray-600">Subtotal (ex-VAT):</span>
                             <span className="font-semibold">{r.projectSubtotalJOD.toFixed(2)} JOD</span>
@@ -3872,6 +3932,12 @@ This quotation is valid for 30 days from the date of issue"
                               <span className="font-semibold">{r.projectTaxJOD.toFixed(2)} JOD</span>
                             </div>
                           )}
+                          {project.includeTax && (
+                            <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                              <span className="text-gray-600">VAT to Remit:</span>
+                              <span className="font-semibold">{r.vatToRemitJOD.toFixed(2)} JOD</span>
+                            </div>
+                          )}
                           <div className="flex justify-between p-3 bg-gray-900 text-white rounded-lg">
                             <span className="text-gray-300">Final Total:</span>
                             <span className="font-bold">{r.projectTotalJOD.toFixed(2)} JOD</span>
@@ -3880,125 +3946,222 @@ This quotation is valid for 30 days from the date of issue"
                       </div>
                     </div>
 
-                    {/* ── SECTION B: VOID ACOUSTICS ── */}
+                    {/* ── 3. COSTS ── */}
                     <div className="border border-gray-200 rounded-xl overflow-hidden">
                       <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-                        <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                          <Building2 size={16} />
-                          B — Void Acoustics Jordan
-                        </h4>
+                        <h4 className="font-semibold text-gray-900">Costs</h4>
                       </div>
-                      <div className="p-6 space-y-6">
-                        {/* KPI cards */}
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                          <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">Equipment Value (MSRP)</p>
-                            <p className="text-lg font-bold text-gray-900 mt-1">{r.equipmentMsrpValueJOD.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">JOD list price</p>
+                      <div className="p-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-gray-500 font-medium text-xs">Sound System Dealer</p>
+                            <p className="text-base font-bold text-gray-900 mt-1">{r.equipmentDealerTotalJOD.toFixed(2)} JOD</p>
                           </div>
-                          <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">Equipment Value (After Discount)</p>
-                            <p className="text-lg font-bold text-gray-900 mt-1">{r.discountedEquipmentValueJOD.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">After discount</p>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-gray-500 font-medium text-xs">Custom Items</p>
+                            <p className="text-base font-bold text-gray-900 mt-1">{(s.customShipped.cost + s.customLocal.cost).toFixed(2)} JOD</p>
+                            <p className="text-xs text-gray-400">shipped + local</p>
                           </div>
-                          <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">Internal Landed Cost</p>
-                            <p className="text-lg font-bold text-gray-900 mt-1">{r.doorToDoorCostJOD.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">incl. customs, shipping &amp; import tax</p>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-gray-500 font-medium text-xs">Freight</p>
+                            <p className="text-base font-bold text-gray-900 mt-1">{r.shipping.toFixed(2)} JOD</p>
                           </div>
-                          <div className="p-4 bg-gray-50 rounded-lg text-center">
-                            <p className="text-xs text-gray-500 font-medium">Sales Profit</p>
-                            <p className="text-lg font-bold text-green-600 mt-1">{r.voidSalesProfit.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">JOD</p>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-gray-500 font-medium text-xs">Customs &amp; Duties</p>
+                            <p className="text-base font-bold text-gray-900 mt-1">{r.customs.toFixed(2)} JOD</p>
                           </div>
-                          <div className="p-4 bg-green-50 rounded-lg text-center border border-green-200">
-                            <p className="text-xs text-gray-600 font-medium">Equipment Gross Margin</p>
-                            <p className="text-2xl font-bold text-green-700 mt-1">{(r.equipmentGrossMargin * 100).toFixed(1)}%</p>
-                            <p className="text-xs text-gray-400 mt-0.5">profit ÷ MSRP value</p>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-gray-500 font-medium text-xs">Import Tax</p>
+                            <p className="text-base font-bold text-gray-900 mt-1">{r.vatJOD.toFixed(2)} JOD</p>
                           </div>
                         </div>
-
-                        {/* Logistics pass-through callout */}
-                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm">
-                          <p className="font-medium text-blue-900 mb-2">Logistics — Pass-through (billed at cost, 0% margin)</p>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs text-blue-700">
-                            <div><span className="font-medium">Shipping:</span> {r.shipping.toFixed(2)} JOD</div>
-                            <div><span className="font-medium">Customs:</span> {r.customs.toFixed(2)} JOD</div>
-                            <div><span className="font-medium">Import Tax:</span> {r.vatJOD.toFixed(2)} JOD</div>
-                            <div><span className="font-medium">Total pass-through:</span> {r.passThroughJOD.toFixed(2)} JOD</div>
-                          </div>
-                        </div>
-
-                        {/* Order cost breakdown */}
-                        <div>
-                          <h6 className="font-medium text-gray-800 mb-3 text-sm">Order Cost Breakdown</h6>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                            <div className="text-center p-4 bg-gray-50 rounded-lg">
-                              <p className="text-gray-600 font-medium text-xs">Dealer Equipment</p>
-                              <p className="text-base text-gray-900 mt-1">{r.equipmentDealerTotalJOD.toFixed(2)} JOD</p>
-                              <p className="text-xs text-gray-400">{r.doorToDoorCostExclTax020JOD > 0 ? ((r.equipmentDealerTotalJOD / r.doorToDoorCostExclTax020JOD) * 100).toFixed(1) : '0'}% of cost</p>
-                            </div>
-                            <div className="text-center p-4 bg-gray-50 rounded-lg">
-                              <p className="text-gray-600 font-medium text-xs">Shipping</p>
-                              <p className="text-base text-gray-900 mt-1">{r.shipping.toFixed(2)} JOD</p>
-                              <p className="text-xs text-gray-400">pass-through</p>
-                            </div>
-                            <div className="text-center p-4 bg-gray-50 rounded-lg">
-                              <p className="text-gray-600 font-medium text-xs">Customs</p>
-                              <p className="text-base text-gray-900 mt-1">{r.customs.toFixed(2)} JOD</p>
-                              <p className="text-xs text-gray-400">pass-through</p>
-                            </div>
-                            <div className="text-center p-4 bg-gray-50 rounded-lg">
-                              <p className="text-gray-600 font-medium text-xs">Import Tax</p>
-                              <p className="text-base text-gray-900 mt-1">{r.vatJOD.toFixed(2)} JOD</p>
-                              <p className="text-xs text-gray-400">pass-through</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Quotation cost distribution chart */}
-                        <div className="border border-gray-100 rounded-lg p-4">
-                          <h6 className="font-medium text-gray-800 mb-2 text-sm">Quotation Cost Distribution</h6>
-                          <ResponsiveContainer width="100%" height={260}>
-                            <PieChart>
-                              <Pie
-                                data={[
-                                  { name: 'Dealer Cost', value: r.equipmentDealerTotalJOD },
-                                  { name: 'Shipping', value: r.shipping },
-                                  { name: 'Customs', value: r.customs },
-                                  ...(r.vatJOD > 0 ? [{ name: 'Import Tax', value: r.vatJOD }] : []),
-                                  { name: 'Profit', value: r.voidSalesProfit },
-                                ].filter(d => d.value > 0)}
-                                cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="value"
-                                label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
-                                labelLine={false}
-                              >
-                                {[0,1,2,3,4].map(i => <Cell key={i} fill={BOARD_COLORS[i % BOARD_COLORS.length]} />)}
-                              </Pie>
-                              <Tooltip formatter={(v) => `${Number(v).toFixed(2)} JOD`} />
-                              <Legend iconSize={10} wrapperStyle={{fontSize: '11px'}} />
-                            </PieChart>
-                          </ResponsiveContainer>
+                        <div className="flex justify-between p-4 mt-4 bg-gray-900 text-white rounded-lg">
+                          <span className="text-gray-300 font-medium">Total Landed Cost</span>
+                          <span className="font-bold">{r.doorToDoorCostJOD.toFixed(2)} JOD</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* ── KEY PERFORMANCE METRICS ── */}
+                    {/* ── 4. SHIPPING & LOGISTICS ── */}
+                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                      <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                        <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                          <Truck size={16} />
+                          Shipping &amp; Logistics
+                        </h4>
+                      </div>
+                      <div className="p-6 space-y-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-gray-500 font-medium text-xs">Total Weight</p>
+                            <p className="text-base font-bold text-gray-900 mt-1">{r.totalWeight.toFixed(1)} kg</p>
+                            <p className="text-xs text-gray-400">SS {s.voidShipped.weightKg.toFixed(1)}kg + custom {s.customShipped.weightKg.toFixed(1)}kg</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-gray-500 font-medium text-xs">Items Shipped</p>
+                            <p className="text-base font-bold text-gray-900 mt-1">{s.voidShipped.itemCount + s.customShipped.itemCount}</p>
+                            <p className="text-xs text-gray-400">SS {s.voidShipped.itemCount} + custom {s.customShipped.itemCount}</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-gray-500 font-medium text-xs">Items Local</p>
+                            <p className="text-base font-bold text-gray-900 mt-1">{s.customLocal.itemCount}</p>
+                            <p className="text-xs text-gray-400">custom equipment, no freight</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-gray-500 font-medium text-xs">Freight Rate</p>
+                            <p className="text-base font-bold text-gray-900 mt-1">{shippingRatePerKg.toFixed(2)} JOD/kg</p>
+                            <p className="text-xs text-gray-400">+ 35 clearance, 70 transport, 45 DO</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
+                            <p className="font-medium text-gray-800 mb-3 text-center">Sound System Logistics</p>
+                            <div className="grid grid-cols-3 gap-3 text-center">
+                              <div>
+                                <p className="text-xs text-gray-500">Shipping</p>
+                                <p className="text-base font-bold text-gray-900 mt-0.5">{s.voidShipped.shipping.toFixed(2)}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Customs</p>
+                                <p className="text-base font-bold text-gray-900 mt-0.5">{s.voidShipped.customs.toFixed(2)}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Total</p>
+                                <p className="text-base font-bold text-gray-900 mt-0.5">{r.passThroughJOD.toFixed(2)}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
+                            <p className="font-medium text-gray-800 mb-3 text-center">Custom Equipment Logistics</p>
+                            <div className="grid grid-cols-3 gap-3 text-center">
+                              <div>
+                                <p className="text-xs text-gray-500">Shipping</p>
+                                <p className="text-base font-bold text-gray-900 mt-0.5">{s.customShipped.shipping.toFixed(2)}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Customs</p>
+                                <p className="text-base font-bold text-gray-900 mt-0.5">{s.customShipped.customs.toFixed(2)}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Total</p>
+                                <p className="text-base font-bold text-gray-900 mt-0.5">{s.customShipped.logistics.toFixed(2)}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-400">Import Tax ({r.vatJOD.toFixed(2)} JOD) is paid at customs on the combined pool — see Costs section.</p>
+                      </div>
+                    </div>
+
+                    {/* ── 5. PROFIT ANALYSIS ── */}
+                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                      <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                        <h4 className="font-semibold text-gray-900">Profit Analysis</h4>
+                      </div>
+                      <div className="p-6 space-y-8">
+                        {/* Sound System */}
+                        <div className="space-y-4">
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sound System</p>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
+                                  <th className="py-2 pr-4 font-medium">Stream</th>
+                                  <th className="py-2 px-4 font-medium text-right">Revenue</th>
+                                  <th className="py-2 px-4 font-medium text-right">Cost</th>
+                                  <th className="py-2 px-4 font-medium text-right">Profit</th>
+                                  <th className="py-2 pl-4 font-medium text-right">Margin</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {soundSystemRows.map(({ key, label, data }) => {
+                                  const margin = data.revenue > 0 ? (data.profit / data.revenue) * 100 : 0;
+                                  return (
+                                    <tr key={key} className="border-b border-gray-100 last:border-0">
+                                      <td className="py-2 pr-4 text-gray-800">{label}</td>
+                                      <td className="py-2 px-4 text-right text-gray-900">{data.revenue.toFixed(2)}</td>
+                                      <td className="py-2 px-4 text-right text-gray-500">{data.cost.toFixed(2)}</td>
+                                      <td className={`py-2 px-4 text-right font-medium ${data.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{data.profit.toFixed(2)}</td>
+                                      <td className="py-2 pl-4 text-right text-gray-500">{margin.toFixed(1)}%</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                            <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                              <span className="text-gray-600">Gross Profit:</span>
+                              <span className="font-semibold">{soundSystemProfit.toFixed(2)} JOD</span>
+                            </div>
+                            <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                              <span className="text-gray-600">Origination Fee (2% of SS revenue):</span>
+                              <span className="font-semibold">−{r.originationFeeJOD.toFixed(2)} JOD</span>
+                            </div>
+                            <div className="flex justify-between p-3 bg-gray-900 text-white rounded-lg">
+                              <span className="text-gray-300">Final Profit:</span>
+                              <span className="font-bold text-green-400">{soundSystemFinalProfit.toFixed(2)} JOD</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Nogahub */}
+                        <div className="space-y-4 border-t border-gray-100 pt-6">
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Nogahub</p>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
+                                  <th className="py-2 pr-4 font-medium">Stream</th>
+                                  <th className="py-2 px-4 font-medium text-right">Revenue</th>
+                                  <th className="py-2 px-4 font-medium text-right">Cost</th>
+                                  <th className="py-2 px-4 font-medium text-right">Profit</th>
+                                  <th className="py-2 pl-4 font-medium text-right">Margin</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {nogahubRows.map(({ key, label, data }) => {
+                                  const margin = data.revenue > 0 ? (data.profit / data.revenue) * 100 : 0;
+                                  return (
+                                    <tr key={key} className="border-b border-gray-100 last:border-0">
+                                      <td className="py-2 pr-4 text-gray-800">{label}</td>
+                                      <td className="py-2 px-4 text-right text-gray-900">{data.revenue.toFixed(2)}</td>
+                                      <td className="py-2 px-4 text-right text-gray-500">{data.cost.toFixed(2)}</td>
+                                      <td className={`py-2 px-4 text-right font-medium ${data.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{data.profit.toFixed(2)}</td>
+                                      <td className="py-2 pl-4 text-right text-gray-500">{margin.toFixed(1)}%</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div className="flex justify-end">
+                            <div className="flex justify-between gap-6 p-3 bg-gray-900 text-white rounded-lg min-w-[240px]">
+                              <span className="text-gray-300">Final Profit:</span>
+                              <span className="font-bold text-green-400">{nogahubGrossProfit.toFixed(2)} JOD</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── 6. KEY PERFORMANCE METRICS ── */}
                     <div className="border border-gray-200 rounded-xl overflow-hidden">
                       <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
                         <h4 className="font-semibold text-gray-900">Key Performance Metrics</h4>
                       </div>
                       <div className="p-6">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                          <div className="text-center p-4 bg-green-50 border border-green-100 rounded-lg">
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-600 font-medium">Equipment Gross Margin</p>
-                            <p className="text-2xl font-bold text-green-700 mt-1">{(r.equipmentGrossMargin * 100).toFixed(1)}%</p>
-                            <p className="text-xs text-gray-400 mt-0.5">profit ÷ MSRP value</p>
+                            <p className="text-2xl font-bold text-gray-800 mt-1">{(r.equipmentGrossMargin * 100).toFixed(1)}%</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Sound System profit ÷ MSRP value</p>
                           </div>
                           <div className="text-center p-4 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-600 font-medium">Blended Net Margin</p>
                             <p className="text-2xl font-bold text-gray-800 mt-1">{blendedNetMargin.toFixed(1)}%</p>
-                            <p className="text-xs text-gray-400 mt-0.5">excl. VAT &amp; pass-through</p>
+                            <p className="text-xs text-gray-400 mt-0.5">final profit ÷ subtotal</p>
                           </div>
                           <div className="text-center p-4 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-600 font-medium">Equipment Markup</p>
@@ -4009,10 +4172,9 @@ This quotation is valid for 30 days from the date of issue"
                             </p>
                             <p className="text-xs text-gray-400 mt-0.5">MSRP over dealer cost</p>
                           </div>
-                          <div className="text-center p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-600 font-medium">Effective Discount</p>
-                            <p className="text-2xl font-bold text-yellow-700 mt-1">{r.effectiveDiscountPct.toFixed(1)}%</p>
-                            <p className="text-sm font-semibold text-yellow-700 mt-0.5">−{(r.discountAmount || 0).toFixed(2)} JOD</p>
+                            <p className="text-2xl font-bold text-gray-800 mt-1">{r.effectiveDiscountPct.toFixed(1)}%</p>
                             <p className="text-xs text-gray-400 mt-0.5">vs list pricing</p>
                           </div>
                           <div className="text-center p-4 bg-gray-50 rounded-lg">
@@ -4034,9 +4196,14 @@ This quotation is valid for 30 days from the date of issue"
                             <p className="text-xs text-gray-400 mt-0.5">landed cost ÷ subtotal</p>
                           </div>
                           <div className="text-center p-4 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-600 font-medium">Distributable Profit</p>
-                            <p className="text-2xl font-bold text-green-600 mt-1">{r.voidSalesProfit.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">JOD total sales profit</p>
+                            <p className="text-xs text-gray-600 font-medium">Origination Fee</p>
+                            <p className="text-2xl font-bold text-gray-800 mt-1">{r.originationFeeJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD, 2% of SS revenue</p>
+                          </div>
+                          <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-600 font-medium">Final Profit</p>
+                            <p className="text-2xl font-bold text-gray-800 mt-1">{r.finalProfitJOD.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">JOD after origination fee</p>
                           </div>
                         </div>
                       </div>

@@ -18,12 +18,8 @@ export const SERVICE_PRICING = {
   PROJECT_MANAGEMENT: 0.10, // 10% of equipment MSRP
 };
 
-// Role-based Fees (from business report)
-export const ROLE_FEES = {
-  PRODUCER: 0.05, // 5% of void sales profit
-  PROJECT_MANAGER: 0.225, // 22.5% of total project value
-  NOGAHUB_FEE: 0.375, // 37.5% of void sales profit
-};
+// Origination Fee — charged on Void equipment revenue only, deducted from gross profit
+export const ORIGINATION_FEE_RATE = 0.02; // 2%
 
 // Shipping & Customs Fees
 export const SHIPPING_CUSTOMS = {
@@ -42,26 +38,6 @@ export const TAX_RATES = {
   TAX_016: 23.2,
   TAX_019: 25,
   TAX_070: 0.05,
-};
-
-// Profit Distribution (Void Company)
-export const VOID_PROFIT_DISTRIBUTION = {
-  RETAINED_EARNINGS: 0.05, // 5%
-  SHAREHOLDER_DISTRIBUTION: 0.525, // 52.5%
-  // Individual shareholders
-  NADEEM_SHARE: 0.55, // 55% of shareholder distribution
-  ISSA_SHARE: 0.225, // 22.5% of shareholder distribution
-  BAKRI_SHARE: 0.225, // 22.5% of shareholder distribution
-};
-
-// Profit Distribution (Nogahub Company)
-export const NOGAHUB_PROFIT_DISTRIBUTION = {
-  RETAINED_EARNINGS: 0.27, // 27% of Nogahub fee
-  SHAREHOLDER_DISTRIBUTION: 0.20, // 20% of Nogahub fee
-  // Individual shareholders (of shareholder distribution)
-  NADEEM_SHARE: 0.40, // 40% of shareholder distribution
-  ISSA_SHARE: 0.40, // 40% of shareholder distribution
-  WEWEALTH_SHARE: 0.20, // 20% of shareholder distribution
 };
 
 // Initial Project State
