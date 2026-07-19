@@ -178,7 +178,6 @@ async function translateToArabic(text: string): Promise<string> {
       return (data[0] as unknown[][]).map(chunk => chunk[0]).join('');
     },
     async () => ((await fetchJson(`https://lingva.ml/api/v1/en/ar/${q}`)) as { translation: string }).translation,
-    async () => ((await fetchJson(`https://lingva.lunar.icu/api/v1/en/ar/${q}`)) as { translation: string }).translation,
   ];
   for (const provider of providers) {
     try {
