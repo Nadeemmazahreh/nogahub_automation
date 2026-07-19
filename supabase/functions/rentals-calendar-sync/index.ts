@@ -463,7 +463,6 @@ async function sendRentalNotifications(rental: Record<string, unknown>, q: Recor
       `Booking ID: ${bookingCode}`,
       `Event: ${rental.title || ''}`,
       `Venue: ${rental.venue || ''}`,
-      `Address: ${rental.venue_address || ''}`,
       `Start: ${fmtEn(start)}`,
       `End: ${fmtEn(end)}`,
       '',
