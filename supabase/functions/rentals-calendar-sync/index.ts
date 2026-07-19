@@ -161,20 +161,32 @@ function toArabicNumerals(text: string): string {
   return text.replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)]);
 }
 
+async function fetchJson(url: string): Promise<unknown> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 async function translateToArabic(text: string): Promise<string> {
   if (!text?.trim()) return text;
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=${encodeURIComponent(text)}`;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+  const q = encodeURIComponent(text);
+  // Google direct 429s from Supabase edge IPs. Lingva instances proxy Google
+  // Translate from other IPs with identical output (incl. name transliteration).
+  const providers = [
+    async () => {
+      const data = await fetchJson(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=${q}`) as unknown[][];
       return (data[0] as unknown[][]).map(chunk => chunk[0]).join('');
-    } catch (e) {
-      if (attempt === 2) console.error(`translateToArabic failed for "${text}":`, e);
-      else await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
-    }
+    },
+    async () => ((await fetchJson(`https://lingva.ml/api/v1/en/ar/${q}`)) as { translation: string }).translation,
+    async () => ((await fetchJson(`https://lingva.lunar.icu/api/v1/en/ar/${q}`)) as { translation: string }).translation,
+  ];
+  for (const provider of providers) {
+    try {
+      const out = await provider();
+      if (out?.trim()) return out;
+    } catch { /* try next provider */ }
   }
+  console.error(`translateToArabic: all providers failed for "${text}"`);
   return text;
 }
 
