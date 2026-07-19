@@ -163,14 +163,19 @@ function toArabicNumerals(text: string): string {
 
 async function translateToArabic(text: string): Promise<string> {
   if (!text?.trim()) return text;
-  try {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=${encodeURIComponent(text)}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return (data[0] as unknown[][]).map(chunk => chunk[0]).join('');
-  } catch {
-    return text;
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=${encodeURIComponent(text)}`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return (data[0] as unknown[][]).map(chunk => chunk[0]).join('');
+    } catch (e) {
+      if (attempt === 2) console.error(`translateToArabic failed for "${text}":`, e);
+      else await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+    }
   }
+  return text;
 }
 
 // ── Booking code ─────────────────────────────────────────────────────────────
@@ -205,22 +210,20 @@ async function buildEventPdf(rental: Record<string, unknown>, q: Record<string, 
   const soundcheck = si.soundcheck_time ? new Date(si.soundcheck_time) : null;
 
   // Everything user-facing is translated except equipment list + technical rider.
-  const [
-    notesAr, titleAr, venueAr, uninstallAr, installAr,
-    clientNameAr, venueAddressAr, venueContactNameAr, logisticsNameAr, soundNameAr, artistNameAr,
-  ] = await Promise.all([
-    notes ? translateToArabic(notes) : Promise.resolve(''),
-    rental.title ? translateToArabic(rental.title as string) : Promise.resolve(''),
-    rental.venue ? translateToArabic(rental.venue as string) : Promise.resolve(''),
-    li.uninstall_from ? translateToArabic(li.uninstall_from) : Promise.resolve(''),
-    li.install_in ? translateToArabic(li.install_in) : Promise.resolve(''),
-    q.client_name ? translateToArabic(q.client_name as string) : Promise.resolve(''),
-    rental.venue_address ? translateToArabic(rental.venue_address as string) : Promise.resolve(''),
-    rental.venue_contact_name ? translateToArabic(rental.venue_contact_name as string) : Promise.resolve(''),
-    li.name ? translateToArabic(li.name) : Promise.resolve(''),
-    si.name ? translateToArabic(si.name) : Promise.resolve(''),
-    si.artist_name ? translateToArabic(si.artist_name) : Promise.resolve(''),
-  ]);
+  // Sequential on purpose: a parallel burst gets the edge IP rate-limited by
+  // the unofficial translate endpoint, silently falling back to English.
+  const tr = (s: unknown) => s ? translateToArabic(String(s)) : Promise.resolve('');
+  const notesAr = await tr(notes);
+  const titleAr = await tr(rental.title);
+  const venueAr = await tr(rental.venue);
+  const uninstallAr = await tr(li.uninstall_from);
+  const installAr = await tr(li.install_in);
+  const clientNameAr = await tr(q.client_name);
+  const venueAddressAr = await tr(rental.venue_address);
+  const venueContactNameAr = await tr(rental.venue_contact_name);
+  const logisticsNameAr = await tr(li.name);
+  const soundNameAr = await tr(si.name);
+  const artistNameAr = await tr(si.artist_name);
 
   const equipmentEn = bulletize(li.equipment_summary); // untranslated, per request
 
@@ -329,9 +332,9 @@ async function buildEventPdf(rental: Record<string, unknown>, q: Record<string, 
     doc.setTextColor(0, 0, 0);
   };
 
-  // Draws "label: value" on one line — bold label, normal value. Falls back to a
-  // plain wrapped line (label losing its bold) only for the rare overlong value.
-  const drawField = (fontName: string, rtl: boolean, y: number, label: string, value: string): number => {
+  // LTR only (Arabic page always stacks label over value). Draws "label: value"
+  // on one line — bold label, normal value — wrapping only the rare overlong value.
+  const drawField = (fontName: string, y: number, label: string, value: string): number => {
     const labelText = `${label}:`;
     doc.setFont(fontName, 'bold');
     const labelW = doc.getTextWidth(labelText);
@@ -339,16 +342,14 @@ async function buildEventPdf(rental: Record<string, unknown>, q: Record<string, 
     const valueW = doc.getTextWidth(value);
     const gap = 2;
     if (labelW + gap + valueW <= contentWidth) {
-      const edge = rtl ? pageWidth - marginX : marginX;
       doc.setFont(fontName, 'bold');
-      doc.text(labelText, edge, y, { align: rtl ? 'right' : 'left' });
+      doc.text(labelText, marginX, y);
       doc.setFont(fontName, 'normal');
-      const valueX = rtl ? edge - labelW - gap : edge + labelW + gap;
-      doc.text(value, valueX, y, { align: rtl ? 'right' : 'left' });
+      doc.text(value, marginX + labelW + gap, y);
       return 1;
     }
     const wrapped: string[] = doc.splitTextToSize(`${labelText} ${value}`, contentWidth);
-    wrapped.forEach((w, i) => doc.text(w, rtl ? pageWidth - marginX : marginX, y + i * lineH, { align: rtl ? 'right' : 'left' }));
+    wrapped.forEach((w, i) => doc.text(w, marginX, y + i * lineH));
     return wrapped.length;
   };
 
@@ -373,10 +374,13 @@ async function buildEventPdf(rental: Record<string, unknown>, q: Record<string, 
       doc.setFontSize(10.5);
       for (const field of fields) {
         ensureRoom();
-        if (field.multiline) {
+        // RTL always stacks label over value: mixed Arabic/English on one line
+        // misaligns (jsPDF has no bidi). Colon is prepended in logical order so
+        // it renders visually AFTER the Arabic label.
+        if (rtl || field.multiline) {
           if (field.label) {
             doc.setFont(fontName, 'bold');
-            doc.text(`${field.label}:`, rtl ? pageWidth - marginX : marginX, y, { align: rtl ? 'right' : 'left' });
+            doc.text(rtl ? `:${field.label}` : `${field.label}:`, rtl ? pageWidth - marginX : marginX, y, { align: rtl ? 'right' : 'left' });
             y += lineH;
           }
           doc.setFont(fontName, 'normal');
@@ -387,7 +391,7 @@ async function buildEventPdf(rental: Record<string, unknown>, q: Record<string, 
             y += lineH;
           }
         } else {
-          y += drawField(fontName, rtl, y, field.label, field.value) * lineH;
+          y += drawField(fontName, y, field.label, field.value) * lineH;
         }
       }
       y += 6;
